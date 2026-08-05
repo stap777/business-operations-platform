@@ -107,10 +107,12 @@ public class Order extends BaseEntity {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    // TODO (Sprint 7 Roadmap): These temporary payment fields (amountReceived, paymentMethod) will be replaced by the PaymentTransaction module in Sprint 7.
     @DecimalMin(value = "0.0", message = "Amount received must be greater than or equal to 0")
     @Column(name = "amount_received", precision = 12, scale = 2)
     private BigDecimal amountReceived;
 
+    // TODO (Sprint 7 Roadmap): These temporary payment fields (amountReceived, paymentMethod) will be replaced by the PaymentTransaction module in Sprint 7.
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", length = 20)
     private PaymentMethod paymentMethod;

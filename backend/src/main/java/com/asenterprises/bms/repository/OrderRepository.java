@@ -23,7 +23,11 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :startOfDay AND o.createdAt <= :endOfDay")
     long countOrdersForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
-    Page<Order> findByDeliveryPersonUsernameAndOrderStatusIn(String username, Collection<OrderStatus> orderStatuses, Pageable pageable);
+    Page<Order> findByDeliveryPersonUsernameAndOrderStatusInOrderByCreatedAtAsc(
+            String username,
+            Collection<OrderStatus> orderStatuses,
+            Pageable pageable
+    );
 
     @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.manager " +
            "WHERE (:orderNumber IS NULL OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :orderNumber, '%'))) " +
