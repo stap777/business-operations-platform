@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: as-enterprises-bms
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+jwt:
+  secret-key: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+  expiration: ${JWT_EXPIRATION:86400000} # 24 Hours in milliseconds (24 * 60 * 60 * 1000)
+
