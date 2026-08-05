@@ -30,6 +30,8 @@ public class OrderRequest {
     @NotNull(message = "Manager ID is required")
     private Long managerId;
 
+    private Long deliveryPersonId;
+
     @NotEmpty(message = "Order must contain at least one line item")
     @Valid
     private List<OrderItemRequest> items;
@@ -37,6 +39,9 @@ public class OrderRequest {
     @DecimalMin(value = "0.0", message = "Discount amount must be greater than or equal to 0")
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
+
+    @Size(max = 500, message = "Delivery instructions cannot exceed 500 characters")
+    private String deliveryInstructions;
 
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     private String notes;

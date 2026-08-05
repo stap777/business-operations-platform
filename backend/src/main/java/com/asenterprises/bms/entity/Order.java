@@ -28,6 +28,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Order entity representing a sales order header.
+ *
+ * TODO (V2 Improvement): Future versions should snapshot delivery address instead of referencing Customer address directly.
+ */
 @Entity
 @Table(
     name = "orders",
@@ -35,6 +40,7 @@ import java.util.List;
         @Index(name = "idx_orders_order_number", columnList = "order_number", unique = true),
         @Index(name = "idx_orders_customer_id", columnList = "customer_id"),
         @Index(name = "idx_orders_manager_id", columnList = "manager_id"),
+        @Index(name = "idx_orders_delivery_person_id", columnList = "delivery_person_id"),
         @Index(name = "idx_orders_order_status", columnList = "order_status"),
         @Index(name = "idx_orders_created_at", columnList = "created_at")
     }
@@ -44,8 +50,8 @@ import java.util.List;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(callSuper = true, exclude = {"customer", "manager", "items"})
-@EqualsAndHashCode(callSuper = true, exclude = {"customer", "manager", "items"})
+@ToString(callSuper = true, exclude = {"customer", "manager", "deliveryPerson", "items"})
+@EqualsAndHashCode(callSuper = true, exclude = {"customer", "manager", "deliveryPerson", "items"})
 public class Order extends BaseEntity {
 
     @NotBlank(message = "Order number is required")
@@ -62,6 +68,10 @@ public class Order extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id", nullable = false)
     private User manager;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_person_id")
+    private User deliveryPerson;
 
     @NotNull(message = "Order status is required")
     @Enumerated(EnumType.STRING)
@@ -96,6 +106,10 @@ public class Order extends BaseEntity {
     @DecimalMin(value = "0.0", message = "Total amount must be greater than or equal to 0")
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
+
+    @Size(max = 500, message = "Delivery instructions cannot exceed 500 characters")
+    @Column(name = "delivery_instructions", length = 500)
+    private String deliveryInstructions;
 
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     @Column(name = "notes", length = 500)

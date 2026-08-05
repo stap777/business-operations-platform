@@ -30,12 +30,15 @@ public class OrderResponse {
     private String customerCode;
     private Long managerId;
     private String managerName;
+    private Long deliveryPersonId;
+    private String deliveryPersonName;
     private OrderStatus orderStatus;
     private PaymentStatus paymentStatus;
     private DeliveryStatus deliveryStatus;
     private BigDecimal subtotal;
     private BigDecimal discountAmount;
     private BigDecimal totalAmount;
+    private String deliveryInstructions;
     private String notes;
     private List<OrderItemResponse> items;
     private LocalDateTime createdAt;

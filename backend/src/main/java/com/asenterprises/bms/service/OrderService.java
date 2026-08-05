@@ -13,6 +13,7 @@ import com.asenterprises.bms.entity.OrderStatus;
 import com.asenterprises.bms.entity.PaymentStatus;
 import com.asenterprises.bms.entity.Product;
 import com.asenterprises.bms.entity.ProductStatus;
+import com.asenterprises.bms.entity.Role;
 import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.entity.UserStatus;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
@@ -37,6 +38,8 @@ import java.util.List;
  * Service managing Order lifecycle operations: creation, lookup, searching, and cancellation.
  * Calculates line totals, subtotal, discount, and total amounts.
  * Stock deduction is deferred to inventory movement modules.
+ *
+ * TODO (V2 Improvement): Future versions should snapshot delivery address instead of referencing Customer address directly.
  */
 @Service
 @RequiredArgsConstructor
@@ -65,6 +68,20 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot assign order to an inactive manager");
         }
 
+        User deliveryPerson = null;
+        if (request.getDeliveryPersonId() != null) {
+            deliveryPerson = userRepository.findById(request.getDeliveryPersonId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Delivery person not found with id: " + request.getDeliveryPersonId()));
+
+            if (deliveryPerson.getStatus() != UserStatus.ACTIVE) {
+                throw new IllegalArgumentException("Cannot assign order to an inactive delivery person");
+            }
+
+            if (deliveryPerson.getRole() != Role.DELIVERY) {
+                throw new IllegalArgumentException("Assigned delivery user must have DELIVERY role");
+            }
+        }
+
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new IllegalArgumentException("Order must contain at least one item");
         }
@@ -76,9 +93,11 @@ public class OrderService {
                 .orderNumber(orderNumber)
                 .customer(customer)
                 .manager(manager)
-                .orderStatus(OrderStatus.CREATED)
+                .deliveryPerson(deliveryPerson)
+                .orderStatus(deliveryPerson != null ? OrderStatus.ASSIGNED : OrderStatus.CREATED)
                 .paymentStatus(PaymentStatus.PENDING)
                 .deliveryStatus(DeliveryStatus.PENDING)
+                .deliveryInstructions(trim(request.getDeliveryInstructions()))
                 .notes(trim(request.getNotes()))
                 .build();
 
@@ -197,12 +216,15 @@ public class OrderService {
                 .customerCode(order.getCustomer().getCustomerCode())
                 .managerId(order.getManager().getId())
                 .managerName(order.getManager().getFullName())
+                .deliveryPersonId(order.getDeliveryPerson() != null ? order.getDeliveryPerson().getId() : null)
+                .deliveryPersonName(order.getDeliveryPerson() != null ? order.getDeliveryPerson().getFullName() : null)
                 .orderStatus(order.getOrderStatus())
                 .paymentStatus(order.getPaymentStatus())
                 .deliveryStatus(order.getDeliveryStatus())
                 .subtotal(order.getSubtotal())
                 .discountAmount(order.getDiscountAmount())
                 .totalAmount(order.getTotalAmount())
+                .deliveryInstructions(order.getDeliveryInstructions())
                 .notes(order.getNotes())
                 .items(itemResponses)
                 .createdAt(order.getCreatedAt())
