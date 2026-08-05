@@ -5,7 +5,7 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java Version](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://www.oracle.com/java/)
 
-A production-grade Business Operations and Resource Management System built with Spring Boot 3, Java 21, PostgreSQL, and Spring Security with JWT authentication. Designed for enterprise inventory tracking, customer lifecycle management, and order processing workflows.
+A production-grade Business Operations and Resource Management System built with Spring Boot 3, Java 21, PostgreSQL, and Spring Security with JWT authentication. Designed for enterprise inventory tracking, customer lifecycle management, order processing, and delivery workflows.
 
 ---
 
@@ -30,6 +30,7 @@ A production-grade Business Operations and Resource Management System built with
 Distribution enterprises and wholesale suppliers often face operational bottlenecks caused by fragmented business software:
 - **Uncoordinated Customer Tracking**: Inconsistent client profiles, duplicate phone entries, and lack of customer status tracking.
 - **Inventory Discrepancies**: Manual stock management leads to stockouts, inaccurate valuations, and price mismatches between purchase costs and selling prices.
+- **Delivery Visibility Gaps**: Difficulty tracking assigned orders, delivery state transitions, and on-field payment collection status.
 - **Security and Authorization Risks**: Unprotected application endpoints without role-based access control or audit logging.
 
 ---
@@ -41,6 +42,7 @@ The Business Operations Platform provides an integrated RESTful backend that uni
 2. **Customer Lifecycle Management**: Automated customer code generation (`CUST-0001`), mobile validation, and status tracking.
 3. **Category and Product Catalog**: Hierarchical product classification, price guardrails (`Selling Price >= Purchase Price`), stock tracking (`availableStock`), and service item support (`trackInventory`).
 4. **Order Processing Engine**: Line item price snapshotting, automated subtotal/total calculations, and delivery person role enforcement.
+5. **Delivery Workflow Module**: Dedicated dashboard for delivery staff, status transitions (`ASSIGNED` -> `OUT_FOR_DELIVERY` -> `DELIVERED`), and temporary payment collection recording (`CASH`, `UPI`, `BANK_TRANSFER`).
 
 ---
 
@@ -98,6 +100,12 @@ The application implements a standard Layered Architecture (`Controller -> Servi
 - **Status Lifecycle**: Tracks `OrderStatus` (`CREATED`, `ASSIGNED`, `OUT_FOR_DELIVERY`, `DELIVERED`, `VERIFIED`, `COMPLETED`, `CANCELLED`), `PaymentStatus`, and `DeliveryStatus`.
 - **Endpoints**: `/api/v1/orders` (Create, View by ID, Paginated Search, Cancel).
 
+### 5. Delivery Workflow Module
+- **Delivery Personnel Dashboard**: Lists orders assigned to currently authenticated delivery user (`ASSIGNED`, `OUT_FOR_DELIVERY`).
+- **State Transition Endpoints**: `start-delivery` (`ASSIGNED` -> `OUT_FOR_DELIVERY`) and `mark-delivered` (`OUT_FOR_DELIVERY` -> `DELIVERED`).
+- **Delivery Payment Recording**: Records `amountReceived` and `paymentMethod` (`CASH`, `UPI`, `BANK_TRANSFER`), updating `PaymentStatus` (`PAID`, `PARTIAL`, `PENDING`).
+- **Endpoints**: `/api/v1/delivery/orders` (Get Assigned Orders, Start Delivery, Mark Delivered).
+
 ---
 
 ## Technology Stack
@@ -120,8 +128,8 @@ business-operations-platform/
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/asenterprises/bms/
-│   │   │   │   ├── controller/    # REST API Controllers
-│   │   │   │   ├── service/       # Business Logic Services
+│   │   │   │   ├── controller/    # REST API Controllers (AuthController, CustomerController, DeliveryController, etc.)
+│   │   │   │   ├── service/       # Business Logic Services (DeliveryService, OrderService, etc.)
 │   │   │   │   ├── repository/    # JPA Repositories
 │   │   │   │   ├── entity/        # JPA Entities
 │   │   │   │   ├── dto/           # Data Transfer Objects
@@ -193,6 +201,9 @@ Base Path: `http://localhost:8080/api/v1`
 | Orders | `/api/v1/orders` | `POST` | Create order with line items |
 | Orders | `/api/v1/orders/search` | `GET` | Search orders by number, customer, status, date |
 | Orders | `/api/v1/orders/{id}/cancel` | `PATCH` | Cancel order |
+| Delivery | `/api/v1/delivery/orders` | `GET` | Get assigned orders for logged-in delivery user |
+| Delivery | `/api/v1/delivery/orders/{id}/start-delivery` | `PATCH` | Transition assigned order to OUT_FOR_DELIVERY |
+| Delivery | `/api/v1/delivery/orders/{id}/mark-delivered` | `PATCH` | Mark order DELIVERED & record payment details |
 
 ---
 
@@ -221,9 +232,9 @@ Base Path: `http://localhost:8080/api/v1`
 - [x] **Sprint 3**: Customer Management Module
 - [x] **Sprint 4**: Category and Inventory-Ready Product Module
 - [x] **Sprint 5A**: Order Processing and Line Item Calculation
-- [ ] **Sprint 5B**: Inventory Movement Logs and Stock Reservation
-- [ ] **Sprint 6**: Invoicing and Payment Gateway Integration
-- [ ] **Sprint 7**: Reporting and Executive Analytics
+- [x] **Sprint 6**: Delivery Workflow Module & Temporary Payment Recording
+- [ ] **Sprint 7**: Invoicing and Payment Gateway Integration
+- [ ] **Sprint 8**: Reporting and Executive Analytics
 
 ---
 

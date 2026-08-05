@@ -107,6 +107,14 @@ public class Order extends BaseEntity {
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
+    @DecimalMin(value = "0.0", message = "Amount received must be greater than or equal to 0")
+    @Column(name = "amount_received", precision = 12, scale = 2)
+    private BigDecimal amountReceived;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_method", length = 20)
+    private PaymentMethod paymentMethod;
+
     @Size(max = 500, message = "Delivery instructions cannot exceed 500 characters")
     @Column(name = "delivery_instructions", length = 500)
     private String deliveryInstructions;

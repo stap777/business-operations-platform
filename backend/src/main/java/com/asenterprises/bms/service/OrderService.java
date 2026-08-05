@@ -203,7 +203,7 @@ public class OrderService {
         return input != null ? input.trim() : null;
     }
 
-    private OrderResponse mapToResponse(Order order) {
+    public OrderResponse mapToResponse(Order order) {
         List<OrderItemResponse> itemResponses = order.getItems().stream()
                 .map(this::mapToItemResponse)
                 .toList();
@@ -224,6 +224,8 @@ public class OrderService {
                 .subtotal(order.getSubtotal())
                 .discountAmount(order.getDiscountAmount())
                 .totalAmount(order.getTotalAmount())
+                .amountReceived(order.getAmountReceived())
+                .paymentMethod(order.getPaymentMethod())
                 .deliveryInstructions(order.getDeliveryInstructions())
                 .notes(order.getNotes())
                 .items(itemResponses)

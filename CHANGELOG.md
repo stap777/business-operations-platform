@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [v0.6.0] - 2026-08-05
+
+### Added
+- **Delivery Workflow Module**:
+  - `DeliveryController` dedicated REST endpoints (`/api/v1/delivery/orders`).
+  - `DeliveryService` managing delivery dashboard retrieval, status transitions (`ASSIGNED` -> `OUT_FOR_DELIVERY` -> `DELIVERED`), and delivery person authorization guards.
+  - `DeliveryPaymentRequest` DTO and `PaymentMethod` enum (`CASH`, `UPI`, `BANK_TRANSFER`).
+  - Temporary payment collection fields (`amountReceived`, `paymentMethod`) on `Order` entity.
+  - Automated `PaymentStatus` evaluation (`PAID`, `PARTIAL`, `PENDING`) based on `amountReceived` vs. `totalAmount`.
+  - Filtered order query in `OrderRepository` for assigned delivery personnel (`ASSIGNED`, `OUT_FOR_DELIVERY`).
+
+---
+
 ## [v0.5.0] - 2026-08-05
 
 ### Added

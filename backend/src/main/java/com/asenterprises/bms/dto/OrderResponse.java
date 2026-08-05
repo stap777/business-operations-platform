@@ -2,6 +2,7 @@ package com.asenterprises.bms.dto;
 
 import com.asenterprises.bms.entity.DeliveryStatus;
 import com.asenterprises.bms.entity.OrderStatus;
+import com.asenterprises.bms.entity.PaymentMethod;
 import com.asenterprises.bms.entity.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,6 +39,8 @@ public class OrderResponse {
     private BigDecimal subtotal;
     private BigDecimal discountAmount;
     private BigDecimal totalAmount;
+    private BigDecimal amountReceived;
+    private PaymentMethod paymentMethod;
     private String deliveryInstructions;
     private String notes;
     private List<OrderItemResponse> items;
