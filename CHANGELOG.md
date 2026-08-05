@@ -1,8 +1,22 @@
 # Changelog
 
-All notable changes to the **Business Operations Platform** will be documented in this file.
+All notable changes to the Business Operations Platform are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [v0.5.0] - 2026-08-05
+
+### Added
+- **Order Management Module**:
+  - `Order` and `OrderItem` JPA entities with cascade persistence and orphan removal.
+  - `OrderStatus` (`CREATED`, `ASSIGNED`, `OUT_FOR_DELIVERY`, `DELIVERED`, `VERIFIED`, `COMPLETED`, `CANCELLED`), `PaymentStatus`, and `DeliveryStatus` enums.
+  - Snapshot pricing logic capturing historical product `sellingPrice` per item at order creation.
+  - Automated calculation of `lineTotal`, `subtotal`, `discountAmount`, and `totalAmount`.
+  - Delivery person assignment validation restricting assigned users to active accounts with the `DELIVERY` role.
+  - `OrderRepository` supporting sequential order number generation (`ORD-YYYYMMDD-XXXX`) and multi-criteria paginated search.
+  - `OrderService` and `OrderController` exposing endpoints under `/api/v1/orders`.
 
 ---
 
