@@ -29,7 +29,16 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 
     long countByActiveFalse();
 
+    @Query("SELECT COUNT(c) FROM Coupon c WHERE c.endDate < :now")
+    long countExpiredCoupons(@Param("now") java.time.LocalDateTime now);
+
+    @Query("SELECT SUM(COALESCE(c.usedCount, 0)) FROM Coupon c")
+    Long sumTotalRedemptions();
+
+    @Query("SELECT c FROM Coupon c WHERE c.active = true AND c.endDate > :now AND c.endDate <= :threshold")
+    java.util.List<Coupon> findUpcomingExpiries(@Param("now") java.time.LocalDateTime now, @Param("threshold") java.time.LocalDateTime threshold);
+
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("UPDATE Coupon c SET c.usedCount = c.usedCount + 1 WHERE c.id = :id AND c.usedCount < c.usageLimit")
+    @Query("UPDATE Coupon c SET c.usedCount = COALESCE(c.usedCount, 0) + 1 WHERE c.id = :id AND (c.usageLimit IS NULL OR COALESCE(c.usedCount, 0) < c.usageLimit)")
     int incrementUsedCount(@Param("id") Long id);
 }

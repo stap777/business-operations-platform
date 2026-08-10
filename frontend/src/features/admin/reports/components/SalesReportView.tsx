@@ -10,6 +10,7 @@ import {
   Coins,
   ArrowUpRight,
   ArrowDownRight,
+  Info,
 } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 
@@ -70,6 +71,16 @@ export const SalesReportView: React.FC<SalesReportViewProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Legacy Order COGS Notice */}
+      {data?.cogsIncomplete && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+          <Info className="w-4 h-4 text-amber-500 shrink-0" />
+          <span>
+            <strong>Notice:</strong> This report range includes legacy order items created prior to purchase cost snapshotting. Unrecorded legacy purchase costs are excluded from COGS calculations.
+          </span>
+        </div>
+      )}
+
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {/* Total Revenue */}

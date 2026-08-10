@@ -21,7 +21,15 @@ public class DeliveryReportController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-    public ResponseEntity<DeliveryReportResponse> getDeliveryReport() {
-        return ResponseEntity.ok(deliveryReportService.getDeliveryReport());
+    public ResponseEntity<DeliveryReportResponse> getDeliveryReport(
+            @org.springframework.web.bind.annotation.RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate startDate,
+
+            @org.springframework.web.bind.annotation.RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            java.time.LocalDate endDate) {
+
+        return ResponseEntity.ok(deliveryReportService.getDeliveryReport(startDate, endDate));
     }
 }

@@ -43,6 +43,18 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT SUM(p.totalAmount) FROM Payment p WHERE p.paymentDate >= :start AND p.paymentDate <= :end")
     java.math.BigDecimal sumPaymentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
+    @Query("SELECT COUNT(p) FROM Payment p WHERE p.paymentDate >= :start AND p.paymentDate <= :end AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod)")
+    long countPaymentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end, @Param("paymentMethod") PaymentMethod paymentMethod);
+
+    @Query("SELECT new com.asenterprises.bms.dto.PaymentMethodSummaryResponse(" +
+           "p.paymentMethod, COUNT(p), SUM(p.totalAmount)) " +
+           "FROM Payment p " +
+           "WHERE p.paymentDate >= :start AND p.paymentDate <= :end " +
+           "GROUP BY p.paymentMethod")
+    java.util.List<com.asenterprises.bms.dto.PaymentMethodSummaryResponse> summarizePaymentsByMethodBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
+
     @Query("SELECT p FROM Payment p JOIN FETCH p.customer WHERE p.customer.id = :customerId ORDER BY p.paymentDate DESC")
     java.util.List<Payment> findByCustomerId(@Param("customerId") Long customerId);
 }

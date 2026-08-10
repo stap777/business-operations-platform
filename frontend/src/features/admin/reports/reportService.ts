@@ -52,8 +52,14 @@ export const reportService = {
   /**
    * Fetch delivery operations & agent performance report: GET /reports/deliveries
    */
-  getDeliveryReport: async (): Promise<DeliveryReportResponse> => {
-    const response = await apiClient.get<DeliveryReportResponse>('/reports/deliveries');
+  getDeliveryReport: async (params: ReportFilterParams = {}): Promise<DeliveryReportResponse> => {
+    const queryParams: Record<string, any> = {};
+    if (params.startDate) queryParams.startDate = params.startDate;
+    if (params.endDate) queryParams.endDate = params.endDate;
+
+    const response = await apiClient.get<DeliveryReportResponse>('/reports/deliveries', {
+      params: queryParams,
+    });
     return response.data;
   },
 

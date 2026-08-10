@@ -2,6 +2,8 @@ package com.asenterprises.bms.service;
 
 import com.asenterprises.bms.dto.CouponRequest;
 import com.asenterprises.bms.dto.CouponResponse;
+import com.asenterprises.bms.dto.CouponValidationRequest;
+import com.asenterprises.bms.dto.CouponValidationResponse;
 import com.asenterprises.bms.entity.Coupon;
 import com.asenterprises.bms.entity.DiscountType;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Service managing coupon lifecycle, discount validations, date window verifications, and usage cap logic.
@@ -105,25 +108,34 @@ public class CouponService {
 
     @Transactional(readOnly = true)
     public CouponResponse getCouponByCode(String code) {
-        String trimmedCode = trim(code).toUpperCase();
-        Coupon coupon = couponRepository.findByCode(trimmedCode)
-                .orElseThrow(() -> new ResourceNotFoundException("Coupon not found with code: " + trimmedCode));
+        String trimmedCode = trim(code);
+        if (trimmedCode == null || trimmedCode.isEmpty()) {
+            throw new IllegalArgumentException("Coupon code cannot be empty");
+        }
+        final String searchCode = trimmedCode.toUpperCase();
+
+        Coupon coupon = couponRepository.findByCode(searchCode)
+                .orElseThrow(() -> new ResourceNotFoundException("Coupon not found with code: " + searchCode));
 
         LocalDateTime now = LocalDateTime.now();
 
-        // Business Rule: Coupon must be active
         if (!coupon.isActive()) {
-            throw new IllegalArgumentException("Coupon '" + trimmedCode + "' is inactive");
+            throw new IllegalArgumentException("Coupon '" + searchCode + "' is inactive");
         }
 
-        // Business Rule: Current date must be within validity window
-        if (now.isBefore(coupon.getStartDate()) || now.isAfter(coupon.getEndDate())) {
-            throw new IllegalArgumentException("Coupon '" + trimmedCode + "' is expired or not yet valid");
+        if (coupon.getStartDate() != null && now.isBefore(coupon.getStartDate())) {
+            throw new IllegalArgumentException("Coupon '" + searchCode + "' is not yet valid");
         }
 
-        // Business Rule: usedCount cannot exceed usageLimit
-        if (coupon.getUsedCount() >= coupon.getUsageLimit()) {
-            throw new IllegalArgumentException("Coupon '" + trimmedCode + "' has reached its maximum usage limit");
+        if (coupon.getEndDate() != null && now.isAfter(coupon.getEndDate())) {
+            throw new IllegalArgumentException("Coupon '" + searchCode + "' is expired");
+        }
+
+        int used = coupon.getUsedCount() != null ? coupon.getUsedCount() : 0;
+        int limit = coupon.getUsageLimit() != null ? coupon.getUsageLimit() : Integer.MAX_VALUE;
+
+        if (used >= limit) {
+            throw new IllegalArgumentException("Coupon '" + searchCode + "' has reached its maximum usage limit");
         }
 
         return mapToResponse(coupon);
@@ -134,6 +146,105 @@ public class CouponService {
         String trimmedQuery = trim(query);
         return couponRepository.searchCoupons(trimmedQuery, active, pageable)
                 .map(this::mapToResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public CouponValidationResponse validateCouponForOrder(CouponValidationRequest request) {
+        try {
+            String trimmedCode = trim(request.getCode());
+            if (trimmedCode == null || trimmedCode.isEmpty()) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Coupon code cannot be empty")
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            trimmedCode = trimmedCode.toUpperCase();
+            Optional<Coupon> couponOptional = couponRepository.findByCode(trimmedCode);
+            if (couponOptional.isEmpty()) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Coupon code '" + trimmedCode + "' not found")
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            Coupon coupon = couponOptional.get();
+
+            if (!coupon.isActive()) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Coupon '" + trimmedCode + "' is inactive")
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            if (coupon.getStartDate() != null && now.isBefore(coupon.getStartDate())) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Coupon '" + trimmedCode + "' is not yet valid")
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            if (coupon.getEndDate() != null && now.isAfter(coupon.getEndDate())) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Coupon '" + trimmedCode + "' is expired")
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            int used = coupon.getUsedCount() != null ? coupon.getUsedCount() : 0;
+            int limit = coupon.getUsageLimit() != null ? coupon.getUsageLimit() : Integer.MAX_VALUE;
+
+            if (used >= limit) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Coupon '" + trimmedCode + "' has reached its maximum usage limit")
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            BigDecimal subtotal = request.getSubtotal() != null ? request.getSubtotal() : BigDecimal.ZERO;
+            BigDecimal minOrder = coupon.getMinimumOrderAmount() != null ? coupon.getMinimumOrderAmount() : BigDecimal.ZERO;
+
+            if (subtotal.compareTo(minOrder) < 0) {
+                return CouponValidationResponse.builder()
+                        .valid(false)
+                        .message("Order subtotal (₹" + subtotal + ") does not meet coupon minimum requirement of ₹" + minOrder)
+                        .calculatedDiscount(BigDecimal.ZERO)
+                        .build();
+            }
+
+            BigDecimal discountAmount = BigDecimal.ZERO;
+            BigDecimal discountValue = coupon.getDiscountValue() != null ? coupon.getDiscountValue() : BigDecimal.ZERO;
+
+            if (coupon.getDiscountType() == DiscountType.PERCENTAGE) {
+                discountAmount = subtotal.multiply(discountValue).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                if (coupon.getMaximumDiscount() != null) {
+                    discountAmount = discountAmount.min(coupon.getMaximumDiscount());
+                }
+            } else if (coupon.getDiscountType() == DiscountType.FLAT) {
+                discountAmount = discountValue.min(subtotal);
+            }
+
+            return CouponValidationResponse.builder()
+                    .valid(true)
+                    .message("Coupon '" + coupon.getCode() + "' applied successfully!")
+                    .coupon(mapToResponse(coupon))
+                    .calculatedDiscount(discountAmount)
+                    .build();
+        } catch (Exception ex) {
+            log.error("Unexpected error validating coupon: ", ex);
+            return CouponValidationResponse.builder()
+                    .valid(false)
+                    .message("Failed to validate coupon: " + ex.getMessage())
+                    .calculatedDiscount(BigDecimal.ZERO)
+                    .build();
+        }
     }
 
     private void validateCouponBusinessRules(CouponRequest request) {

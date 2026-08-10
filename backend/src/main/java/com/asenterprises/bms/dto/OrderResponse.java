@@ -38,6 +38,7 @@ public class OrderResponse {
     private DeliveryStatus deliveryStatus;
     private BigDecimal subtotal;
     private BigDecimal discountAmount;
+    private String couponCode;
     private BigDecimal totalAmount;
     private BigDecimal amountReceived;
     private PaymentMethod paymentMethod;

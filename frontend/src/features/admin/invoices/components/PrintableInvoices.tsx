@@ -22,8 +22,11 @@ export const PrintableInvoices: React.FC<PrintableInvoicesProps> = ({
         return (
           <div
             key={invoice.id || index}
-            className={`w-full ${!isLast ? 'break-after-page print:break-after-page' : ''}`}
-            style={!isLast ? { pageBreakAfter: 'always', breakAfter: 'page' } : undefined}
+            className="w-full page-break-container"
+            style={{
+              pageBreakAfter: isLast ? 'auto' : 'always',
+              breakAfter: isLast ? 'auto' : 'page',
+            }}
           >
             <PrintableInvoice invoice={invoice} businessSettings={businessSettings} />
           </div>

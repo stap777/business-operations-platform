@@ -7,7 +7,7 @@ export const reportKeys = {
   sales: (params?: ReportFilterParams) => [...reportKeys.all, 'sales', params] as const,
   payments: (params?: ReportFilterParams) => [...reportKeys.all, 'payments', params] as const,
   inventory: () => [...reportKeys.all, 'inventory'] as const,
-  deliveries: () => [...reportKeys.all, 'deliveries'] as const,
+  deliveries: (params?: ReportFilterParams) => [...reportKeys.all, 'deliveries', params] as const,
   auditLogs: (params?: ReportFilterParams) => [...reportKeys.all, 'auditLogs', params] as const,
 };
 
@@ -35,10 +35,10 @@ export const useInventoryReport = () => {
   });
 };
 
-export const useDeliveryReport = () => {
+export const useDeliveryReport = (params: ReportFilterParams = {}) => {
   return useQuery({
-    queryKey: reportKeys.deliveries(),
-    queryFn: () => reportService.getDeliveryReport(),
+    queryKey: reportKeys.deliveries(params),
+    queryFn: () => reportService.getDeliveryReport(params),
     staleTime: 5 * 60 * 1000,
   });
 };

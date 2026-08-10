@@ -25,6 +25,13 @@ export const DeliveryAndNotes: React.FC<DeliveryAndNotesProps> = ({
     staleTime: 5 * 60 * 1000,
   });
 
+  // Auto-select the first delivery person from the list if none is currently selected
+  React.useEffect(() => {
+    if (selectedDeliveryPersonId === null && deliveryPeople.length > 0) {
+      onSelectDeliveryPerson(deliveryPeople[0].id);
+    }
+  }, [deliveryPeople, selectedDeliveryPersonId, onSelectDeliveryPerson]);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
       {/* Assign Delivery Person Dropdown */}

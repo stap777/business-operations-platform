@@ -6,12 +6,12 @@ import {
   Sun,
   Moon,
   Plus,
-  Clock,
   ClipboardList,
   Truck,
   CreditCard,
   ArrowRight,
   Loader2,
+  CheckCircle,
 } from 'lucide-react';
 import { useDashboardSummary } from '../useDashboardQueries';
 import { Button } from '../../../components/ui/button';
@@ -70,34 +70,7 @@ export const ManagerDashboardPage: React.FC = () => {
 
       {/* 4 KPI Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* 1. Pending Orders */}
-        <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl p-4 flex flex-col justify-between space-y-4 shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">
-                Pending Orders
-              </span>
-              <p className="text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
-                {summaryQuery.isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
-                ) : (
-                  summaryQuery.data?.todaysDeliveriesPending ?? 0
-                )}
-              </p>
-            </div>
-            <div className="w-9 h-9 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <button
-            onClick={() => navigate('/orders/create')}
-            className="text-[11px] font-semibold text-[#111111] dark:text-[#FAFAFA] hover:underline flex items-center gap-1 self-start"
-          >
-            + Create Order <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* 2. Today's Orders */}
+        {/* 1. Today's Orders */}
         <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl p-4 flex flex-col justify-between space-y-4 shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
@@ -117,10 +90,37 @@ export const ManagerDashboardPage: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => navigate('/orders/create')}
+            onClick={() => navigate('/orders')}
             className="text-[11px] font-semibold text-[#111111] dark:text-[#FAFAFA] hover:underline flex items-center gap-1 self-start"
           >
-            + Create Order <ArrowRight className="w-3 h-3" />
+            View all orders <ArrowRight className="w-3 h-3" />
+          </button>
+        </div>
+
+        {/* 2. Verified Orders */}
+        <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl p-4 flex flex-col justify-between space-y-4 shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1">
+              <span className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">
+                Verified Orders
+              </span>
+              <p className="text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
+                {summaryQuery.isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+                ) : (
+                  summaryQuery.data?.todaysVerifiedOrders ?? 0
+                )}
+              </p>
+            </div>
+            <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <CheckCircle className="w-4 h-4" />
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/orders')}
+            className="text-[11px] font-semibold text-[#111111] dark:text-[#FAFAFA] hover:underline flex items-center gap-1 self-start"
+          >
+            View verified <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
@@ -144,33 +144,31 @@ export const ManagerDashboardPage: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => navigate('/orders/create')}
+            onClick={() => navigate('/orders')}
             className="text-[11px] font-semibold text-[#111111] dark:text-[#FAFAFA] hover:underline flex items-center gap-1 self-start"
           >
-            + Create Order <ArrowRight className="w-3 h-3" />
+            View deliveries <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 
-        {/* 4. Payments */}
+        {/* 4. Payments Collected Today */}
         <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl p-4 flex flex-col justify-between space-y-4 shadow-sm hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <span className="text-xs font-medium text-[#71717A] dark:text-[#A1A1AA]">
-                Payments
+                Payments Received Today
               </span>
               <p className="text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
                 {summaryQuery.isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
                 ) : (
                   `₹${(
-                    summaryQuery.data?.todaysPaymentsReceived ||
-                    summaryQuery.data?.todaysRevenue ||
-                    0
-                  ).toLocaleString('en-IN')}`
+                    summaryQuery.data?.todaysPaymentsReceived ?? 0
+                  ).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                 )}
               </p>
             </div>
-            <div className="w-9 h-9 rounded-lg bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
@@ -178,7 +176,7 @@ export const ManagerDashboardPage: React.FC = () => {
             onClick={() => navigate('/payments')}
             className="text-[11px] font-semibold text-[#111111] dark:text-[#FAFAFA] hover:underline flex items-center gap-1 self-start"
           >
-            View payments <ArrowRight className="w-3 h-3" />
+            View payment ledger <ArrowRight className="w-3 h-3" />
           </button>
         </div>
       </div>

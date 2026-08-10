@@ -27,5 +27,6 @@ public class SalesReportResponse {
     private BigDecimal profitMarginPercentage;
     private long completedOrders;
     private long cancelledOrders;
+    private Boolean cogsIncomplete;
     private List<SalesPeriodItemResponse> items;
 }

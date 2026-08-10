@@ -24,6 +24,7 @@ export interface SalesReportResponse {
   profitMarginPercentage?: number;
   completedOrders: number;
   cancelledOrders: number;
+  cogsIncomplete?: boolean;
   items: SalesPeriodItemResponse[];
 }
 

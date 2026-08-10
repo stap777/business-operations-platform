@@ -57,6 +57,7 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const handleViewInvoice = (invoice: InvoiceResponse) => {
+    setBulkPrintInvoices(null);
     setSelectedInvoice(invoice);
     setIsDetailsOpen(true);
   };
@@ -67,6 +68,8 @@ export const InvoicesPage: React.FC = () => {
   };
 
   const handleOpenBulkPrint = () => {
+    setSelectedInvoice(null);
+    setIsDetailsOpen(false);
     const total = invoiceData?.totalElements || 0;
     if (total === 0) {
       toast.info('No invoices to print matching current filters.');
@@ -98,9 +101,19 @@ export const InvoicesPage: React.FC = () => {
       setIsPreparingBulkPrint(false);
       setIsBulkModalOpen(false);
 
-      // Trigger print after rendering bulk printable invoices DOM
+      // Trigger print after rendering bulk printable invoices DOM and cleanup state afterward
       setTimeout(() => {
+        const cleanupPrint = () => {
+          setBulkPrintInvoices(null);
+          window.removeEventListener('afterprint', cleanupPrint);
+        };
+        window.addEventListener('afterprint', cleanupPrint);
         window.print();
+
+        // Fallback cleanup after 2 seconds if afterprint doesn't fire
+        setTimeout(() => {
+          setBulkPrintInvoices(null);
+        }, 2000);
       }, 150);
     } catch (err: any) {
       setIsPreparingBulkPrint(false);

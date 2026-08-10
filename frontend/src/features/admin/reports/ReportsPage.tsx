@@ -25,7 +25,7 @@ export const ReportsPage: React.FC = () => {
   const salesQuery = useSalesReport({ startDate, endDate, granularity });
   const paymentQuery = usePaymentReport({ startDate, endDate });
   const inventoryQuery = useInventoryReport();
-  const deliveryQuery = useDeliveryReport();
+  const deliveryQuery = useDeliveryReport({ startDate, endDate });
 
   const handleDateChange = (start?: string, end?: string) => {
     setStartDate(start);
@@ -92,8 +92,8 @@ export const ReportsPage: React.FC = () => {
         })}
       </div>
 
-      {/* Shared Filter Bar (Active for Sales, Payments, and Overview) */}
-      {(activeTab === 'OVERVIEW' || activeTab === 'SALES' || activeTab === 'PAYMENTS') && (
+      {/* Shared Filter Bar (Active for Sales, Payments, Delivery, and Overview) */}
+      {(activeTab === 'OVERVIEW' || activeTab === 'SALES' || activeTab === 'PAYMENTS' || activeTab === 'DELIVERY') && (
         <ReportFilterBar
           onDateChange={handleDateChange}
           granularity={granularity}

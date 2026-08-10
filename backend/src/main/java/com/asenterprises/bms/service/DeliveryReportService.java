@@ -32,28 +32,28 @@ public class DeliveryReportService {
 
     @Transactional(readOnly = true)
     public DeliveryReportResponse getDeliveryReport() {
-        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+        return getDeliveryReport(null, null);
+    }
 
-        long deliveriesToday = orderRepository.countOrdersBetween(startOfDay, endOfDay);
-        long pendingDeliveries = orderRepository.countDeliveriesPendingBetween(startOfDay, endOfDay);
-        long completedDeliveries = orderRepository.countDeliveriesCompletedBetween(startOfDay, endOfDay);
+    @Transactional(readOnly = true)
+    public DeliveryReportResponse getDeliveryReport(LocalDate startDate, LocalDate endDate) {
+        LocalDate start = startDate != null ? startDate : LocalDate.now().minusDays(30);
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
 
-        List<User> deliveryAgents = userRepository.findAll().stream()
-                .filter(u -> u.getRole() == Role.DELIVERY)
-                .toList();
+        LocalDateTime startDateTime = start.atStartOfDay();
+        LocalDateTime endDateTime = end.atTime(LocalTime.MAX);
 
-        List<Order> allOrders = orderRepository.findAll();
+        long deliveriesToday = orderRepository.countOrdersBetween(startDateTime, endDateTime);
+        long pendingDeliveries = orderRepository.countDeliveriesPendingBetween(startDateTime, endDateTime);
+        long completedDeliveries = orderRepository.countDeliveriesCompletedBetween(startDateTime, endDateTime);
+
+        List<User> deliveryAgents = userRepository.findByRole(Role.DELIVERY);
 
         List<DeliveryAgentPerformanceResponse> agentPerformanceList = new ArrayList<>();
         for (User agent : deliveryAgents) {
-            List<Order> agentOrders = allOrders.stream()
-                    .filter(o -> o.getDeliveryPerson() != null && o.getDeliveryPerson().getId().equals(agent.getId()))
-                    .toList();
-
-            long assigned = agentOrders.size();
-            long pending = agentOrders.stream().filter(o -> o.getDeliveryStatus() == DeliveryStatus.PENDING || o.getDeliveryStatus() == DeliveryStatus.OUT_FOR_DELIVERY).count();
-            long completed = agentOrders.stream().filter(o -> o.getDeliveryStatus() == DeliveryStatus.DELIVERED).count();
+            long assigned = orderRepository.countAssignedDeliveriesForAgentBetween(agent.getId(), startDateTime, endDateTime);
+            long pending = orderRepository.countPendingDeliveriesForAgentBetween(agent.getId(), startDateTime, endDateTime);
+            long completed = orderRepository.countCompletedDeliveriesForAgentBetween(agent.getId(), startDateTime, endDateTime);
 
             agentPerformanceList.add(DeliveryAgentPerformanceResponse.builder()
                     .deliveryPersonId(agent.getId())
@@ -64,8 +64,8 @@ public class DeliveryReportService {
                     .build());
         }
 
-        log.info("Generated delivery report: {} today, {} completed, {} pending",
-                deliveriesToday, completedDeliveries, pendingDeliveries);
+        log.info("Generated delivery report from {} to {}: {} total, {} completed, {} pending",
+                start, end, deliveriesToday, completedDeliveries, pendingDeliveries);
 
         return DeliveryReportResponse.builder()
                 .deliveriesToday(deliveriesToday)

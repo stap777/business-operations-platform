@@ -106,6 +106,10 @@ public class OrderService {
             if (deliveryPerson.getRole() != Role.DELIVERY) {
                 throw new IllegalArgumentException("Assigned delivery user must have DELIVERY role");
             }
+        } else {
+            // Auto-select first active delivery person if available when creating order
+            deliveryPerson = userRepository.findFirstByRoleAndStatusOrderByIdAsc(Role.DELIVERY, UserStatus.ACTIVE)
+                    .orElse(null);
         }
 
         if (request.getItems() == null || request.getItems().isEmpty()) {
@@ -140,12 +144,14 @@ public class OrderService {
             }
 
             BigDecimal sellingPrice = product.getSellingPrice();
+            BigDecimal purchasePrice = product.getPurchasePrice();
             BigDecimal lineTotal = sellingPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
             subtotal = subtotal.add(lineTotal);
 
             OrderItem orderItem = OrderItem.builder()
                     .product(product)
                     .quantity(itemReq.getQuantity())
+                    .purchasePrice(purchasePrice)
                     .sellingPrice(sellingPrice)
                     .lineTotal(lineTotal)
                     .build();
@@ -157,36 +163,48 @@ public class OrderService {
         String couponCode = trim(request.getCouponCode());
 
         if (couponCode != null && !couponCode.isEmpty()) {
-            com.asenterprises.bms.entity.Coupon coupon = couponRepository.findByCode(couponCode)
-                    .orElseThrow(() -> new ResourceNotFoundException("Coupon not found with code: " + couponCode));
+            String uppercaseCode = couponCode.toUpperCase();
+            com.asenterprises.bms.entity.Coupon coupon = couponRepository.findByCode(uppercaseCode)
+                    .orElseThrow(() -> new ResourceNotFoundException("Coupon not found with code: " + uppercaseCode));
 
             if (!coupon.isActive()) {
-                throw new IllegalArgumentException("Coupon '" + couponCode + "' is inactive");
+                throw new IllegalArgumentException("Coupon '" + uppercaseCode + "' is inactive");
             }
 
             LocalDateTime now = LocalDateTime.now();
-            if (now.isBefore(coupon.getStartDate()) || now.isAfter(coupon.getEndDate())) {
-                throw new IllegalArgumentException("Coupon '" + couponCode + "' is expired or not yet valid");
+            if ((coupon.getStartDate() != null && now.isBefore(coupon.getStartDate())) ||
+                (coupon.getEndDate() != null && now.isAfter(coupon.getEndDate()))) {
+                throw new IllegalArgumentException("Coupon '" + uppercaseCode + "' is expired or not yet valid");
             }
 
-            if (coupon.getUsedCount() >= coupon.getUsageLimit()) {
-                throw new IllegalStateException("Coupon '" + couponCode + "' usage limit has been reached");
+            int used = coupon.getUsedCount() != null ? coupon.getUsedCount() : 0;
+            int limit = coupon.getUsageLimit() != null ? coupon.getUsageLimit() : Integer.MAX_VALUE;
+
+            if (used >= limit) {
+                throw new IllegalStateException("Coupon '" + uppercaseCode + "' usage limit has been reached");
             }
 
-            if (subtotal.compareTo(coupon.getMinimumOrderAmount()) < 0) {
-                throw new IllegalArgumentException("Order subtotal (" + subtotal + ") does not meet coupon minimum requirement (" + coupon.getMinimumOrderAmount() + ")");
+            BigDecimal minOrder = coupon.getMinimumOrderAmount() != null ? coupon.getMinimumOrderAmount() : BigDecimal.ZERO;
+            if (subtotal.compareTo(minOrder) < 0) {
+                throw new IllegalArgumentException("Order subtotal (" + subtotal + ") does not meet coupon minimum requirement (" + minOrder + ")");
             }
+
+            BigDecimal discountVal = coupon.getDiscountValue() != null ? coupon.getDiscountValue() : BigDecimal.ZERO;
 
             if (coupon.getDiscountType() == com.asenterprises.bms.entity.DiscountType.PERCENTAGE) {
-                discountAmount = subtotal.multiply(coupon.getDiscountValue()).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                discountAmount = subtotal.multiply(discountVal).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
                 if (coupon.getMaximumDiscount() != null) {
                     discountAmount = discountAmount.min(coupon.getMaximumDiscount());
                 }
             } else if (coupon.getDiscountType() == com.asenterprises.bms.entity.DiscountType.FLAT) {
-                discountAmount = coupon.getDiscountValue().min(subtotal);
+                discountAmount = discountVal.min(subtotal);
             }
 
             order.setCoupon(coupon);
+            int updatedRows = couponRepository.incrementUsedCount(coupon.getId());
+            if (updatedRows == 0) {
+                throw new IllegalStateException("Coupon '" + uppercaseCode + "' usage limit has been reached");
+            }
         } else if (request.getDiscountAmount() != null) {
             discountAmount = request.getDiscountAmount();
             if (discountAmount.compareTo(BigDecimal.ZERO) < 0) {
@@ -286,6 +304,7 @@ public class OrderService {
                 .deliveryStatus(order.getDeliveryStatus())
                 .subtotal(order.getSubtotal())
                 .discountAmount(order.getDiscountAmount())
+                .couponCode(order.getCoupon() != null ? order.getCoupon().getCode() : null)
                 .totalAmount(order.getTotalAmount())
                 .amountReceived(order.getAmountReceived() != null ? order.getAmountReceived() : BigDecimal.ZERO)
                 .paymentMethod(order.getPaymentMethod())

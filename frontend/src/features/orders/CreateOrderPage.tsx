@@ -93,6 +93,7 @@ export const CreateOrderPage: React.FC = () => {
         quantity: it.quantity,
       })),
       discountAmount: couponDiscount,
+      couponCode: appliedCoupon?.code || undefined,
       deliveryInstructions: deliveryInstructions.trim() || undefined,
       notes: notes.trim() ? `[Payment: ${paymentType}] ${notes.trim()}` : `Payment: ${paymentType}`,
     };

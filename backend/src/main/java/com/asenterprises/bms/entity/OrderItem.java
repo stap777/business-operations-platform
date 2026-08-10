@@ -52,6 +52,10 @@ public class OrderItem extends BaseEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
+    @DecimalMin(value = "0.0", message = "Purchase price must be non-negative")
+    @Column(name = "purchase_price", precision = 12, scale = 2)
+    private BigDecimal purchasePrice;
+
     @NotNull(message = "Selling price is required")
     @DecimalMin(value = "0.0", message = "Selling price must be non-negative")
     @Column(name = "selling_price", nullable = false, precision = 12, scale = 2)

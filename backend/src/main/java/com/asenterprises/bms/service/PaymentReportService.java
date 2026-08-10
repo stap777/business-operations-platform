@@ -43,35 +43,17 @@ public class PaymentReportService {
         BigDecimal totalPayments = paymentRepository.sumPaymentsBetween(startDateTime, endDateTime);
         if (totalPayments == null) totalPayments = BigDecimal.ZERO;
 
-        BigDecimal totalRevenue = orderRepository.sumRevenueBetween(startDateTime, endDateTime);
-        if (totalRevenue == null) totalRevenue = BigDecimal.ZERO;
-
-        BigDecimal outstandingAmount = totalRevenue.subtract(totalPayments);
-        if (outstandingAmount.compareTo(BigDecimal.ZERO) < 0) {
+        BigDecimal outstandingAmount = orderRepository.sumOutstandingForOrdersBetween(startDateTime, endDateTime);
+        if (outstandingAmount == null || outstandingAmount.compareTo(BigDecimal.ZERO) < 0) {
             outstandingAmount = BigDecimal.ZERO;
         }
 
         List<PaymentResponse> recentPayments = paymentService.searchPayments(null, null, paymentMethod, start, end, Pageable.ofSize(50))
                 .getContent();
 
-        long totalTransactions = recentPayments.size();
+        long totalTransactions = paymentRepository.countPaymentsBetween(startDateTime, endDateTime, paymentMethod);
 
-        List<PaymentMethodSummaryResponse> methodSummaries = new ArrayList<>();
-        for (PaymentMethod method : PaymentMethod.values()) {
-            List<PaymentResponse> methodPayments = paymentService.searchPayments(null, null, method, start, end, Pageable.ofSize(1000))
-                    .getContent();
-            BigDecimal methodTotal = methodPayments.stream()
-                    .map(PaymentResponse::getTotalAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            if (methodPayments.size() > 0) {
-                methodSummaries.add(PaymentMethodSummaryResponse.builder()
-                        .paymentMethod(method)
-                        .transactionCount(methodPayments.size())
-                        .totalAmount(methodTotal)
-                        .build());
-            }
-        }
+        List<PaymentMethodSummaryResponse> methodSummaries = paymentRepository.summarizePaymentsByMethodBetween(startDateTime, endDateTime);
 
         log.info("Generated payment report from {} to {}", start, end);
 

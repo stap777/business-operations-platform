@@ -17,6 +17,7 @@ import {
   X,
   FileText,
   BarChart3,
+  ClipboardList,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
           group: 'OPERATIONS',
           items: [
             { label: 'Dashboard', icon: LayoutDashboard, path: '/manager/dashboard' },
+            { label: 'Orders', icon: ClipboardList, path: '/orders' },
             { label: 'Create Order', icon: ShoppingCart, path: '/orders/create' },
             { label: 'Customers', icon: Users, path: '/customers' },
             { label: 'Payments', icon: CreditCard, path: '/payments' },
@@ -68,7 +70,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
           { label: 'Customers', icon: Users, path: '/customers' },
           { label: 'Products', icon: Package, path: '/products' },
           { label: 'Create Order', icon: ShoppingCart, path: '/orders/create' },
-          { label: 'Payments', icon: CreditCard, path: '/payments' },
         ],
       },
       {

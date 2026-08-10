@@ -2,6 +2,8 @@ package com.asenterprises.bms.controller;
 
 import com.asenterprises.bms.dto.CouponRequest;
 import com.asenterprises.bms.dto.CouponResponse;
+import com.asenterprises.bms.dto.CouponValidationRequest;
+import com.asenterprises.bms.dto.CouponValidationResponse;
 import com.asenterprises.bms.service.CouponService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,12 @@ public class CouponController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CouponResponse> createCoupon(@Valid @RequestBody CouponRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(couponService.createCoupon(request));
+    }
+
+    @PostMapping("/validate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CouponValidationResponse> validateCoupon(@Valid @RequestBody CouponValidationRequest request) {
+        return ResponseEntity.ok(couponService.validateCouponForOrder(request));
     }
 
     @PutMapping("/{id}")

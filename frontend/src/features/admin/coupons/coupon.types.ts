@@ -39,3 +39,10 @@ export interface PageResponse<T> {
   first: boolean;
   last: boolean;
 }
+
+export interface CouponValidationResponse {
+  valid: boolean;
+  message: string;
+  coupon?: CouponResponse;
+  calculatedDiscount: number;
+}

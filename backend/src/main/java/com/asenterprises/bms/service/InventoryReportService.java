@@ -45,15 +45,16 @@ public class InventoryReportService {
                 .map(productService::mapToResponse)
                 .collect(Collectors.toList());
 
-        BigDecimal valuation = productRepository.findAll().stream()
-                .map(p -> p.getSellingPrice().multiply(BigDecimal.valueOf(p.getAvailableStock() != null ? p.getAvailableStock() : 0)))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal valuation = productRepository.sumInventoryValuation();
+        if (valuation == null) {
+            valuation = BigDecimal.ZERO;
+        }
 
         List<StockAdjustmentResponse> recentAdjustments = stockAdjustmentService.searchStockAdjustments(null, null, null, null, Pageable.ofSize(20))
                 .getContent();
 
-        log.info("Generated inventory report: {} products, {} low stock, {} out of stock",
-                totalProducts, lowStockCount, outOfStockEntities.size());
+        log.info("Generated inventory report: {} products, {} low stock, {} out of stock, asset cost valuation: {}",
+                totalProducts, lowStockCount, outOfStockEntities.size(), valuation);
 
         return InventoryReportResponse.builder()
                 .totalProducts(totalProducts)

@@ -26,21 +26,20 @@ public class CouponReportService {
 
     @Transactional(readOnly = true)
     public CouponReportResponse getCouponReport() {
-        List<Coupon> coupons = couponRepository.findAll();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime threshold = now.plusDays(7);
 
-        long totalCoupons = coupons.size();
-        long activeCoupons = coupons.stream().filter(Coupon::isActive).count();
-        long expiredCoupons = coupons.stream().filter(c -> LocalDateTime.now().isAfter(c.getEndDate())).count();
-        long totalRedemptions = coupons.stream().mapToLong(c -> c.getUsedCount() != null ? c.getUsedCount() : 0).sum();
+        long totalCoupons = couponRepository.count();
+        long activeCoupons = couponRepository.countByActiveTrue();
+        long expiredCoupons = couponRepository.countExpiredCoupons(now);
+        Long totalRedemptionsSum = couponRepository.sumTotalRedemptions();
+        long totalRedemptions = totalRedemptionsSum != null ? totalRedemptionsSum : 0L;
 
-        List<CouponSummaryResponse> couponSummaries = coupons.stream()
+        List<CouponSummaryResponse> couponSummaries = couponRepository.findAll().stream()
                 .map(this::mapToSummary)
                 .collect(Collectors.toList());
 
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime threshold = now.plusDays(7);
-        List<CouponSummaryResponse> upcomingExpiries = coupons.stream()
-                .filter(c -> c.isActive() && c.getEndDate().isAfter(now) && c.getEndDate().isBefore(threshold))
+        List<CouponSummaryResponse> upcomingExpiries = couponRepository.findUpcomingExpiries(now, threshold).stream()
                 .map(this::mapToSummary)
                 .collect(Collectors.toList());
 

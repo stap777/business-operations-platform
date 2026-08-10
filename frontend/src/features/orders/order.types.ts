@@ -40,6 +40,7 @@ export interface OrderResponse {
   deliveryStatus: DeliveryStatus;
   subtotal: number;
   discountAmount: number;
+  couponCode?: string | null;
   totalAmount: number;
   amountReceived?: number | null;
   paymentMethod?: PaymentMethod | string | null;
@@ -61,6 +62,7 @@ export interface OrderRequest {
   deliveryPersonId?: number;
   items: OrderItemRequest[];
   discountAmount?: number;
+  couponCode?: string;
   deliveryInstructions?: string;
   notes?: string;
 }

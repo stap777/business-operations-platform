@@ -78,3 +78,18 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(156, 163, 175, 0.4);
 }
+
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  .page-break-container {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  .page-break-container:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+}
