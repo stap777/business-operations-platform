@@ -12,6 +12,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -34,16 +35,19 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request));
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<OrderResponse> createOrder(@Valid @RequestBody OrderRequest request, java.security.Principal principal) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(request, principal.getName()));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DELIVERY')")
     public ResponseEntity<OrderResponse> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DELIVERY')")
     public ResponseEntity<Page<OrderResponse>> searchOrders(
             @RequestParam(required = false) String orderNumber,
             @RequestParam(required = false) Long customerId,
@@ -56,6 +60,7 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.cancelOrder(id));
     }

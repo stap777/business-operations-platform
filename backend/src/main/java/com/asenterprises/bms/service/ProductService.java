@@ -95,13 +95,19 @@ public class ProductService {
         product.setCategory(category);
         product.setPurchasePrice(request.getPurchasePrice());
         product.setSellingPrice(request.getSellingPrice());
-        product.setAvailableStock(request.getAvailableStock());
         product.setMinimumStock(request.getMinimumStock());
         product.setUnit(request.getUnit());
         product.setTrackInventory(request.getTrackInventory() != null ? request.getTrackInventory() : true);
 
         Product updatedProduct = productRepository.save(product);
         return mapToResponse(updatedProduct);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+        return mapToResponse(product);
     }
 
     @Transactional(readOnly = true)
@@ -164,9 +170,10 @@ public class ProductService {
         return input != null ? input.trim() : null;
     }
 
-    private ProductResponse mapToResponse(Product product) {
+    public ProductResponse mapToResponse(Product product) {
         return ProductResponse.builder()
                 .id(product.getId())
+                .sku(product.getId() != null ? "PROD-" + product.getId() : null)
                 .name(product.getName())
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())

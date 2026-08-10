@@ -66,6 +66,13 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    public CategoryResponse getCategoryById(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+        return mapToResponse(category);
+    }
+
+    @Transactional(readOnly = true)
     public Page<CategoryResponse> searchCategories(String query, Pageable pageable) {
         if (query == null || query.trim().isEmpty()) {
             return categoryRepository.findAll(pageable).map(this::mapToResponse);

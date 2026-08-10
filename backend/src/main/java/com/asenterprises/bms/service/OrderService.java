@@ -49,11 +49,17 @@ public class OrderService {
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final com.asenterprises.bms.repository.CouponRepository couponRepository;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
+        return createOrder(request, null);
+    }
+
+    @Transactional
+    public OrderResponse createOrder(OrderRequest request, String authenticatedUsername) {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + request.getCustomerId()));
 
@@ -61,11 +67,31 @@ public class OrderService {
             throw new IllegalArgumentException("Cannot create order for an inactive customer");
         }
 
-        User manager = userRepository.findById(request.getManagerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Manager not found with id: " + request.getManagerId()));
+        User manager = null;
+        if (authenticatedUsername != null) {
+            User actor = userRepository.findByUsername(authenticatedUsername).orElse(null);
+            if (actor != null && actor.getRole() == Role.MANAGER) {
+                // MANAGER identity is derived directly from authenticated principal
+                manager = actor;
+            } else if (actor != null && actor.getRole() == Role.ADMIN && request.getManagerId() != null) {
+                manager = userRepository.findById(request.getManagerId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Manager not found with id: " + request.getManagerId()));
+            } else if (actor != null && actor.getRole() == Role.ADMIN) {
+                manager = actor;
+            }
+        }
+
+        if (manager == null) {
+            manager = userRepository.findById(request.getManagerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found with id: " + request.getManagerId()));
+        }
 
         if (manager.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalArgumentException("Cannot assign order to an inactive manager");
+        }
+
+        if (manager.getRole() != Role.MANAGER && manager.getRole() != Role.ADMIN) {
+            throw new IllegalArgumentException("Assigned manager must have MANAGER or ADMIN role");
         }
 
         User deliveryPerson = null;
@@ -127,12 +153,48 @@ public class OrderService {
             order.addItem(orderItem);
         }
 
-        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
-        if (discountAmount.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Discount amount cannot be negative");
-        }
-        if (discountAmount.compareTo(subtotal) > 0) {
-            throw new IllegalArgumentException("Discount amount (" + discountAmount + ") cannot exceed order subtotal (" + subtotal + ")");
+        BigDecimal discountAmount = BigDecimal.ZERO;
+        String couponCode = trim(request.getCouponCode());
+
+        if (couponCode != null && !couponCode.isEmpty()) {
+            com.asenterprises.bms.entity.Coupon coupon = couponRepository.findByCode(couponCode)
+                    .orElseThrow(() -> new ResourceNotFoundException("Coupon not found with code: " + couponCode));
+
+            if (!coupon.isActive()) {
+                throw new IllegalArgumentException("Coupon '" + couponCode + "' is inactive");
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(coupon.getStartDate()) || now.isAfter(coupon.getEndDate())) {
+                throw new IllegalArgumentException("Coupon '" + couponCode + "' is expired or not yet valid");
+            }
+
+            if (coupon.getUsedCount() >= coupon.getUsageLimit()) {
+                throw new IllegalStateException("Coupon '" + couponCode + "' usage limit has been reached");
+            }
+
+            if (subtotal.compareTo(coupon.getMinimumOrderAmount()) < 0) {
+                throw new IllegalArgumentException("Order subtotal (" + subtotal + ") does not meet coupon minimum requirement (" + coupon.getMinimumOrderAmount() + ")");
+            }
+
+            if (coupon.getDiscountType() == com.asenterprises.bms.entity.DiscountType.PERCENTAGE) {
+                discountAmount = subtotal.multiply(coupon.getDiscountValue()).divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+                if (coupon.getMaximumDiscount() != null) {
+                    discountAmount = discountAmount.min(coupon.getMaximumDiscount());
+                }
+            } else if (coupon.getDiscountType() == com.asenterprises.bms.entity.DiscountType.FLAT) {
+                discountAmount = coupon.getDiscountValue().min(subtotal);
+            }
+
+            order.setCoupon(coupon);
+        } else if (request.getDiscountAmount() != null) {
+            discountAmount = request.getDiscountAmount();
+            if (discountAmount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException("Discount amount cannot be negative");
+            }
+            if (discountAmount.compareTo(subtotal) > 0) {
+                throw new IllegalArgumentException("Discount amount (" + discountAmount + ") cannot exceed order subtotal (" + subtotal + ")");
+            }
         }
 
         BigDecimal totalAmount = subtotal.subtract(discountAmount);
@@ -174,12 +236,13 @@ public class OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
-        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalArgumentException("Order is already cancelled");
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Order is already cancelled");
         }
 
-        if (order.getOrderStatus() == OrderStatus.COMPLETED) {
-            throw new IllegalArgumentException("Cannot cancel a completed order");
+        if (currentStatus == OrderStatus.DELIVERED || currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot cancel order in " + currentStatus + " state");
         }
 
         order.setOrderStatus(OrderStatus.CANCELLED);
@@ -224,7 +287,7 @@ public class OrderService {
                 .subtotal(order.getSubtotal())
                 .discountAmount(order.getDiscountAmount())
                 .totalAmount(order.getTotalAmount())
-                .amountReceived(order.getAmountReceived())
+                .amountReceived(order.getAmountReceived() != null ? order.getAmountReceived() : BigDecimal.ZERO)
                 .paymentMethod(order.getPaymentMethod())
                 .deliveryInstructions(order.getDeliveryInstructions())
                 .notes(order.getNotes())

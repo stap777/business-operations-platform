@@ -1,0 +1,48 @@
+package com.asenterprises.bms.repository;
+
+import com.asenterprises.bms.entity.Payment;
+import com.asenterprises.bms.entity.PaymentMethod;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
+
+/**
+ * JPA Repository for Payment entity persistence and querying.
+ */
+@Repository
+public interface PaymentRepository extends JpaRepository<Payment, Long> {
+
+    Optional<Payment> findByPaymentNumber(String paymentNumber);
+
+    boolean existsByPaymentNumber(String paymentNumber);
+
+    @Query("SELECT COUNT(p) FROM Payment p WHERE p.createdAt >= :startOfDay AND p.createdAt <= :endOfDay")
+    long countPaymentsForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
+
+    @Query("SELECT DISTINCT p FROM Payment p JOIN FETCH p.customer JOIN FETCH p.receivedBy " +
+           "WHERE (:paymentNumber IS NULL OR LOWER(p.paymentNumber) LIKE LOWER(CONCAT('%', :paymentNumber, '%'))) " +
+           "AND (:customerId IS NULL OR p.customer.id = :customerId) " +
+           "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
+           "AND (:startDate IS NULL OR p.paymentDate >= :startDate) " +
+           "AND (:endDate IS NULL OR p.paymentDate <= :endDate)")
+    Page<Payment> searchPayments(
+            @Param("paymentNumber") String paymentNumber,
+            @Param("customerId") Long customerId,
+            @Param("paymentMethod") PaymentMethod paymentMethod,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            Pageable pageable
+    );
+
+    @Query("SELECT SUM(p.totalAmount) FROM Payment p WHERE p.paymentDate >= :start AND p.paymentDate <= :end")
+    java.math.BigDecimal sumPaymentsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT p FROM Payment p JOIN FETCH p.customer WHERE p.customer.id = :customerId ORDER BY p.paymentDate DESC")
+    java.util.List<Payment> findByCustomerId(@Param("customerId") Long customerId);
+}

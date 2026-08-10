@@ -3,7 +3,9 @@ package com.asenterprises.bms.controller;
 import com.asenterprises.bms.dto.CustomerDropdownResponse;
 import com.asenterprises.bms.dto.CustomerRequest;
 import com.asenterprises.bms.dto.CustomerResponse;
+import com.asenterprises.bms.dto.PendingOrderResponse;
 import com.asenterprises.bms.service.CustomerService;
+import com.asenterprises.bms.service.PaymentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,10 +31,12 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/customers")
+@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
 @RequiredArgsConstructor
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final PaymentService paymentService;
 
     @PostMapping
     public ResponseEntity<CustomerResponse> createCustomer(@Valid @RequestBody CustomerRequest request) {
@@ -63,7 +68,13 @@ public class CustomerController {
     }
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CustomerResponse> deactivateCustomer(@PathVariable Long id) {
         return ResponseEntity.ok(customerService.deactivateCustomer(id));
+    }
+
+    @GetMapping("/{id}/pending-orders")
+    public ResponseEntity<List<PendingOrderResponse>> getPendingOrdersForCustomer(@PathVariable Long id) {
+        return ResponseEntity.ok(paymentService.getPendingOrdersForCustomer(id));
     }
 }

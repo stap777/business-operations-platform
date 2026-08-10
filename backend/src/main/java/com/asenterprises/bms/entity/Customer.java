@@ -65,4 +65,8 @@ public class Customer extends BaseEntity {
     @Builder.Default
     @Column(name = "status", nullable = false, length = 20)
     private CustomerStatus status = CustomerStatus.ACTIVE;
+
+    public String getPhone() {
+        return phoneNumber;
+    }
 }

@@ -40,6 +40,9 @@ public class OrderRequest {
     @Builder.Default
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
+    @Size(max = 30, message = "Coupon code cannot exceed 30 characters")
+    private String couponCode;
+
     @Size(max = 500, message = "Delivery instructions cannot exceed 500 characters")
     private String deliveryInstructions;
 

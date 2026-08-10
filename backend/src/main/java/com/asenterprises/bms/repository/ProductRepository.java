@@ -32,4 +32,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("lowStockOnly") Boolean lowStockOnly,
             Pageable pageable
     );
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.availableStock <= p.minimumStock")
+    long countLowStockProducts();
+
+    @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.availableStock <= p.minimumStock ORDER BY p.availableStock ASC")
+    List<Product> findLowStockProducts();
+
+    @Query("SELECT p FROM Product p JOIN FETCH p.category WHERE p.availableStock = 0 ORDER BY p.name ASC")
+    List<Product> findOutOfStockProducts();
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p SET p.availableStock = p.availableStock - :qty WHERE p.id = :id AND p.trackInventory = true AND p.availableStock >= :qty")
+    int deductStock(@Param("id") Long id, @Param("qty") Integer qty);
 }

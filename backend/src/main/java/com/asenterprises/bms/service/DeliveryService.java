@@ -37,6 +37,8 @@ public class DeliveryService {
 
     private final OrderRepository orderRepository;
     private final OrderService orderService;
+    private final PaymentService paymentService;
+    private final com.asenterprises.bms.repository.UserRepository userRepository;
 
     /**
      * Retrieves paginated list of orders assigned to the logged-in delivery personnel,
@@ -67,7 +69,7 @@ public class DeliveryService {
     }
 
     /**
-     * Marks order as delivered (OUT_FOR_DELIVERY -> DELIVERED) and records temporary payment details.
+     * Marks order as delivered (OUT_FOR_DELIVERY -> DELIVERED) and records payment through canonical PaymentService.
      */
     @Transactional
     public OrderResponse markDelivered(Long orderId, DeliveryPaymentRequest paymentRequest, String username) {
@@ -77,12 +79,26 @@ public class DeliveryService {
         validateDeliveryState(order, OrderStatus.OUT_FOR_DELIVERY);
         validatePaymentRequest(paymentRequest, order.getTotalAmount());
 
-        BigDecimal amountReceived = paymentRequest.getAmountReceived();
-        order.setAmountReceived(amountReceived);
-        order.setPaymentMethod(paymentRequest.getPaymentMethod());
+        BigDecimal amountReceived = paymentRequest != null && paymentRequest.getAmountReceived() != null
+                ? paymentRequest.getAmountReceived()
+                : BigDecimal.ZERO;
 
-        PaymentStatus calculatedPaymentStatus = evaluatePaymentStatus(amountReceived, order.getTotalAmount());
-        order.setPaymentStatus(calculatedPaymentStatus);
+        if (amountReceived.compareTo(BigDecimal.ZERO) > 0) {
+            com.asenterprises.bms.dto.PaymentRequest pReq = com.asenterprises.bms.dto.PaymentRequest.builder()
+                    .customerId(order.getCustomer().getId())
+                    .totalAmount(amountReceived)
+                    .paymentMethod(paymentRequest.getPaymentMethod())
+                    .remarks("Payment collected upon delivery for Order #" + order.getOrderNumber())
+                    .allocations(List.of(
+                            com.asenterprises.bms.dto.PaymentAllocationRequest.builder()
+                                    .orderId(order.getId())
+                                    .allocatedAmount(amountReceived)
+                                    .build()
+                    ))
+                    .build();
+
+            paymentService.createPayment(pReq, username);
+        }
 
         order.setOrderStatus(OrderStatus.DELIVERED);
         order.setDeliveryStatus(DeliveryStatus.DELIVERED);
@@ -97,8 +113,15 @@ public class DeliveryService {
     }
 
     private void validateAssignedDeliveryPerson(Order order, String username) {
-        if (order.getDeliveryPerson() == null || !order.getDeliveryPerson().getUsername().equals(username)) {
-            throw new AccessDeniedException("Only the assigned delivery person may perform delivery updates for this order");
+        if (order.getDeliveryPerson() == null) {
+            throw new AccessDeniedException("No delivery personnel assigned to this order");
+        }
+        boolean isAssignedPerson = order.getDeliveryPerson().getUsername().equals(username);
+        com.asenterprises.bms.entity.User actor = userRepository.findByUsername(username).orElse(null);
+        boolean isAdmin = actor != null && actor.getRole() == com.asenterprises.bms.entity.Role.ADMIN;
+
+        if (!isAssignedPerson && !isAdmin) {
+            throw new AccessDeniedException("Only the assigned delivery person or an Administrator may perform delivery updates for this order");
         }
     }
 

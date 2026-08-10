@@ -31,6 +31,13 @@ public class JwtService {
         this.jwtExpiration = jwtExpiration;
     }
 
+    @jakarta.annotation.PostConstruct
+    public void validateSecretKey() {
+        if (secretKey == null || secretKey.trim().length() < 32) {
+            throw new IllegalStateException("JWT secret key must be configured and contain at least 256 bits (32 characters)");
+        }
+    }
+
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }

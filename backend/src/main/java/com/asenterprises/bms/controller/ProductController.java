@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,18 +36,27 @@ public class ProductController {
     private final ProductService productService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> createProduct(@Valid @RequestBody ProductRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productService.createProduct(request));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
             @Valid @RequestBody ProductRequest request) {
         return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DELIVERY')")
+    public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getProductById(id));
+    }
+
     @GetMapping("/search")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DELIVERY')")
     public ResponseEntity<Page<ProductResponse>> searchProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long categoryId,
@@ -56,16 +66,19 @@ public class ProductController {
     }
 
     @GetMapping("/dropdown")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'DELIVERY')")
     public ResponseEntity<List<ProductDropdownResponse>> getProductDropdown() {
         return ResponseEntity.ok(productService.getProductDropdown());
     }
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> deactivateProduct(@PathVariable Long id) {
         return ResponseEntity.ok(productService.deactivateProduct(id));
     }
 
     @PatchMapping("/{id}/update-stock")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> updateStock(
             @PathVariable Long id,
             @Valid @RequestBody StockUpdateRequest request) {

@@ -2,6 +2,7 @@ package com.asenterprises.bms.exception;
 
 import com.asenterprises.bms.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -19,8 +20,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Controller advice for global exception handling returning standardized 401, 403, 404, and 400 JSON responses.
+ * Controller advice for global exception handling returning standardized, sanitized JSON responses.
+ * Strictly prevents leaking internal exception messages or stack traces in production 500 error responses.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -31,11 +34,12 @@ public class GlobalExceptionHandler {
             AuthenticationException.class
     })
     public ResponseEntity<ErrorResponse> handleAuthenticationExceptions(Exception ex, HttpServletRequest request) {
+        log.warn("Authentication failure on path {}: {}", request.getServletPath(), ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
-                .message(ex.getMessage())
+                .message(ex.getMessage() != null ? ex.getMessage() : "Invalid username or password")
                 .path(request.getServletPath())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
@@ -43,6 +47,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(AccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Access denied on path {}: {}", request.getServletPath(), ex.getMessage());
         String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
                 ? ex.getMessage()
                 : "You do not have permission to access this resource";
@@ -91,16 +96,42 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResourceAlreadyExistsException(ResourceAlreadyExistsException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .path(request.getServletPath())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.warn("Database constraint/integrity violation on path {}: {}", request.getServletPath(), ex.getMessage());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message("Data integrity constraint violated: duplicate record or active reference prevents this action.")
+                .path(request.getServletPath())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(jakarta.validation.ConstraintViolationException ex, HttpServletRequest request) {
+        log.warn("Constraint violation on path {}: {}", request.getServletPath(), ex.getMessage());
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
-                .message(ex.getMessage())
+                .message("Validation constraint violated for request payload")
                 .path(request.getServletPath())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
-    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentAndStateException(RuntimeException ex, HttpServletRequest request) {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(IllegalArgumentException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
@@ -109,15 +140,28 @@ public class GlobalExceptionHandler {
                 .path(request.getServletPath())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .path(request.getServletPath())
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled internal server error on path {}: ", request.getServletPath(), ex);
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
-                .message("An unexpected error occurred: " + ex.getMessage())
+                .message("An internal server error occurred. Please contact system support.")
                 .path(request.getServletPath())
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
