@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD}}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://dpg-d9tbppid0e5s738pnc90-a:5432/aven_8v5s}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:aven_admin}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:3ZeXstHHTrewTf1vxK67SkHjPORt2PXD}}
     driver-class-name: org.postgresql.Driver
 
   jpa:
