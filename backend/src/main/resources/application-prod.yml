@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://dpg-d9tbppid0e5s738pnc90-a:5432/aven_8v5s}
-    username: ${SPRING_DATASOURCE_USERNAME:${DB_USER:aven_admin}}
-    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:3ZeXstHHTrewTf1vxK67SkHjPORt2PXD}}
+    url: jdbc:postgresql://dpg-d9tbppid0e5s738pnc90-a:5432/aven_8v5s
+    username: aven_admin
+    password: 3ZeXstHHTrewTf1vxK67SkHjPORt2PXD
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -18,8 +18,8 @@ spring:
     locations: classpath:db/migration
 
 jwt:
-  secret-key: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}
+  secret-key: 3BRmo0fdCkWqjbvgnpdTChugAf6MMjVcthfdU7/WT40=
+  expiration: 86400000
 
 app:
   cors:
