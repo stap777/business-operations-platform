@@ -35,5 +35,11 @@ app:
 
 logging:
   level:
-    root: WARN
+    root: INFO
+    org.flywaydb: DEBUG
+    com.zaxxer.hikari: DEBUG
+    org.hibernate: INFO
+    org.springframework.orm: DEBUG
+    org.springframework.security: DEBUG
     com.asenterprises.bms: INFO
+    STARTUP_FORENSICS: INFO

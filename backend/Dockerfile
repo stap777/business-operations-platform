@@ -27,7 +27,7 @@ RUN chown appuser:appgroup app.jar
 USER appuser
 
 # Expose default port (Render dynamically overrides PORT via environment variable)
-EXPOSE 8085
+EXPOSE 10000
 
 # Execute Spring Boot application with non-blocking entropy source
 ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
