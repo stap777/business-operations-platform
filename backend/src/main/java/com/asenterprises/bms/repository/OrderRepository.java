@@ -33,12 +33,20 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             Pageable pageable
     );
 
-    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.manager " +
-           "WHERE (:orderNumber IS NULL OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :orderNumber, '%'))) " +
-           "AND (:customerId IS NULL OR o.customer.id = :customerId) " +
-           "AND (:status IS NULL OR o.orderStatus = :status) " +
-           "AND (:startDate IS NULL OR o.createdAt >= :startDate) " +
-           "AND (:endDate IS NULL OR o.createdAt <= :endDate)")
+    @Query(
+        value = "SELECT DISTINCT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.manager " +
+                "WHERE (cast(:orderNumber as String) IS NULL OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :orderNumber, '%'))) " +
+                "AND (cast(:customerId as Long) IS NULL OR o.customer.id = :customerId) " +
+                "AND (cast(:status as String) IS NULL OR o.orderStatus = :status) " +
+                "AND (cast(:startDate as LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
+                "AND (cast(:endDate as LocalDateTime) IS NULL OR o.createdAt <= :endDate)",
+        countQuery = "SELECT COUNT(o) FROM Order o " +
+                     "WHERE (cast(:orderNumber as String) IS NULL OR LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :orderNumber, '%'))) " +
+                     "AND (cast(:customerId as Long) IS NULL OR o.customer.id = :customerId) " +
+                     "AND (cast(:status as String) IS NULL OR o.orderStatus = :status) " +
+                     "AND (cast(:startDate as LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
+                     "AND (cast(:endDate as LocalDateTime) IS NULL OR o.createdAt <= :endDate)"
+    )
     Page<Order> searchOrders(
             @Param("orderNumber") String orderNumber,
             @Param("customerId") Long customerId,
@@ -48,9 +56,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             Pageable pageable
     );
 
-    @Query("SELECT o FROM Order o JOIN FETCH o.customer LEFT JOIN FETCH o.deliveryPerson " +
-           "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED " +
-           "ORDER BY o.updatedAt ASC")
+    @Query(
+        value = "SELECT o FROM Order o JOIN FETCH o.customer LEFT JOIN FETCH o.deliveryPerson " +
+                "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED " +
+                "ORDER BY o.updatedAt ASC",
+        countQuery = "SELECT COUNT(o) FROM Order o " +
+                     "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED"
+    )
     Page<Order> findPendingVerificationOrders(Pageable pageable);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end")
