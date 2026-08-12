@@ -45,6 +45,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- JavaMail Starter: Spring Mail infrastructure for transactional emails -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- PostgreSQL Driver: Database connectivity for PostgreSQL -->
         <dependency>
             <groupId>org.postgresql</groupId>

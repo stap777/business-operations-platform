@@ -10,14 +10,17 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
+import { authService } from '../../services/authService';
+
 const forgotSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
+  email: z.string().min(1, 'Email or username is required'),
 });
 
 type ForgotFormData = z.infer<typeof forgotSchema>;
 
 export const AvenForgotPasswordPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
 
   const {
@@ -30,14 +33,21 @@ export const AvenForgotPasswordPage: React.FC = () => {
 
   const onSubmit = async (data: ForgotFormData) => {
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSubmitting(false);
-
-    toast.success('Reset Link Sent', {
-      description: `If an account exists for ${data.email}, instructions have been sent.`,
-    });
-
-    navigate('/reset-password');
+    try {
+      await authService.forgotPassword(data.email.trim());
+      setSubmitted(true);
+      toast.success('Request Processed', {
+        description: 'If an account exists for that email, a password reset link has been sent.',
+      });
+    } catch {
+      // Always show generic message to prevent account enumeration
+      setSubmitted(true);
+      toast.success('Request Processed', {
+        description: 'If an account exists for that email, a password reset link has been sent.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -52,11 +62,29 @@ export const AvenForgotPasswordPage: React.FC = () => {
             Forgot your password?
           </h1>
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] max-w-xs mx-auto">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address or username and we'll send you a link to reset your password.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5" noValidate autoComplete="off">
+        {submitted ? (
+          <div className="space-y-4 text-center">
+            <div className="p-4 rounded-xl bg-neutral-100 dark:bg-[#0F0F0F] border border-neutral-300 dark:border-[#232323] text-[#111111] dark:text-[#FAFAFA] text-xs font-medium space-y-1">
+              <p className="font-semibold">Reset Link Sent</p>
+              <p className="text-[#71717A] dark:text-[#A1A1AA]">
+                If an account exists for that address, instructions to reset your password have been sent to your inbox.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="inline-flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] transition-colors font-medium cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to login</span>
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 sm:space-y-5" noValidate autoComplete="off">
           <div className="space-y-1.5">
             <label htmlFor="email" className="text-xs font-medium text-[#111111] dark:text-[#FAFAFA] block">
               Email Address
@@ -102,6 +130,7 @@ export const AvenForgotPasswordPage: React.FC = () => {
             </button>
           </div>
         </form>
+        )}
       </div>
     </AvenAuthLayout>
   );

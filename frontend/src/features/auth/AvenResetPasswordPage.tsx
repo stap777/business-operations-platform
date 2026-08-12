@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +9,7 @@ import { AvenLogo } from '../../components/aven/AvenLogo';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { ArrowLeft, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { authService } from '../../services/authService';
 
 const resetSchema = z
   .object({
@@ -26,8 +27,11 @@ export const AvenResetPasswordPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
 
   const {
     register,
@@ -54,16 +58,30 @@ export const AvenResetPasswordPage: React.FC = () => {
 
   const strength = getStrength(passwordVal);
 
-  const onSubmit = async (_data: ResetFormData) => {
+  const onSubmit = async (data: ResetFormData) => {
+    setApiError(null);
+
+    if (!token) {
+      const msg = 'Invalid or missing reset token. Please request a new password reset link.';
+      setApiError(msg);
+      toast.error('Reset Failed', { description: msg });
+      return;
+    }
+
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsSubmitting(false);
-
-    toast.success('Password Reset Successful', {
-      description: 'Your password has been updated. Please sign in.',
-    });
-
-    navigate('/login');
+    try {
+      const res = await authService.resetPassword(token, data.password);
+      toast.success('Password Reset Successful', {
+        description: res.message || 'Your password has been updated. Please sign in.',
+      });
+      navigate('/login');
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || 'Failed to reset password. Token may be expired or invalid.';
+      setApiError(errorMsg);
+      toast.error('Reset Error', { description: errorMsg });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -81,6 +99,12 @@ export const AvenResetPasswordPage: React.FC = () => {
             Enter your new password below.
           </p>
         </div>
+
+        {apiError && (
+          <div role="alert" className="p-3 rounded-xl bg-neutral-100 dark:bg-[#0F0F0F] border border-neutral-300 dark:border-[#232323] text-[#111111] dark:text-[#FAFAFA] text-xs font-medium text-center">
+            {apiError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate autoComplete="off">
           {/* New Password */}

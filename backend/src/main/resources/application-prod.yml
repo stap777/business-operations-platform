@@ -25,11 +25,27 @@ spring:
     baseline-version: 1.0
     locations: classpath:db/migration
 
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 jwt:
   secret-key: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
 app:
+  frontend-url: ${APP_FRONTEND_URL:https://aven-frontend.onrender.com}
+  mail:
+    from: ${MAIL_FROM:noreply@asenterprises.com}
+    from-name: ${MAIL_FROM_NAME:A.S. Enterprises BMS}
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:https://aven.asenterprises.com}}
 

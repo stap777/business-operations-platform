@@ -21,9 +21,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.asenterprises.bms.dto.ForgotPasswordRequest;
+import com.asenterprises.bms.dto.ResetPasswordRequest;
+import com.asenterprises.bms.entity.PasswordResetToken;
+import com.asenterprises.bms.repository.PasswordResetTokenRepository;
+import org.springframework.beans.factory.annotation.Value;
+import java.time.LocalDateTime;
+
 /**
  * Service encapsulating authentication operations: verifying credentials, status checks, token generation,
- * rate limiting brute-force protection, and one-time workspace initialization.
+ * rate limiting brute-force protection, one-time workspace initialization, and password recovery.
  */
 @Slf4j
 @Service
@@ -32,10 +39,15 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final BusinessSettingsRepository businessSettingsRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CustomUserDetailsService customUserDetailsService;
     private final LoginAttemptService loginAttemptService;
+    private final EmailService emailService;
+
+    @Value("${app.frontend-url:https://aven-frontend.onrender.com}")
+    private String frontendUrl;
 
     public LoginResponse login(LoginRequest request) {
         String normalizedUsername = request.getUsername() != null ? request.getUsername().trim() : "";
@@ -181,5 +193,84 @@ public class AuthService {
 
         businessSettingsRepository.save(settings);
         log.info("Workspace business settings persisted successfully: {}", settings.getBusinessName());
+    }
+
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+        String identifier = request.getEmailOrUsername() != null ? request.getEmailOrUsername().trim() : "";
+        log.info("Processing password reset request for identifier [redacted]");
+
+        if (identifier.isBlank()) {
+            return;
+        }
+
+        userRepository.findByUsernameOrEmail(identifier).ifPresent(user -> {
+            if (user.getEmail() == null || user.getEmail().isBlank()) {
+                log.warn("Password reset requested for user [redacted], but user has no email registered");
+                return;
+            }
+
+            passwordResetTokenRepository.invalidateAllActiveTokensForUser(user, LocalDateTime.now());
+
+            byte[] randomBytes = new byte[32];
+            new java.security.SecureRandom().nextBytes(randomBytes);
+            String rawToken = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+
+            String tokenHash = hashToken(rawToken);
+
+            PasswordResetToken resetToken = PasswordResetToken.builder()
+                    .user(user)
+                    .tokenHash(tokenHash)
+                    .expiresAt(LocalDateTime.now().plusMinutes(15))
+                    .build();
+
+            passwordResetTokenRepository.save(resetToken);
+
+            String resetUrl = frontendUrl.replaceAll("/+$", "") + "/reset-password?token=" + rawToken;
+            emailService.sendPasswordResetEmail(user.getEmail(), user.getFullName(), resetUrl);
+        });
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        String rawToken = request.getToken() != null ? request.getToken().trim() : "";
+        String newPassword = request.getNewPassword();
+
+        if (rawToken.isBlank() || newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Invalid reset token or password criteria not met");
+        }
+
+        String tokenHash = hashToken(rawToken);
+
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired password reset token"));
+
+        if (resetToken.isUsed() || resetToken.isExpired()) {
+            throw new IllegalArgumentException("Invalid or expired password reset token");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        resetToken.setUsedAt(LocalDateTime.now());
+        passwordResetTokenRepository.save(resetToken);
+
+        passwordResetTokenRepository.invalidateAllActiveTokensForUser(user, LocalDateTime.now());
+        log.info("Password reset successfully completed for user [redacted]");
+    }
+
+    private String hashToken(String rawToken) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(rawToken.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("SHA-256 algorithm missing", e);
+        }
     }
 }

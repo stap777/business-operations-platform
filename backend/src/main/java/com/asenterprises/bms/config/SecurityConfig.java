@@ -99,7 +99,14 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/health", "/api/v1/health", "/auth/login", "/api/v1/auth/login", "/auth/setup", "/api/v1/auth/setup", "/error").permitAll()
+                        .requestMatchers(
+                                "/health", "/api/v1/health",
+                                "/auth/login", "/api/v1/auth/login",
+                                "/auth/setup", "/api/v1/auth/setup",
+                                "/auth/forgot-password", "/api/v1/auth/forgot-password",
+                                "/auth/reset-password", "/api/v1/auth/reset-password",
+                                "/error"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
