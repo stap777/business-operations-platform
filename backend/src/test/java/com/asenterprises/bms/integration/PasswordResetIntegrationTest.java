@@ -142,7 +142,7 @@ public class PasswordResetIntegrationTest {
                 .build());
 
         assertThat(loginRes).isNotNull();
-        assertThat(loginRes.getToken()).isNotBlank();
+        assertThat(loginRes.getUsername()).isEqualTo("recovery_admin");
     }
 
     @Test

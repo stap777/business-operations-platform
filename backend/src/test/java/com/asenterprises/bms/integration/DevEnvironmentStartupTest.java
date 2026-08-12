@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("dev")
 @TestPropertySource(properties = {
     "SPRING_DATASOURCE_URL=jdbc:h2:mem:dev_env_startup_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-    "JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
     "spring.jpa.hibernate.ddl-auto=update",

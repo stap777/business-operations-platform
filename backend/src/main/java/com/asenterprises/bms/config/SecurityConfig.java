@@ -3,7 +3,7 @@ package com.asenterprises.bms.config;
 import com.asenterprises.bms.exception.CustomAccessDeniedHandler;
 import com.asenterprises.bms.exception.CustomAuthenticationEntryPoint;
 import com.asenterprises.bms.security.CustomUserDetailsService;
-import com.asenterprises.bms.security.JwtAuthenticationFilter;
+import com.asenterprises.bms.security.SessionAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -39,12 +39,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final SessionAuthenticationFilter sessionAuthFilter;
     private final CustomUserDetailsService customUserDetailsService;
     private final CustomAuthenticationEntryPoint authEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://aven-frontend.onrender.com}")
     private String allowedOriginsProperty;
 
     @Bean
@@ -75,7 +75,7 @@ public class SecurityConfig {
 
         configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Requested-With"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/health", "/api/v1/health",
                                 "/auth/login", "/api/v1/auth/login",
+                                "/auth/logout", "/api/v1/auth/logout",
+                                "/auth/logout-all", "/api/v1/auth/logout-all",
                                 "/auth/setup", "/api/v1/auth/setup",
                                 "/auth/forgot-password", "/api/v1/auth/forgot-password",
                                 "/auth/reset-password", "/api/v1/auth/reset-password",
@@ -110,7 +112,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(sessionAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

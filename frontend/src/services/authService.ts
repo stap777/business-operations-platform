@@ -24,6 +24,18 @@ export const authService = {
     return response.data;
   },
 
+  // Logout current session
+  logout: async (): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>('/auth/logout');
+    return response.data;
+  },
+
+  // Logout all sessions across devices
+  logoutAll: async (): Promise<{ message: string }> => {
+    const response = await apiClient.post<{ message: string }>('/auth/logout-all');
+    return response.data;
+  },
+
   // Get Current Authenticated User profile
   getCurrentUser: async (): Promise<User> => {
     const response = await apiClient.get<User>('/auth/me');
@@ -40,13 +52,6 @@ export const authService = {
   setupFirstAdmin: async (request: SetupAdminRequest): Promise<User> => {
     const response = await apiClient.post<User>('/auth/setup-admin', request);
     return response.data;
-  },
-
-  // Token Refresh Architecture Placeholder (Sprint 10 expansion)
-  refreshToken: async (): Promise<string> => {
-    // Placeholder architecture for silent token refresh via HTTP-only cookie or refresh endpoint
-    const response = await apiClient.post<{ token: string }>('/auth/refresh-token');
-    return response.data.token;
   },
 
   // Password Recovery: Request Password Reset Link
@@ -66,3 +71,4 @@ export const authService = {
     return response.data;
   },
 };
+

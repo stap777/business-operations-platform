@@ -16,7 +16,7 @@ app:
     from: ${MAIL_FROM:noreply@asenterprises.com}
     from-name: ${MAIL_FROM_NAME:A.S. Enterprises BMS}
 
-jwt:
-  secret-key: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000} # 24 Hours in milliseconds (24 * 60 * 60 * 1000)
+session:
+  expiration: ${SESSION_EXPIRATION:86400000} # 24 Hours in milliseconds
+
 

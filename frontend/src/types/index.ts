@@ -14,7 +14,7 @@ export interface User {
 }
 
 export interface AuthResponse {
-  token: string;
+  token?: string;
   username: string;
   role: Role;
   fullName: string;

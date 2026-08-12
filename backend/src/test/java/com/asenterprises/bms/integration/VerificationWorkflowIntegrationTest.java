@@ -32,6 +32,7 @@ import com.asenterprises.bms.repository.OrderRepository;
 import com.asenterprises.bms.repository.ProductRepository;
 import com.asenterprises.bms.repository.StockAdjustmentRepository;
 import com.asenterprises.bms.repository.UserRepository;
+import com.asenterprises.bms.repository.UserSessionRepository;
 import com.asenterprises.bms.service.BusinessSettingsService;
 import com.asenterprises.bms.service.DeliveryService;
 import com.asenterprises.bms.service.VerificationService;
@@ -94,13 +95,29 @@ public class VerificationWorkflowIntegrationTest {
     private Product product;
     private Coupon coupon;
 
+    @Autowired
+    private UserSessionRepository userSessionRepository;
+
+    @Autowired
+    private com.asenterprises.bms.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+
     @BeforeEach
     void setUp() {
+        passwordResetTokenRepository.deleteAll();
+        userSessionRepository.deleteAll();
+        invoiceRepository.deleteAll();
+        orderRepository.deleteAll();
+        customerRepository.deleteAll();
+        productRepository.deleteAll();
+        couponRepository.deleteAll();
+        stockAdjustmentRepository.deleteAll();
+        userRepository.deleteAll();
+
         adminUser = userRepository.save(User.builder()
                 .fullName("System Admin")
-                .username("admin_test")
+                .username("vw_admin_test")
                 .password("encoded_pass")
-                .phoneNumber("9876543210")
+                .phoneNumber("9876543290")
                 .role(Role.ADMIN)
                 .status(UserStatus.ACTIVE)
                 .firstLogin(false)
@@ -108,9 +125,9 @@ public class VerificationWorkflowIntegrationTest {
 
         managerUser = userRepository.save(User.builder()
                 .fullName("Branch Manager")
-                .username("manager_test")
+                .username("vw_manager_test")
                 .password("encoded_pass")
-                .phoneNumber("9876543211")
+                .phoneNumber("9876543291")
                 .role(Role.MANAGER)
                 .status(UserStatus.ACTIVE)
                 .firstLogin(false)
@@ -118,9 +135,9 @@ public class VerificationWorkflowIntegrationTest {
 
         deliveryUser = userRepository.save(User.builder()
                 .fullName("Delivery Agent")
-                .username("delivery_test")
+                .username("vw_delivery_test")
                 .password("encoded_pass")
-                .phoneNumber("9876543212")
+                .phoneNumber("9876543292")
                 .role(Role.DELIVERY)
                 .status(UserStatus.ACTIVE)
                 .firstLogin(false)

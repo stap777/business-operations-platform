@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { authService } from '../services/authService';
 import type { AuthResponse, Role, User } from '../types';
 
 interface AuthContextType {
@@ -6,8 +7,8 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (authData: AuthResponse, rememberMe?: boolean) => void;
-  logout: () => void;
+  login: (authData: AuthResponse) => void;
+  logout: () => Promise<void>;
   hasRole: (roles: Role[]) => boolean;
   getRoleRedirectPath: (role?: Role) => string;
 }
@@ -16,58 +17,51 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Restore session from localStorage or sessionStorage
-    const storedToken =
-      localStorage.getItem('bms_jwt_token') || sessionStorage.getItem('bms_jwt_token');
-    const storedUserInfo =
-      localStorage.getItem('bms_user_info') || sessionStorage.getItem('bms_user_info');
-
-    if (storedToken && storedUserInfo) {
+    // Verify server session on application mount
+    const verifySession = async () => {
       try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUserInfo));
+        const currentUser = await authService.getCurrentUser();
+        setUser(currentUser);
       } catch (e) {
-        console.error('Failed to parse stored auth session', e);
-        clearAuthStorage();
+        setUser(null);
+      } finally {
+        setIsLoading(false);
       }
-    }
-    setIsLoading(false);
+    };
+
+    verifySession();
   }, []);
 
-  const clearAuthStorage = () => {
+  const clearLegacyAuthStorage = () => {
     localStorage.removeItem('bms_jwt_token');
     localStorage.removeItem('bms_user_info');
     sessionStorage.removeItem('bms_jwt_token');
     sessionStorage.removeItem('bms_user_info');
   };
 
-  const login = (authData: AuthResponse, rememberMe = true) => {
+  const login = (authData: AuthResponse) => {
+    clearLegacyAuthStorage();
     const userInfo: User = {
       fullName: authData.fullName,
       username: authData.username,
       role: authData.role,
       status: 'ACTIVE',
     };
-
-    setToken(authData.token);
     setUser(userInfo);
-
-    // Clear existing storage before saving to selected storage
-    clearAuthStorage();
-
-    const targetStorage = rememberMe ? localStorage : sessionStorage;
-    targetStorage.setItem('bms_jwt_token', authData.token);
-    targetStorage.setItem('bms_user_info', JSON.stringify(userInfo));
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    clearAuthStorage();
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      console.warn('Backend logout call failed or session already expired', e);
+    } finally {
+      setUser(null);
+      clearLegacyAuthStorage();
+    }
   };
 
   const hasRole = (roles: Role[]) => {
@@ -92,8 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        token,
-        isAuthenticated: !!token && !!user,
+        token: null,
+        isAuthenticated: !!user,
         isLoading,
         login,
         logout,
@@ -113,3 +107,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

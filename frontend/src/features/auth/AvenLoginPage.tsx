@@ -52,7 +52,7 @@ export const AvenLoginPage: React.FC = () => {
         password: data.password,
       });
 
-      login(response, data.rememberMe);
+      login(response);
 
       toast.success(`Welcome back, ${response.fullName || response.username}!`, {
         description: `Signed in to workspace`,

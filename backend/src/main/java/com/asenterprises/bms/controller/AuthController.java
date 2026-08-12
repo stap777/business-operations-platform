@@ -1,24 +1,29 @@
 package com.asenterprises.bms.controller;
 
+import com.asenterprises.bms.dto.ForgotPasswordRequest;
 import com.asenterprises.bms.dto.LoginRequest;
 import com.asenterprises.bms.dto.LoginResponse;
+import com.asenterprises.bms.dto.ResetPasswordRequest;
+import com.asenterprises.bms.dto.UserResponse;
 import com.asenterprises.bms.dto.WorkspaceSetupRequest;
 import com.asenterprises.bms.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.asenterprises.bms.dto.ForgotPasswordRequest;
-import com.asenterprises.bms.dto.ResetPasswordRequest;
 import java.util.Map;
 
 /**
- * REST Controller exposing public authentication, password recovery, and workspace initialization endpoints.
+ * REST Controller exposing authentication, session lifecycle, password recovery, and workspace initialization endpoints.
  */
 @RestController
 @RequestMapping("/auth")
@@ -28,8 +33,31 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        return ResponseEntity.ok(authService.login(request, httpRequest, httpResponse));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String, String>> logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
+    }
+
+    @PostMapping("/logout-all")
+    public ResponseEntity<Map<String, String>> logoutAll(
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        authService.logoutAll(authentication.getName(), response);
+        return ResponseEntity.ok(Map.of("message", "Logged out from all devices successfully"));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        return ResponseEntity.ok(authService.getCurrentUser(authentication.getName()));
     }
 
     @PostMapping("/setup")
@@ -50,3 +78,4 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password has been successfully reset. Please log in with your new password."));
     }
 }
+

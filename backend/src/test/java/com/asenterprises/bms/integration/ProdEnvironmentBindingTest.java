@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
     "SPRING_DATASOURCE_URL=jdbc:h2:mem:prod_env_binding_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
     "SPRING_DATASOURCE_USERNAME=test_prod_user",
     "SPRING_DATASOURCE_PASSWORD=test_prod_password",
-    "JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970",
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
     "spring.jpa.hibernate.ddl-auto=none",

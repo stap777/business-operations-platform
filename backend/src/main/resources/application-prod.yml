@@ -37,9 +37,9 @@ spring:
           starttls:
             enable: true
 
-jwt:
-  secret-key: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}
+session:
+  expiration: ${SESSION_EXPIRATION:86400000}
+
 
 app:
   frontend-url: ${APP_FRONTEND_URL:https://aven-frontend.onrender.com}

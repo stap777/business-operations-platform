@@ -17,10 +17,6 @@ spring:
   flyway:
     enabled: false
 
-jwt:
-  secret-key: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}
-
 logging:
   level:
     com.asenterprises.bms: DEBUG

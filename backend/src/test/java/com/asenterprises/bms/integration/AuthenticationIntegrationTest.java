@@ -6,7 +6,6 @@ import com.asenterprises.bms.entity.Role;
 import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.entity.UserStatus;
 import com.asenterprises.bms.repository.UserRepository;
-import com.asenterprises.bms.security.JwtService;
 import com.asenterprises.bms.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,9 +34,6 @@ public class AuthenticationIntegrationTest {
 
     @Autowired
     private AuthService authService;
-
-    @Autowired
-    private JwtService jwtService;
 
     private User adminUser;
     private User managerUser;
@@ -90,24 +86,28 @@ public class AuthenticationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Test 1 — Valid ADMIN Authentication returns 200 OK with valid JWT and matching profile")
+    @DisplayName("Test 1 — Valid ADMIN Authentication creates session and returns matching profile")
     void testValidAdminAuthentication() {
         LoginRequest request = LoginRequest.builder()
                 .username("admin_test")
                 .password("AdminPass123!")
                 .build();
 
-        LoginResponse response = authService.login(request);
+        org.springframework.mock.web.MockHttpServletRequest mockRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.mock.web.MockHttpServletResponse mockResponse = new org.springframework.mock.web.MockHttpServletResponse();
+
+        LoginResponse response = authService.login(request, mockRequest, mockResponse);
 
         assertThat(response).isNotNull();
-        assertThat(response.getToken()).isNotBlank();
         assertThat(response.getUsername()).isEqualTo("admin_test");
         assertThat(response.getRole()).isEqualTo(Role.ADMIN);
         assertThat(response.getFullName()).isEqualTo("System Administrator");
 
-        // Verify JWT token is valid for username
-        String usernameFromToken = jwtService.extractUsername(response.getToken());
-        assertThat(usernameFromToken).isEqualTo("admin_test");
+        // Verify Set-Cookie header contains AVEN_SESSION
+        String setCookieHeader = mockResponse.getHeader("Set-Cookie");
+        assertThat(setCookieHeader).isNotNull();
+        assertThat(setCookieHeader).contains("AVEN_SESSION=");
+        assertThat(setCookieHeader).contains("HttpOnly");
     }
 
     @Test
@@ -118,7 +118,10 @@ public class AuthenticationIntegrationTest {
                 .password("WrongPassword123")
                 .build();
 
-        assertThatThrownBy(() -> authService.login(request))
+        org.springframework.mock.web.MockHttpServletRequest mockRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.mock.web.MockHttpServletResponse mockResponse = new org.springframework.mock.web.MockHttpServletResponse();
+
+        assertThatThrownBy(() -> authService.login(request, mockRequest, mockResponse))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Invalid username or password");
     }
@@ -131,7 +134,10 @@ public class AuthenticationIntegrationTest {
                 .password("SomePassword123")
                 .build();
 
-        assertThatThrownBy(() -> authService.login(request))
+        org.springframework.mock.web.MockHttpServletRequest mockRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.mock.web.MockHttpServletResponse mockResponse = new org.springframework.mock.web.MockHttpServletResponse();
+
+        assertThatThrownBy(() -> authService.login(request, mockRequest, mockResponse))
                 .isInstanceOf(BadCredentialsException.class)
                 .hasMessage("Invalid username or password");
     }
@@ -144,7 +150,10 @@ public class AuthenticationIntegrationTest {
                 .password("InactivePass123!")
                 .build();
 
-        assertThatThrownBy(() -> authService.login(request))
+        org.springframework.mock.web.MockHttpServletRequest mockRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.mock.web.MockHttpServletResponse mockResponse = new org.springframework.mock.web.MockHttpServletResponse();
+
+        assertThatThrownBy(() -> authService.login(request, mockRequest, mockResponse))
                 .isInstanceOf(DisabledException.class)
                 .hasMessage("User account is inactive");
     }
@@ -157,7 +166,10 @@ public class AuthenticationIntegrationTest {
                 .password("ManagerPass123!")
                 .build();
 
-        LoginResponse response = authService.login(request);
+        org.springframework.mock.web.MockHttpServletRequest mockRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.mock.web.MockHttpServletResponse mockResponse = new org.springframework.mock.web.MockHttpServletResponse();
+
+        LoginResponse response = authService.login(request, mockRequest, mockResponse);
 
         assertThat(response).isNotNull();
         assertThat(response.getRole()).isEqualTo(Role.MANAGER);
@@ -171,18 +183,13 @@ public class AuthenticationIntegrationTest {
                 .password("DeliveryPass123!")
                 .build();
 
-        LoginResponse response = authService.login(request);
+        org.springframework.mock.web.MockHttpServletRequest mockRequest = new org.springframework.mock.web.MockHttpServletRequest();
+        org.springframework.mock.web.MockHttpServletResponse mockResponse = new org.springframework.mock.web.MockHttpServletResponse();
+
+        LoginResponse response = authService.login(request, mockRequest, mockResponse);
 
         assertThat(response).isNotNull();
         assertThat(response.getRole()).isEqualTo(Role.DELIVERY);
     }
 
-    @Test
-    @DisplayName("Test 8 — Invalid token fails extraction/validation")
-    void testInvalidJwtTokenValidation() {
-        String corruptedToken = "eyJhbGciOiJIUzI1NiJ9.invalidpayload.corruptedsignature";
-
-        assertThatThrownBy(() -> jwtService.extractUsername(corruptedToken))
-                .isInstanceOf(Exception.class);
-    }
 }

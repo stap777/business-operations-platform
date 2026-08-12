@@ -10,7 +10,6 @@ import com.asenterprises.bms.entity.UserStatus;
 import com.asenterprises.bms.repository.BusinessSettingsRepository;
 import com.asenterprises.bms.repository.UserRepository;
 import com.asenterprises.bms.security.CustomUserDetailsService;
-import com.asenterprises.bms.security.JwtService;
 import com.asenterprises.bms.security.LoginAttemptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +26,18 @@ import com.asenterprises.bms.entity.PasswordResetToken;
 import com.asenterprises.bms.repository.PasswordResetTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import java.time.LocalDateTime;
+import com.asenterprises.bms.dto.UserResponse;
+import com.asenterprises.bms.exception.ResourceNotFoundException;
+import com.asenterprises.bms.security.SessionService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import java.util.Arrays;
 
 /**
- * Service encapsulating authentication operations: verifying credentials, status checks, token generation,
+ * Service encapsulating authentication operations: verifying credentials, status checks, session management,
  * rate limiting brute-force protection, one-time workspace initialization, and password recovery.
  */
 @Slf4j
@@ -41,7 +49,7 @@ public class AuthService {
     private final BusinessSettingsRepository businessSettingsRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final SessionService sessionService;
     private final CustomUserDetailsService customUserDetailsService;
     private final LoginAttemptService loginAttemptService;
     private final EmailService emailService;
@@ -50,6 +58,10 @@ public class AuthService {
     private String frontendUrl;
 
     public LoginResponse login(LoginRequest request) {
+        return login(request, null, null);
+    }
+
+    public LoginResponse login(LoginRequest request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
         String normalizedUsername = request.getUsername() != null ? request.getUsername().trim() : "";
 
         if (loginAttemptService.isBlocked(normalizedUsername)) {
@@ -79,17 +91,81 @@ public class AuthService {
 
         loginAttemptService.loginSucceeded(normalizedUsername);
 
-        UserDetails userDetails = customUserDetailsService.loadUserByUsername(user.getUsername());
-        String token = jwtService.generateToken(userDetails);
+        String rawToken = sessionService.createSession(user, httpRequest);
 
-        log.info("Authentication successful for user: {}", normalizedUsername);
+        if (httpResponse != null) {
+            ResponseCookie cookie = ResponseCookie.from(sessionService.getCookieName(), rawToken)
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("None")
+                    .path("/")
+                    .maxAge(sessionService.getSessionExpirationMillis() / 1000)
+                    .build();
+            httpResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
+
+        log.info("Session authentication successful for user: {}", normalizedUsername);
 
         return LoginResponse.builder()
-                .token(token)
                 .username(user.getUsername())
                 .role(user.getRole())
                 .fullName(user.getFullName())
                 .build();
+    }
+
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String rawToken = extractSessionCookie(request);
+        if (rawToken != null) {
+            sessionService.revokeSession(rawToken);
+        }
+        clearSessionCookie(response);
+        log.info("Logout completed successfully");
+    }
+
+    public void logoutAll(String username, HttpServletResponse response) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+        sessionService.revokeAllUserSessions(user.getId());
+        clearSessionCookie(response);
+        log.info("Logout-all completed successfully for user: {}", username);
+    }
+
+    public UserResponse getCurrentUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
+
+        return UserResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .username(user.getUsername())
+                .phoneNumber(user.getPhoneNumber())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .firstLogin(user.isFirstLogin())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
+
+    private String extractSessionCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+        return Arrays.stream(request.getCookies())
+                .filter(c -> sessionService.getCookieName().equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private void clearSessionCookie(HttpServletResponse response) {
+        if (response == null) return;
+        ResponseCookie cookie = ResponseCookie.from(sessionService.getCookieName(), "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     @Transactional
