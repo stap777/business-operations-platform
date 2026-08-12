@@ -230,7 +230,7 @@ public class VerificationService {
         LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
         LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
 
-        String trimmedQuery = query != null ? query.trim() : null;
+        String trimmedQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         return invoiceRepository.searchInvoices(trimmedQuery, startDateTime, endDateTime, pageable)
                 .map(this::mapToResponse);
     }

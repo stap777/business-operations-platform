@@ -35,17 +35,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query(
         value = "SELECT DISTINCT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.manager " +
-                "WHERE (:orderNumber IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(:orderNumber), '%')) " +
-                "AND (:customerId IS NULL OR o.customer.id = :customerId) " +
+                "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
+                "AND (CAST(:customerId AS Long) IS NULL OR o.customer.id = :customerId) " +
                 "AND (:status IS NULL OR o.orderStatus = :status) " +
-                "AND (:startDate IS NULL OR o.createdAt >= :startDate) " +
-                "AND (:endDate IS NULL OR o.createdAt <= :endDate)",
+                "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
+                "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)",
         countQuery = "SELECT COUNT(o) FROM Order o " +
-                     "WHERE (:orderNumber IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(:orderNumber), '%')) " +
-                     "AND (:customerId IS NULL OR o.customer.id = :customerId) " +
+                     "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
+                     "AND (CAST(:customerId AS Long) IS NULL OR o.customer.id = :customerId) " +
                      "AND (:status IS NULL OR o.orderStatus = :status) " +
-                     "AND (:startDate IS NULL OR o.createdAt >= :startDate) " +
-                     "AND (:endDate IS NULL OR o.createdAt <= :endDate)"
+                     "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
+                     "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)"
     )
     Page<Order> searchOrders(
             @Param("orderNumber") String orderNumber,

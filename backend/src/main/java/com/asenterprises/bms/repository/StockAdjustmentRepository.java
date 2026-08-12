@@ -18,15 +18,15 @@ import java.time.LocalDateTime;
 public interface StockAdjustmentRepository extends JpaRepository<StockAdjustment, Long> {
 
     @Query(value = "SELECT sa FROM StockAdjustment sa LEFT JOIN FETCH sa.product LEFT JOIN FETCH sa.adjustedBy " +
-           "WHERE (:productId IS NULL OR sa.product.id = :productId) " +
+           "WHERE (CAST(:productId AS Long) IS NULL OR sa.product.id = :productId) " +
            "AND (:type IS NULL OR sa.adjustmentType = :type) " +
-           "AND (:startDate IS NULL OR sa.adjustmentDate >= :startDate) " +
-           "AND (:endDate IS NULL OR sa.adjustmentDate <= :endDate)",
+           "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR sa.adjustmentDate >= :startDate) " +
+           "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR sa.adjustmentDate <= :endDate)",
            countQuery = "SELECT COUNT(sa) FROM StockAdjustment sa " +
-           "WHERE (:productId IS NULL OR sa.product.id = :productId) " +
+           "WHERE (CAST(:productId AS Long) IS NULL OR sa.product.id = :productId) " +
            "AND (:type IS NULL OR sa.adjustmentType = :type) " +
-           "AND (:startDate IS NULL OR sa.adjustmentDate >= :startDate) " +
-           "AND (:endDate IS NULL OR sa.adjustmentDate <= :endDate)")
+           "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR sa.adjustmentDate >= :startDate) " +
+           "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR sa.adjustmentDate <= :endDate)")
     Page<StockAdjustment> searchStockAdjustments(
             @Param("productId") Long productId,
             @Param("type") StockAdjustmentType type,

@@ -25,12 +25,20 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("SELECT COUNT(p) FROM Payment p WHERE p.createdAt >= :startOfDay AND p.createdAt <= :endOfDay")
     long countPaymentsForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
-    @Query("SELECT DISTINCT p FROM Payment p JOIN FETCH p.customer JOIN FETCH p.receivedBy " +
-           "WHERE (:paymentNumber IS NULL OR LOWER(p.paymentNumber) LIKE LOWER(CONCAT('%', :paymentNumber, '%'))) " +
-           "AND (:customerId IS NULL OR p.customer.id = :customerId) " +
-           "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
-           "AND (:startDate IS NULL OR p.paymentDate >= :startDate) " +
-           "AND (:endDate IS NULL OR p.paymentDate <= :endDate)")
+    @Query(
+        value = "SELECT DISTINCT p FROM Payment p JOIN FETCH p.customer JOIN FETCH p.receivedBy " +
+                "WHERE (CAST(:paymentNumber AS String) IS NULL OR LOWER(p.paymentNumber) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%')) " +
+                "AND (CAST(:customerId AS Long) IS NULL OR p.customer.id = :customerId) " +
+                "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
+                "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate >= :startDate) " +
+                "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate <= :endDate)",
+        countQuery = "SELECT COUNT(p) FROM Payment p " +
+                     "WHERE (CAST(:paymentNumber AS String) IS NULL OR LOWER(p.paymentNumber) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%')) " +
+                     "AND (CAST(:customerId AS Long) IS NULL OR p.customer.id = :customerId) " +
+                     "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
+                     "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate >= :startDate) " +
+                     "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate <= :endDate)"
+    )
     Page<Payment> searchPayments(
             @Param("paymentNumber") String paymentNumber,
             @Param("customerId") Long customerId,

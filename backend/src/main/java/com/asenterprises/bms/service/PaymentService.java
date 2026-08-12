@@ -377,7 +377,7 @@ public class PaymentService {
     }
 
     private String trim(String input) {
-        return input != null ? input.trim() : null;
+        return (input != null && !input.trim().isEmpty()) ? input.trim() : null;
     }
 
     public PaymentResponse mapToResponse(Payment payment) {

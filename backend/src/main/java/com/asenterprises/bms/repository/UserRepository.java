@@ -35,9 +35,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     long countByRoleAndStatus(Role role, UserStatus status);
 
     @Query("SELECT u FROM User u WHERE " +
-           "(:query IS NULL OR LOWER(u.fullName) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "OR LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "OR LOWER(u.phoneNumber) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "(CAST(:query AS String) IS NULL OR LOWER(u.fullName) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+           "OR LOWER(u.username) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+           "OR LOWER(u.phoneNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
            "AND (:role IS NULL OR u.role = :role) " +
            "AND (:status IS NULL OR u.status = :status)")
     Page<User> searchUsers(

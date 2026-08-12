@@ -28,13 +28,22 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT COUNT(i) FROM Invoice i WHERE i.createdAt >= :startOfDay AND i.createdAt <= :endOfDay")
     long countInvoicesForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
-    @Query("SELECT i FROM Invoice i JOIN FETCH i.order JOIN FETCH i.generatedBy " +
-           "WHERE (:query IS NULL OR LOWER(i.invoiceNumber) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "OR LOWER(i.order.orderNumber) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "OR LOWER(i.customerNameSnapshot) LIKE LOWER(CONCAT('%', :query, '%')) " +
-           "OR LOWER(i.customerPhoneSnapshot) LIKE LOWER(CONCAT('%', :query, '%'))) " +
-           "AND (:startDate IS NULL OR i.invoiceDate >= :startDate) " +
-           "AND (:endDate IS NULL OR i.invoiceDate <= :endDate)")
+    @Query(
+        value = "SELECT i FROM Invoice i JOIN FETCH i.order JOIN FETCH i.generatedBy " +
+                "WHERE (CAST(:query AS String) IS NULL OR LOWER(i.invoiceNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                "OR LOWER(i.order.orderNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                "OR LOWER(i.customerNameSnapshot) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                "OR LOWER(i.customerPhoneSnapshot) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
+                "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate >= :startDate) " +
+                "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate <= :endDate)",
+        countQuery = "SELECT COUNT(i) FROM Invoice i " +
+                     "WHERE (CAST(:query AS String) IS NULL OR LOWER(i.invoiceNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                     "OR LOWER(i.order.orderNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                     "OR LOWER(i.customerNameSnapshot) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                     "OR LOWER(i.customerPhoneSnapshot) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
+                     "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate >= :startDate) " +
+                     "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate <= :endDate)"
+    )
     Page<Invoice> searchInvoices(
             @Param("query") String query,
             @Param("startDate") LocalDateTime startDate,

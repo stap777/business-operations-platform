@@ -260,7 +260,7 @@ public class CouponService {
     }
 
     private String trim(String input) {
-        return input != null ? input.trim() : null;
+        return (input != null && !input.trim().isEmpty()) ? input.trim() : null;
     }
 
     public CouponResponse mapToResponse(Coupon coupon) {

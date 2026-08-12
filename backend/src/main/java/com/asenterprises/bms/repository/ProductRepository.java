@@ -24,12 +24,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query(
         value = "SELECT p FROM Product p JOIN FETCH p.category " +
-                "WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-                "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+                "WHERE (CAST(:name AS String) IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name AS String)), '%')) " +
+                "AND (CAST(:categoryId AS Long) IS NULL OR p.category.id = :categoryId) " +
                 "AND (:lowStockOnly = false OR p.availableStock <= p.minimumStock)",
         countQuery = "SELECT COUNT(p) FROM Product p " +
-                     "WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-                     "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+                     "WHERE (CAST(:name AS String) IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name AS String)), '%')) " +
+                     "AND (CAST(:categoryId AS Long) IS NULL OR p.category.id = :categoryId) " +
                      "AND (:lowStockOnly = false OR p.availableStock <= p.minimumStock)"
     )
     Page<Product> searchProducts(
