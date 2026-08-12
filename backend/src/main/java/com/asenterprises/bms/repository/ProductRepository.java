@@ -22,14 +22,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByStatusOrderByNameAsc(ProductStatus status);
 
-    @Query("SELECT p FROM Product p JOIN FETCH p.category " +
-           "WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
-           "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
-           "AND (:lowStockOnly IS NULL OR :lowStockOnly = FALSE OR p.availableStock <= p.minimumStock)")
+    @Query(
+        value = "SELECT p FROM Product p JOIN FETCH p.category " +
+                "WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+                "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+                "AND (:lowStockOnly = false OR p.availableStock <= p.minimumStock)",
+        countQuery = "SELECT COUNT(p) FROM Product p " +
+                     "WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))) " +
+                     "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +
+                     "AND (:lowStockOnly = false OR p.availableStock <= p.minimumStock)"
+    )
     Page<Product> searchProducts(
             @Param("name") String name,
             @Param("categoryId") Long categoryId,
-            @Param("lowStockOnly") Boolean lowStockOnly,
+            @Param("lowStockOnly") boolean lowStockOnly,
             Pageable pageable
     );
 
