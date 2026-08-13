@@ -22,9 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+import lombok.extern.slf4j.Slf4j;
+import java.util.Arrays;
+
 /**
  * REST Controller exposing authentication, session lifecycle, password recovery, and workspace initialization endpoints.
  */
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -56,7 +60,17 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication, HttpServletRequest request) {
+        String origin = request != null ? request.getHeader("Origin") : "none";
+        String userAgent = request != null ? request.getHeader("User-Agent") : "none";
+        boolean cookiePresent = request != null && request.getCookies() != null &&
+                Arrays.stream(request.getCookies()).anyMatch(c -> "AVEN_SESSION".equals(c.getName()));
+        boolean authenticated = authentication != null && authentication.isAuthenticated();
+        String username = authentication != null ? authentication.getName() : "none";
+
+        log.info("[SESSION-DIAGNOSTIC] /auth/me Endpoint Executed | Origin: {} | User-Agent: {} | CookiePresent: {} | Authenticated: {} | User: {}",
+                origin != null ? origin : "none", userAgent != null ? userAgent : "none", cookiePresent, authenticated, username);
+
         return ResponseEntity.ok(authService.getCurrentUser(authentication.getName()));
     }
 

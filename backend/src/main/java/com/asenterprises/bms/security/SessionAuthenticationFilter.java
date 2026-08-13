@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
+import com.asenterprises.bms.repository.UserSessionRepository;
+
 /**
  * Spring Security filter enforcing database-backed server-side session authentication.
  * Reads the HttpOnly AVEN_SESSION cookie, hashes the token, validates active session state,
@@ -32,6 +34,7 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
 
     private final SessionService sessionService;
     private final CustomUserDetailsService userDetailsService;
+    private final UserSessionRepository userSessionRepository;
 
     @Override
     protected void doFilterInternal(
@@ -39,10 +42,30 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        try {
-            String rawToken = extractSessionCookie(request);
+        String origin = request.getHeader("Origin");
+        String userAgent = request.getHeader("User-Agent");
+        String uri = request.getRequestURI();
+        String rawToken = extractSessionCookie(request);
+        boolean cookiePresent = (rawToken != null && !rawToken.isBlank());
+        boolean sessionFound = false;
+        boolean sessionExpired = false;
+        boolean sessionRevoked = false;
+        boolean authenticated = false;
+        String authenticatedUser = null;
 
-            if (rawToken != null && !rawToken.isBlank() && SecurityContextHolder.getContext().getAuthentication() == null) {
+        try {
+            if (cookiePresent) {
+                String tokenHash = sessionService.hashToken(rawToken);
+                Optional<UserSession> rawSessionOpt = userSessionRepository.findByTokenHash(tokenHash);
+                if (rawSessionOpt.isPresent()) {
+                    sessionFound = true;
+                    UserSession s = rawSessionOpt.get();
+                    sessionRevoked = (s.getRevokedAt() != null);
+                    sessionExpired = s.isExpired();
+                }
+            }
+
+            if (cookiePresent && SecurityContextHolder.getContext().getAuthentication() == null) {
                 Optional<UserSession> sessionOpt = sessionService.validateSession(rawToken);
 
                 if (sessionOpt.isPresent()) {
@@ -57,13 +80,22 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authenticated = true;
+                    authenticatedUser = username;
                 }
+            } else if (SecurityContextHolder.getContext().getAuthentication() != null) {
+                authenticated = true;
+                authenticatedUser = SecurityContextHolder.getContext().getAuthentication().getName();
             }
         } catch (Exception e) {
             log.error("Error processing session authentication: {}", e.getMessage());
             // Safe fallback: clear security context and continue without throwing 500
             SecurityContextHolder.clearContext();
         }
+
+        log.info("[SESSION-DIAGNOSTIC] Filter Evaluation | Path: {} | Origin: {} | User-Agent: {} | CookiePresent: {} | SessionFound: {} | SessionExpired: {} | SessionRevoked: {} | Authenticated: {} | User: {}",
+                uri, origin != null ? origin : "none", userAgent != null ? userAgent : "none",
+                cookiePresent, sessionFound, sessionExpired, sessionRevoked, authenticated, authenticatedUser != null ? authenticatedUser : "none");
 
         filterChain.doFilter(request, response);
     }

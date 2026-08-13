@@ -104,6 +104,13 @@ public class AuthService {
             httpResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
         }
 
+        String origin = httpRequest != null ? httpRequest.getHeader("Origin") : "none";
+        String userAgent = httpRequest != null ? httpRequest.getHeader("User-Agent") : "none";
+        boolean cookiePresent = httpRequest != null && extractSessionCookie(httpRequest) != null;
+
+        log.info("[SESSION-DIAGNOSTIC] Login Endpoint Executed | User: {} | Origin: {} | User-Agent: {} | ExistingCookiePresent: {} | SessionCreated: true",
+                normalizedUsername, origin != null ? origin : "none", userAgent != null ? userAgent : "none", cookiePresent);
+
         log.info("Session authentication successful for user: {}", normalizedUsername);
 
         return LoginResponse.builder()
