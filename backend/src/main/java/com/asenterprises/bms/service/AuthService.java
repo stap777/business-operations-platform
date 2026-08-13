@@ -114,6 +114,7 @@ public class AuthService {
         log.info("Session authentication successful for user: {}", normalizedUsername);
 
         return LoginResponse.builder()
+                .token(rawToken)
                 .username(user.getUsername())
                 .role(user.getRole())
                 .fullName(user.getFullName())
@@ -121,7 +122,7 @@ public class AuthService {
     }
 
     public void logout(HttpServletRequest request, HttpServletResponse response) {
-        String rawToken = extractSessionCookie(request);
+        String rawToken = extractSessionToken(request);
         if (rawToken != null) {
             sessionService.revokeSession(rawToken);
         }
@@ -134,7 +135,7 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
         sessionService.revokeAllUserSessions(user.getId());
         clearSessionCookie(response);
-        log.info("Logout-all completed successfully for user: {}", username);
+        log.info("Logout-all completed successfully for user [redacted]");
     }
 
     public UserResponse getCurrentUser(String username) {
@@ -152,6 +153,22 @@ public class AuthService {
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
                 .build();
+    }
+
+    public String extractSessionToken(HttpServletRequest request) {
+        if (request == null) return null;
+        String cookieToken = extractSessionCookie(request);
+        if (cookieToken != null && !cookieToken.isBlank()) {
+            return cookieToken;
+        }
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String bearerToken = authHeader.substring(7).trim();
+            if (!bearerToken.isBlank()) {
+                return bearerToken;
+            }
+        }
+        return null;
     }
 
     private String extractSessionCookie(HttpServletRequest request) {

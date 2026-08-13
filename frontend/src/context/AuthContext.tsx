@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(currentUser);
       } catch (e) {
         setUser(null);
+        clearAuthStorage();
       } finally {
         setIsLoading(false);
       }
@@ -35,7 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifySession();
   }, []);
 
-  const clearLegacyAuthStorage = () => {
+  const clearAuthStorage = () => {
+    localStorage.removeItem('aven_session_token');
     localStorage.removeItem('bms_jwt_token');
     localStorage.removeItem('bms_user_info');
     sessionStorage.removeItem('bms_jwt_token');
@@ -43,7 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (authData: AuthResponse) => {
-    clearLegacyAuthStorage();
+    clearAuthStorage();
+    if (authData.token) {
+      localStorage.setItem('aven_session_token', authData.token);
+    }
     const userInfo: User = {
       fullName: authData.fullName,
       username: authData.username,
@@ -60,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Backend logout call failed or session already expired', e);
     } finally {
       setUser(null);
-      clearLegacyAuthStorage();
+      clearAuthStorage();
     }
   };
 

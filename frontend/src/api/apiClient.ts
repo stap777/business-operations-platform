@@ -11,6 +11,15 @@ export const apiClient = axios.create({
   },
 });
 
+// Request Interceptor: Attach Authorization Bearer header fallback if stored in localStorage
+apiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('aven_session_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // Response Interceptor: Handle 401 Unauthorized globally and normalize errors
 apiClient.interceptors.response.use(
   (response) => response,
@@ -19,6 +28,7 @@ apiClient.interceptors.response.use(
     (error as AxiosError & { apiError?: typeof normalizedError }).apiError = normalizedError;
 
     if (error.response && error.response.status === 401) {
+      localStorage.removeItem('aven_session_token');
       if (
         !window.location.pathname.includes('/login') &&
         !window.location.pathname.includes('/setup')

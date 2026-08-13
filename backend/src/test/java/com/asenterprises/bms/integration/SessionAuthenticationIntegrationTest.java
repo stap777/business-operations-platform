@@ -214,6 +214,77 @@ public class SessionAuthenticationIntegrationTest {
                 .andExpect(jsonPath("$.username").value("session_user"));
     }
 
+    @Test
+    @DisplayName("Test 9 — Bearer header authentication fallback succeeds without session cookie")
+    void testBearerAuthentication_Success() throws Exception {
+        String rawToken = performLoginAndGetToken("session_user", "SessionPass123!");
+        assertThat(rawToken).isNotBlank();
+
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer " + rawToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("session_user"))
+                .andExpect(jsonPath("$.role").value("ADMIN"))
+                .andExpect(jsonPath("$.fullName").value("Test User"));
+    }
+
+    @Test
+    @DisplayName("Test 10 — Invalid bearer token returns 401 Unauthorized")
+    void testInvalidBearerToken_FailsGracefully() throws Exception {
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer invalid_fake_bearer_token_999"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Test 11 — Expired session via Bearer header returns 401 Unauthorized")
+    void testExpiredSession_BearerHeader_Fails() throws Exception {
+        String rawToken = performLoginAndGetToken("session_user", "SessionPass123!");
+
+        // Expire the session in database
+        List<UserSession> sessions = userSessionRepository.findByUserIdAndRevokedAtIsNull(testUser.getId());
+        assertThat(sessions).hasSize(1);
+        UserSession s = sessions.get(0);
+        s.setExpiresAt(java.time.LocalDateTime.now().minusMinutes(10));
+        userSessionRepository.save(s);
+
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer " + rawToken))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Test 12 — Revoked session via Bearer header returns 401 Unauthorized")
+    void testRevokedSession_BearerHeader_Fails() throws Exception {
+        String rawToken = performLoginAndGetToken("session_user", "SessionPass123!");
+
+        // Revoke the session via logout call using Bearer header
+        mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", "Bearer " + rawToken))
+                .andExpect(status().isOk());
+
+        // Subsequent /auth/me call with Bearer header fails with 401
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer " + rawToken))
+                .andExpect(status().isUnauthorized());
+
+        List<UserSession> activeSessions = userSessionRepository.findByUserIdAndRevokedAtIsNull(testUser.getId());
+        assertThat(activeSessions).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Test 13 — Refresh / session restoration via /auth/me with Bearer token succeeds")
+    void testSessionRestoration_AuthMeWithBearer_Success() throws Exception {
+        String rawToken = performLoginAndGetToken("session_user", "SessionPass123!");
+
+        // Simulate page refresh: GET /auth/me with stored Bearer token
+        mockMvc.perform(get("/auth/me")
+                        .header("Authorization", "Bearer " + rawToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("session_user"))
+                .andExpect(jsonPath("$.fullName").value("Test User"));
+    }
+
     private Cookie performLoginAndGetCookie(String username, String password) throws Exception {
         LoginRequest loginRequest = LoginRequest.builder()
                 .username(username)
@@ -229,6 +300,23 @@ public class SessionAuthenticationIntegrationTest {
         Cookie responseCookie = result.getResponse().getCookie("AVEN_SESSION");
         assertThat(responseCookie).isNotNull();
         return responseCookie;
+    }
+
+    private String performLoginAndGetToken(String username, String password) throws Exception {
+        LoginRequest loginRequest = LoginRequest.builder()
+                .username(username)
+                .password(password)
+                .build();
+
+        MvcResult result = mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String responseBody = result.getResponse().getContentAsString();
+        com.fasterxml.jackson.databind.JsonNode jsonNode = objectMapper.readTree(responseBody);
+        return jsonNode.has("token") ? jsonNode.get("token").asText() : "";
     }
 
     private String extractRawCookieValue(MvcResult result) {

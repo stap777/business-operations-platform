@@ -45,8 +45,10 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
         String origin = request.getHeader("Origin");
         String userAgent = request.getHeader("User-Agent");
         String uri = request.getRequestURI();
-        String rawToken = extractSessionCookie(request);
-        boolean cookiePresent = (rawToken != null && !rawToken.isBlank());
+
+        String rawToken = extractSessionToken(request);
+        String tokenSource = determineTokenSource(request);
+        boolean tokenPresent = (rawToken != null && !rawToken.isBlank());
         boolean sessionFound = false;
         boolean sessionExpired = false;
         boolean sessionRevoked = false;
@@ -54,7 +56,7 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
         String authenticatedUser = null;
 
         try {
-            if (cookiePresent) {
+            if (tokenPresent) {
                 String tokenHash = sessionService.hashToken(rawToken);
                 Optional<UserSession> rawSessionOpt = userSessionRepository.findByTokenHash(tokenHash);
                 if (rawSessionOpt.isPresent()) {
@@ -65,7 +67,7 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
 
-            if (cookiePresent && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (tokenPresent && SecurityContextHolder.getContext().getAuthentication() == null) {
                 Optional<UserSession> sessionOpt = sessionService.validateSession(rawToken);
 
                 if (sessionOpt.isPresent()) {
@@ -93,11 +95,38 @@ public class SessionAuthenticationFilter extends OncePerRequestFilter {
             SecurityContextHolder.clearContext();
         }
 
-        log.info("[SESSION-DIAGNOSTIC] Filter Evaluation | Path: {} | Origin: {} | User-Agent: {} | CookiePresent: {} | SessionFound: {} | SessionExpired: {} | SessionRevoked: {} | Authenticated: {} | User: {}",
+        log.info("[SESSION-DIAGNOSTIC] Filter Evaluation | Path: {} | Origin: {} | User-Agent: {} | TokenPresent: {} | Source: {} | SessionFound: {} | SessionExpired: {} | SessionRevoked: {} | Authenticated: {} | User: {}",
                 uri, origin != null ? origin : "none", userAgent != null ? userAgent : "none",
-                cookiePresent, sessionFound, sessionExpired, sessionRevoked, authenticated, authenticatedUser != null ? authenticatedUser : "none");
+                tokenPresent, tokenSource, sessionFound, sessionExpired, sessionRevoked, authenticated, authenticatedUser != null ? authenticatedUser : "none");
 
         filterChain.doFilter(request, response);
+    }
+
+    private String extractSessionToken(HttpServletRequest request) {
+        String cookieToken = extractSessionCookie(request);
+        if (cookieToken != null && !cookieToken.isBlank()) {
+            return cookieToken;
+        }
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String bearerToken = authHeader.substring(7).trim();
+            if (!bearerToken.isBlank()) {
+                return bearerToken;
+            }
+        }
+        return null;
+    }
+
+    private String determineTokenSource(HttpServletRequest request) {
+        String cookieToken = extractSessionCookie(request);
+        if (cookieToken != null && !cookieToken.isBlank()) {
+            return "COOKIE";
+        }
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null && authHeader.startsWith("Bearer ") && !authHeader.substring(7).trim().isBlank()) {
+            return "HEADER";
+        }
+        return "NONE";
     }
 
     private String extractSessionCookie(HttpServletRequest request) {
