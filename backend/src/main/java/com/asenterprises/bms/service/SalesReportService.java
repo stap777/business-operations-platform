@@ -4,6 +4,8 @@ import com.asenterprises.bms.dto.SalesPeriodItemResponse;
 import com.asenterprises.bms.dto.SalesReportResponse;
 import com.asenterprises.bms.entity.Order;
 import com.asenterprises.bms.entity.OrderStatus;
+import com.asenterprises.bms.dto.UnifiedReportResponse;
+import com.asenterprises.bms.repository.OperatingExpenseRepository;
 import com.asenterprises.bms.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,88 @@ import java.util.List;
 public class SalesReportService {
 
     private final OrderRepository orderRepository;
+    private final OperatingExpenseRepository operatingExpenseRepository;
+
+    @Transactional(readOnly = true)
+    public UnifiedReportResponse getUnifiedReport(LocalDate startDate, LocalDate endDate, String granularity) {
+        LocalDate start = startDate != null ? startDate : LocalDate.now().minusDays(30);
+        LocalDate end = endDate != null ? endDate : LocalDate.now();
+
+        LocalDateTime startDateTime = start.atStartOfDay();
+        LocalDateTime endDateTime = end.atTime(LocalTime.MAX);
+
+        long totalOrders = orderRepository.countOrdersBetween(startDateTime, endDateTime);
+        long validOrders = orderRepository.countValidOrdersBetween(startDateTime, endDateTime);
+        BigDecimal totalRevenue = orderRepository.sumRevenueBetween(startDateTime, endDateTime);
+        if (totalRevenue == null) {
+            totalRevenue = BigDecimal.ZERO;
+        }
+        BigDecimal totalDiscount = orderRepository.sumDiscountBetween(startDateTime, endDateTime);
+        if (totalDiscount == null) {
+            totalDiscount = BigDecimal.ZERO;
+        }
+
+        BigDecimal totalCogs = orderRepository.sumCogsBetween(startDateTime, endDateTime);
+        if (totalCogs == null) {
+            totalCogs = BigDecimal.ZERO;
+        }
+        BigDecimal grossProfit = totalRevenue.subtract(totalCogs);
+        BigDecimal grossMarginPercentage = BigDecimal.ZERO;
+        if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            grossMarginPercentage = grossProfit.multiply(BigDecimal.valueOf(100))
+                    .divide(totalRevenue, 2, RoundingMode.HALF_UP);
+        }
+
+        BigDecimal opex = operatingExpenseRepository.sumExpensesBetween(start, end);
+        if (opex == null) {
+            opex = BigDecimal.ZERO;
+        }
+
+        BigDecimal netProfit = grossProfit.subtract(opex);
+        BigDecimal netMarginPercentage = BigDecimal.ZERO;
+        if (totalRevenue.compareTo(BigDecimal.ZERO) > 0) {
+            netMarginPercentage = netProfit.multiply(BigDecimal.valueOf(100))
+                    .divide(totalRevenue, 2, RoundingMode.HALF_UP);
+        }
+
+        long completedOrders = orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.COMPLETED)
+                + orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.VERIFIED)
+                + orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.DELIVERED);
+
+        long cancelledOrders = orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.CANCELLED);
+
+        BigDecimal avgOrderValue = validOrders > 0
+                ? totalRevenue.divide(BigDecimal.valueOf(validOrders), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        long legacyItemsCount = orderRepository.countLegacyItemsBetween(startDateTime, endDateTime);
+        boolean cogsIncomplete = legacyItemsCount > 0;
+
+        List<SalesPeriodItemResponse> periodItems = buildPeriodBreakdown(start, end, granularity);
+
+        log.info("Generated unified report from {} to {} with granularity {}", start, end, granularity);
+
+        return UnifiedReportResponse.builder()
+                .granularity(granularity != null ? granularity.toUpperCase() : "DAILY")
+                .startDate(start.toString())
+                .endDate(end.toString())
+                .totalOrders(totalOrders)
+                .validOrders(validOrders)
+                .completedOrders(completedOrders)
+                .cancelledOrders(cancelledOrders)
+                .totalRevenue(totalRevenue)
+                .totalDiscountGiven(totalDiscount)
+                .averageOrderValue(avgOrderValue)
+                .totalCogs(totalCogs)
+                .grossProfit(grossProfit)
+                .grossMarginPercentage(grossMarginPercentage)
+                .totalOperatingExpenses(opex)
+                .netProfit(netProfit)
+                .netMarginPercentage(netMarginPercentage)
+                .cogsIncomplete(cogsIncomplete)
+                .periodItems(periodItems)
+                .build();
+    }
 
     @Transactional(readOnly = true)
     public SalesReportResponse getSalesReport(LocalDate startDate, LocalDate endDate, String granularity) {

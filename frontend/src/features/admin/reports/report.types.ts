@@ -113,6 +113,47 @@ export interface AuditLogResponse {
   remarks?: string;
 }
 
+export interface UnifiedReportResponse {
+  granularity: string;
+  startDate: string;
+  endDate: string;
+  totalOrders: number;
+  validOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  totalRevenue: number;
+  totalDiscountGiven: number;
+  averageOrderValue: number;
+  totalCogs: number;
+  grossProfit: number;
+  grossMarginPercentage: number;
+  totalOperatingExpenses: number;
+  netProfit: number;
+  netMarginPercentage: number;
+  cogsIncomplete?: boolean;
+  periodItems: SalesPeriodItemResponse[];
+}
+
+export interface OperatingExpenseResponse {
+  id: number;
+  category: string;
+  description: string;
+  amount: number;
+  expenseDate: string;
+  notes?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OperatingExpenseRequest {
+  category: string;
+  description: string;
+  amount: number;
+  expenseDate: string;
+  notes?: string;
+}
+
 export interface ReportFilterParams {
   startDate?: string;
   endDate?: string;

@@ -218,6 +218,9 @@ public class VerificationWorkflowIntegrationTest {
         order.addItem(item);
 
         Order savedOrder = orderRepository.save(order);
+        if (savedOrder.getCoupon() != null) {
+            couponRepository.incrementUsedCount(savedOrder.getCoupon().getId());
+        }
         assertThat(savedOrder.getId()).isNotNull();
 
         // Step 2: Transition Delivery to DELIVERED

@@ -3,22 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus } from './order.types';
 import { useOrders, useCancelOrder, useVerifyOrder } from './hooks/useOrders';
 import { useAuth } from '../../context/AuthContext';
+import { useBusinessSettings } from '../admin/settings/hooks/useBusinessSettings';
 import { OrderFilters } from './components/OrderFilters';
 import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
+import { PrintableOrder } from './components/PrintableOrder';
 import { Button } from '../../components/ui/button';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, RefreshCw, ClipboardList } from 'lucide-react';
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: businessSettings } = useBusinessSettings();
+
   const [searchOrderNumber, setSearchOrderNumber] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | undefined>(undefined);
+  const [startDate, setStartDate] = useState<string | undefined>(undefined);
+  const [endDate, setEndDate] = useState<string | undefined>(undefined);
   const [page, setPage] = useState<number>(0);
 
   // Modals state
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
+  const [printOrderData, setPrintOrderData] = useState<OrderResponse | null>(null);
 
   // React Query Hooks
   const {
@@ -29,6 +36,8 @@ export const OrdersPage: React.FC = () => {
   } = useOrders({
     orderNumber: searchOrderNumber,
     status: selectedStatus,
+    startDate,
+    endDate,
     page,
     size: 20,
   });
@@ -46,9 +55,31 @@ export const OrdersPage: React.FC = () => {
     setPage(0);
   };
 
+  const handleDateRangeChange = (start?: string, end?: string) => {
+    setStartDate(start);
+    setEndDate(end);
+    setPage(0);
+  };
+
+  const handleClearFilters = () => {
+    setSearchOrderNumber('');
+    setSelectedStatus(undefined);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setPage(0);
+  };
+
   const handleViewOrder = (order: OrderResponse) => {
     setSelectedOrder(order);
     setIsDetailsOpen(true);
+  };
+
+  const handlePrintOrder = (order: OrderResponse) => {
+    setPrintOrderData(order);
+    // Trigger browser print after DOM update
+    setTimeout(() => {
+      window.print();
+    }, 100);
   };
 
   const handleCloseDetails = () => {
@@ -83,21 +114,30 @@ export const OrdersPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header Bar (Aven Design System) */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
+      {/* Printable Order Container (rendered on window.print()) */}
+      <PrintableOrder
+        order={printOrderData || selectedOrder}
+        businessSettings={businessSettings}
+      />
+
+      {/* Screen Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323] print:hidden">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
-            Orders
-          </h1>
+          <div className="flex items-center gap-2">
+            <ClipboardList className="w-5 h-5 text-[#111111] dark:text-[#FAFAFA]" />
+            <h1 className="text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
+              Orders Management
+            </h1>
+          </div>
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-            Track and manage business orders.
+            Inspect customer sales orders, track payment & fulfillment status, and generate printable orders.
           </p>
         </div>
 
         <Button
           size="sm"
           onClick={() => navigate('/orders/create')}
-          className="bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111] hover:opacity-90 text-xs font-semibold px-4 py-2 rounded-lg shadow-sm gap-1.5 self-start sm:self-auto"
+          className="bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111] hover:opacity-90 text-xs font-semibold px-4 py-2 rounded-lg shadow-2xs gap-1.5 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Create Order
@@ -105,13 +145,17 @@ export const OrdersPage: React.FC = () => {
       </div>
 
       {/* Main View Container */}
-      <div className="space-y-4">
+      <div className="space-y-4 print:hidden">
         {/* Toolbar Filters */}
         <OrderFilters
           onSearchChange={handleSearchChange}
           onStatusChange={handleStatusChange}
+          onDateRangeChange={handleDateRangeChange}
+          onClearFilters={handleClearFilters}
           initialOrderNumber={searchOrderNumber}
           initialStatus={selectedStatus}
+          initialStartDate={startDate}
+          initialEndDate={endDate}
         />
 
         {/* Error State */}
@@ -135,6 +179,7 @@ export const OrdersPage: React.FC = () => {
           orders={orders}
           isLoading={isLoading}
           onViewOrder={handleViewOrder}
+          onPrintOrder={handlePrintOrder}
           onCancelOrder={handleCancelOrder}
           onVerifyOrder={handleVerifyOrder}
           userRole={user?.role}
@@ -179,6 +224,7 @@ export const OrdersPage: React.FC = () => {
         isOpen={isDetailsOpen}
         onClose={handleCloseDetails}
         order={selectedOrder}
+        onPrintOrder={handlePrintOrder}
         onCancelOrder={handleCancelOrder}
         onVerifyOrder={handleVerifyOrder}
         isCancelling={cancelOrderMutation.isPending}

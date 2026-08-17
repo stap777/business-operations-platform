@@ -78,7 +78,7 @@ export const KpiGrid: React.FC<KpiGridProps> = ({ data, isLoading, isError }) =>
         <KpiCard
           title="Verified Orders"
           value={data?.todaysVerifiedOrders ?? 0}
-          subtitle="Admin/Manager verified"
+          subtitle="Admin/Sales Representative verified"
           icon={ShieldCheck}
           isLoading={isLoading}
           error={isError}

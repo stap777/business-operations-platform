@@ -50,6 +50,8 @@ public class OrderService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final com.asenterprises.bms.repository.CouponRepository couponRepository;
+    private final com.asenterprises.bms.repository.PaymentAllocationRepository paymentAllocationRepository;
+    private final InvoiceService invoiceService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -222,6 +224,10 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
 
         Order savedOrder = orderRepository.save(order);
+        
+        // Auto-create initial invoice immediately upon order placement
+        invoiceService.createInvoiceForOrder(savedOrder, manager);
+
         return mapToResponse(savedOrder);
     }
 
@@ -263,7 +269,17 @@ public class OrderService {
             throw new IllegalStateException("Cannot cancel order in " + currentStatus + " state");
         }
 
+        BigDecimal allocatedAmount = paymentAllocationRepository.sumAllocatedAmountByOrderId(id);
+        if ((allocatedAmount != null && allocatedAmount.compareTo(BigDecimal.ZERO) > 0) ||
+            (order.getAmountReceived() != null && order.getAmountReceived().compareTo(BigDecimal.ZERO) > 0)) {
+            throw new IllegalStateException("Cannot cancel order #" + order.getOrderNumber() + " with allocated payments");
+        }
+
         order.setOrderStatus(OrderStatus.CANCELLED);
+        if (order.getCoupon() != null) {
+            couponRepository.decrementUsedCount(order.getCoupon().getId());
+        }
+
         Order updatedOrder = orderRepository.save(order);
         return mapToResponse(updatedOrder);
     }

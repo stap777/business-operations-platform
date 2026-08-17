@@ -35,4 +35,17 @@ public class BusinessSettingsController {
             @Valid @RequestBody BusinessSettingsRequest request) {
         return ResponseEntity.ok(businessSettingsService.updateBusinessSettings(request));
     }
+
+    @org.springframework.web.bind.annotation.PostMapping(value = "/logo", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BusinessSettingsResponse> uploadLogo(
+            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return ResponseEntity.ok(businessSettingsService.uploadLogo(file));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/logo")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<BusinessSettingsResponse> removeLogo() {
+        return ResponseEntity.ok(businessSettingsService.removeLogo());
+    }
 }

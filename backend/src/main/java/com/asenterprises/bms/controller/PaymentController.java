@@ -37,7 +37,7 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<PaymentResponse> createPayment(
             @Valid @RequestBody PaymentRequest request,
             Principal principal) {

@@ -368,14 +368,88 @@ export const BusinessSettingsPage: React.FC = () => {
         <div className="flex items-center gap-2 pb-3 border-b border-[#ECECEC] dark:border-[#232323]">
           <ImageIcon className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
           <h2 className="text-xs font-semibold text-[#111111] dark:text-[#FAFAFA] uppercase tracking-wider">
-            Enterprise Branding
+            Enterprise Branding & Logo Management
           </h2>
         </div>
 
-        <div className="text-xs space-y-3">
+        <div className="text-xs space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-dashed border-[#ECECEC] dark:border-[#232323] rounded-xl bg-[#FAFAFA] dark:bg-[#151515]">
+            <div className="w-24 h-16 rounded-lg bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] flex items-center justify-center p-2 shrink-0 overflow-hidden">
+              {formData.logoUrl ? (
+                <img
+                  src={formData.logoUrl}
+                  alt="Company Logo"
+                  className="max-h-full max-w-full object-contain"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              ) : (
+                <ImageIcon className="w-6 h-6 text-[#71717A]" />
+              )}
+            </div>
+
+            <div className="space-y-1.5 flex-1">
+              <h4 className="text-xs font-semibold text-[#111111] dark:text-[#FAFAFA]">Company Logo Asset</h4>
+              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+                Upload your official company logo (PNG, JPEG, WEBP max 2MB). This logo will display on all printed Orders, Invoices, and Reports.
+              </p>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <label className="cursor-pointer">
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] text-xs font-medium hover:opacity-90 transition-opacity">
+                    {formData.logoUrl ? 'Replace Logo' : 'Upload Logo'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const { apiClient } = await import('../../../api/apiClient');
+                        const data = new FormData();
+                        data.append('file', file);
+                        const res = await apiClient.post('/business-settings/logo', data, {
+                          headers: { 'Content-Type': 'multipart/form-data' },
+                        });
+                        setFormData((prev) => ({ ...prev, logoUrl: res.data.logoUrl || '' }));
+                        refetch();
+                      } catch (err: any) {
+                        alert(err?.response?.data?.message || 'Failed to upload logo file');
+                      }
+                    }}
+                  />
+                </label>
+
+                {formData.logoUrl && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (!confirm('Are you sure you want to remove the company logo?')) return;
+                      try {
+                        const { apiClient } = await import('../../../api/apiClient');
+                        await apiClient.delete('/business-settings/logo');
+                        setFormData((prev) => ({ ...prev, logoUrl: '' }));
+                        refetch();
+                      } catch (err: any) {
+                        alert(err?.response?.data?.message || 'Failed to remove logo');
+                      }
+                    }}
+                    className="text-xs text-red-600 border-red-200 dark:border-red-900/40 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  >
+                    Remove Logo
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
-              Logo Asset URL
+              Logo Asset URL (Direct Link)
             </label>
             <input
               type="text"
@@ -386,20 +460,6 @@ export const BusinessSettingsPage: React.FC = () => {
             />
             {errors.logoUrl && <p className="text-[10px] text-red-500 mt-1">{errors.logoUrl}</p>}
           </div>
-
-          {formData.logoUrl && (
-            <div className="pt-2 flex items-center gap-3">
-              <span className="text-[11px] text-[#71717A]">Preview:</span>
-              <img
-                src={formData.logoUrl}
-                alt="Logo preview"
-                className="h-8 object-contain max-w-[120px] rounded border border-[#ECECEC] dark:border-[#232323] bg-neutral-50 dark:bg-neutral-900 p-1"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            </div>
-          )}
         </div>
       </div>
 

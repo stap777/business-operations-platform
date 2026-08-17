@@ -66,7 +66,7 @@ export const UserTable: React.FC<UserTableProps> = ({
         <div>
           <h3 className="text-sm font-semibold text-[#111111] dark:text-[#FAFAFA]">No employees yet.</h3>
           <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
-            Get started by registering your first manager or delivery account.
+            Get started by registering your first Sales Representative or Delivery account.
           </p>
         </div>
         <Button

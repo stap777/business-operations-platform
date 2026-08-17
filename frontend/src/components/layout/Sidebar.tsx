@@ -2,6 +2,7 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { AvenLogo } from '../aven/AvenLogo';
+import { formatRoleDisplay } from '../../utils/roleUtils';
 import { Button } from '../ui/button';
 import {
   LayoutDashboard,
@@ -67,9 +68,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
         group: 'MAIN',
         items: [
           { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+          { label: 'Orders', icon: ClipboardList, path: '/orders' },
+          { label: 'Create Order', icon: ShoppingCart, path: '/orders/create' },
           { label: 'Customers', icon: Users, path: '/customers' },
           { label: 'Products', icon: Package, path: '/products' },
-          { label: 'Create Order', icon: ShoppingCart, path: '/orders/create' },
         ],
       },
       {
@@ -87,14 +89,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
         ],
       },
       {
-        group: 'REPORTS',
+        group: 'SYSTEM',
         items: [
-          { label: 'Overview', icon: BarChart3, path: '/admin/reports' },
-        ],
-      },
-      {
-        group: 'ADMIN',
-        items: [
+          { label: 'Reports', icon: BarChart3, path: '/admin/reports' },
           { label: 'Employees', icon: Users, path: '/admin/employees' },
           { label: 'Business Settings', icon: Settings, path: '/admin/settings' },
         ],
@@ -189,7 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
               {user?.fullName || user?.username}
             </p>
             <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase truncate">
-              {user?.role}
+              {formatRoleDisplay(user?.role)}
             </p>
           </div>
         </div>

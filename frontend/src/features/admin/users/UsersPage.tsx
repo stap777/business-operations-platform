@@ -86,7 +86,7 @@ export const UsersPage: React.FC = () => {
           <div>
             <h1 className="text-lg font-bold text-[#111111] dark:text-[#FAFAFA]">Employees</h1>
             <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-              Manage managers and delivery personnel accounts.
+              Manage Sales Representatives and Delivery personnel accounts.
             </p>
           </div>
         </div>

@@ -578,7 +578,7 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
                         {...registerStep3(`teamMembers.${index}.role` as const)}
                         className="flex h-10 w-full rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] px-3 py-1 text-xs text-[#111111] dark:text-[#FAFAFA]"
                       >
-                        <option value="MANAGER">Manager</option>
+                        <option value="MANAGER">Sales Representative</option>
                         <option value="DELIVERY">Delivery Staff</option>
                       </select>
                     </div>
@@ -788,7 +788,7 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
                 <Users className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA] shrink-0 mt-0.5" />
                 <div>
                   <span className="font-medium text-[#111111] dark:text-[#FAFAFA] block">Invite your team and collaborate</span>
-                  <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">Role-based access control for Managers and Delivery staff.</span>
+                  <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">Role-based access control for Sales Representatives and Delivery staff.</span>
                 </div>
               </div>
 

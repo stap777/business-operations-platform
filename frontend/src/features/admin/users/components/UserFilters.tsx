@@ -43,7 +43,7 @@ export const UserFilters: React.FC<UserFiltersProps> = ({
             className="appearance-none pl-3 pr-8 py-2 text-xs bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA] cursor-pointer"
           >
             <option value="">All Roles</option>
-            <option value="MANAGER">Manager</option>
+            <option value="MANAGER">Sales Representative</option>
             <option value="DELIVERY">Delivery</option>
           </select>
           <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#71717A] dark:text-[#A1A1AA] pointer-events-none" />

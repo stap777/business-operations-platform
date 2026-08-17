@@ -41,4 +41,8 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Coupon c SET c.usedCount = COALESCE(c.usedCount, 0) + 1 WHERE c.id = :id AND (c.usageLimit IS NULL OR COALESCE(c.usedCount, 0) < c.usageLimit)")
     int incrementUsedCount(@Param("id") Long id);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Coupon c SET c.usedCount = CASE WHEN COALESCE(c.usedCount, 0) > 0 THEN COALESCE(c.usedCount, 0) - 1 ELSE 0 END WHERE c.id = :id")
+    int decrementUsedCount(@Param("id") Long id);
 }

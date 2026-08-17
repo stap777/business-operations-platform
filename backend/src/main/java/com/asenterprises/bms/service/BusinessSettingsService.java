@@ -46,6 +46,59 @@ public class BusinessSettingsService {
         return mapToResponse(updatedSettings);
     }
 
+    @Transactional
+    public BusinessSettingsResponse uploadLogo(org.springframework.web.multipart.MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Logo file cannot be empty");
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.startsWith("image/"))) {
+            throw new IllegalArgumentException("Uploaded file must be a valid image (PNG, JPEG, WEBP)");
+        }
+
+        try {
+            String uploadDirStr = "./uploads/logos";
+            java.io.File uploadDir = new java.io.File(uploadDirStr);
+            if (!uploadDir.exists()) {
+                uploadDir.mkdirs();
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = ".png";
+            if (originalFilename != null && originalFilename.contains(".")) {
+                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            }
+
+            String filename = "company_logo_" + System.currentTimeMillis() + extension;
+            java.io.File destFile = new java.io.File(uploadDir, filename);
+            file.transferTo(destFile);
+
+            String logoUrl = "/uploads/logos/" + filename;
+
+            BusinessSettings settings = businessSettingsRepository.findFirstByOrderByIdAsc()
+                    .orElseGet(this::seedDefaultBusinessSettings);
+            settings.setLogoUrl(logoUrl);
+
+            BusinessSettings updated = businessSettingsRepository.save(settings);
+            log.info("Uploaded new company logo: {}", logoUrl);
+            return mapToResponse(updated);
+        } catch (java.io.IOException e) {
+            log.error("Failed to save logo file: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to save company logo image", e);
+        }
+    }
+
+    @Transactional
+    public BusinessSettingsResponse removeLogo() {
+        BusinessSettings settings = businessSettingsRepository.findFirstByOrderByIdAsc()
+                .orElseGet(this::seedDefaultBusinessSettings);
+        settings.setLogoUrl(null);
+        BusinessSettings updated = businessSettingsRepository.save(settings);
+        log.info("Removed company logo");
+        return mapToResponse(updated);
+    }
+
     private synchronized BusinessSettings seedDefaultBusinessSettings() {
         if (businessSettingsRepository.count() > 0) {
             return businessSettingsRepository.findFirstByOrderByIdAsc()

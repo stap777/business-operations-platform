@@ -30,7 +30,7 @@ export const ManagerDashboardPage: React.FC = () => {
     return 'Good evening';
   };
 
-  const firstName = user?.fullName ? user.fullName.split(' ')[0] : user?.username || 'Manager';
+  const firstName = user?.fullName ? user.fullName.split(' ')[0] : user?.username || 'Sales Representative';
 
   // 1. Real summary metrics from backend
   const summaryQuery = useDashboardSummary();

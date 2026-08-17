@@ -88,9 +88,40 @@ public class VerificationService {
             throw new IllegalArgumentException("Cannot verify order for an inactive customer");
         }
 
-        // Step 4: Ensure Invoice does NOT already exist
-        if (invoiceRepository.existsByOrderId(orderId)) {
-            throw new IllegalStateException("Invoice already exists for order id: " + orderId);
+        // Step 4: Get existing invoice or auto-create if absent
+        Invoice invoice = invoiceRepository.findByOrderId(orderId).orElse(null);
+        if (invoice == null) {
+            BigDecimal paymentReceived = paymentAllocationRepository.sumAllocatedAmountByOrderId(orderId);
+            if (paymentReceived == null) {
+                paymentReceived = BigDecimal.ZERO;
+            }
+
+            String invoiceNumber = generateInvoiceNumber();
+            invoice = Invoice.builder()
+                    .invoiceNumber(invoiceNumber)
+                    .order(order)
+                    .invoiceDate(LocalDateTime.now())
+                    .customerNameSnapshot(order.getCustomer().getFullName())
+                    .customerPhoneSnapshot(order.getCustomer().getPhone())
+                    .customerAddressSnapshot(order.getCustomer().getAddress())
+                    .subtotal(order.getSubtotal())
+                    .discountAmount(order.getDiscountAmount())
+                    .totalAmount(order.getTotalAmount())
+                    .paymentStatus(order.getPaymentStatus())
+                    .paymentReceivedAtGeneration(paymentReceived)
+                    .generatedBy(adminUser)
+                    .build();
+
+            for (OrderItem item : order.getItems()) {
+                InvoiceItem invoiceItem = InvoiceItem.builder()
+                        .productNameSnapshot(item.getProduct().getName())
+                        .quantity(item.getQuantity())
+                        .sellingPriceSnapshot(item.getSellingPrice())
+                        .lineTotal(item.getLineTotal())
+                        .build();
+                invoice.addItem(invoiceItem);
+            }
+            invoice = invoiceRepository.save(invoice);
         }
 
         // Step 5: Validate & Deduct Product Stock atomically for tracked products
@@ -107,41 +138,7 @@ public class VerificationService {
             }
         }
 
-        // Step 6: Calculate Payment Received at Generation
-        BigDecimal paymentReceived = paymentAllocationRepository.sumAllocatedAmountByOrderId(orderId);
-        if (paymentReceived == null) {
-            paymentReceived = BigDecimal.ZERO;
-        }
-
-        // Step 7: Create Invoice Header & Snapshots
-        String invoiceNumber = generateInvoiceNumber();
-        Invoice invoice = Invoice.builder()
-                .invoiceNumber(invoiceNumber)
-                .order(order)
-                .invoiceDate(LocalDateTime.now())
-                .customerNameSnapshot(order.getCustomer().getFullName())
-                .customerPhoneSnapshot(order.getCustomer().getPhone())
-                .customerAddressSnapshot(order.getCustomer().getAddress())
-                .subtotal(order.getSubtotal())
-                .discountAmount(order.getDiscountAmount())
-                .totalAmount(order.getTotalAmount())
-                .paymentStatus(order.getPaymentStatus())
-                .paymentReceivedAtGeneration(paymentReceived)
-                .generatedBy(adminUser)
-                .build();
-
-        // Step 8: Create Invoice Item Snapshots
-        for (OrderItem item : order.getItems()) {
-            InvoiceItem invoiceItem = InvoiceItem.builder()
-                    .productNameSnapshot(item.getProduct().getName())
-                    .quantity(item.getQuantity())
-                    .sellingPriceSnapshot(item.getSellingPrice())
-                    .lineTotal(item.getLineTotal())
-                    .build();
-            invoice.addItem(invoiceItem);
-        }
-
-        Invoice savedInvoice = invoiceRepository.save(invoice);
+        Invoice savedInvoice = invoice;
 
         // Step 9: Create StockAdjustment history records for tracked products
         for (OrderItem item : order.getItems()) {
@@ -161,20 +158,15 @@ public class VerificationService {
             }
         }
 
-        // Step 10: Increment Coupon Usage atomically if coupon applied
+        // Step 10: Audit Log Coupon Verification if coupon was applied at order placement
         if (order.getCoupon() != null) {
             Coupon coupon = order.getCoupon();
-            int updated = couponRepository.incrementUsedCount(coupon.getId());
-            if (updated == 0) {
-                throw new IllegalStateException("Coupon '" + coupon.getCode() + "' usage limit has been reached");
-            }
-
             auditLogService.recordAuditLog(
                     "COUPON",
                     coupon.getId(),
-                    "COUPON_USED",
+                    "COUPON_VERIFIED",
                     adminUser,
-                    "Coupon '" + coupon.getCode() + "' used for Order #" + order.getOrderNumber()
+                    "Coupon '" + coupon.getCode() + "' verified for Order #" + order.getOrderNumber()
             );
         }
 
@@ -192,10 +184,13 @@ public class VerificationService {
         order.setOrderStatus(OrderStatus.VERIFIED);
         orderRepository.save(order);
 
-        log.info("Order #{} successfully verified by admin {}. Invoice #{} generated.",
-                order.getOrderNumber(), adminUser.getUsername(), savedInvoice.getInvoiceNumber());
+        // Ensure invoice items are fully loaded within session before mapping
+        Invoice reloadedInvoice = invoiceRepository.findById(savedInvoice.getId()).orElse(savedInvoice);
+        if (reloadedInvoice.getItems() != null) {
+            reloadedInvoice.getItems().size();
+        }
 
-        return mapToResponse(savedInvoice);
+        return mapToResponse(reloadedInvoice);
     }
 
     @Transactional(readOnly = true)

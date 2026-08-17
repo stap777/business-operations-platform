@@ -8,6 +8,7 @@ interface OrderDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderResponse | null;
+  onPrintOrder?: (order: OrderResponse) => void;
   onCancelOrder?: (id: number) => void;
   onVerifyOrder?: (id: number) => void;
   isCancelling?: boolean;
@@ -19,6 +20,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   isOpen,
   onClose,
   order,
+  onPrintOrder,
   onCancelOrder,
   onVerifyOrder,
   isCancelling = false,
@@ -29,6 +31,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   const [showVerifyConfirm, setShowVerifyConfirm] = useState(false);
 
   if (!isOpen || !order) return null;
+
+  const amountPaid = order.amountReceived || 0;
+  const balanceDue = Math.max(0, (order.totalAmount || 0) - amountPaid);
 
   const handleConfirmCancel = () => {
     if (onCancelOrder) {
@@ -93,7 +98,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             )}
             {order.managerName && (
               <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                Manager: <span className="text-[#111111] dark:text-[#FAFAFA] font-medium">{order.managerName}</span>
+                Sales Representative: <span className="text-[#111111] dark:text-[#FAFAFA] font-medium">{order.managerName}</span>
               </p>
             )}
           </div>
@@ -162,19 +167,27 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
 
         {/* Financial Totals */}
         <div className="flex flex-col items-end space-y-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] pt-2 border-t border-[#ECECEC] dark:border-[#232323]">
-          <div className="flex justify-between w-52">
+          <div className="flex justify-between w-60">
             <span>Subtotal:</span>
             <span className="font-mono text-[#111111] dark:text-[#FAFAFA]">₹{order.subtotal?.toFixed(2)}</span>
           </div>
           {order.discountAmount > 0 && (
-            <div className="flex justify-between w-52 text-emerald-600 dark:text-emerald-400">
+            <div className="flex justify-between w-60 text-emerald-600 dark:text-emerald-400">
               <span>Discount:</span>
               <span className="font-mono">-₹{order.discountAmount?.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between w-52 font-bold text-sm text-[#111111] dark:text-[#FAFAFA] pt-1.5 border-t border-[#ECECEC] dark:border-[#232323]">
+          <div className="flex justify-between w-60 font-bold text-sm text-[#111111] dark:text-[#FAFAFA] pt-1.5 border-t border-[#ECECEC] dark:border-[#232323]">
             <span>Total Amount:</span>
             <span className="font-mono">₹{order.totalAmount?.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between w-60 text-[#71717A] dark:text-[#A1A1AA]">
+            <span>Amount Paid:</span>
+            <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">₹{amountPaid.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between w-60 font-semibold text-xs text-amber-600 dark:text-amber-400 pt-1 border-t border-dashed border-[#ECECEC] dark:border-[#232323]">
+            <span>Balance Due:</span>
+            <span className="font-mono font-bold">₹{balanceDue.toFixed(2)}</span>
           </div>
         </div>
 
@@ -287,8 +300,19 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           </div>
         ) : (
           /* Footer Actions */
-          <div className="flex items-center justify-between pt-3 border-t border-[#ECECEC] dark:border-[#232323]">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#ECECEC] dark:border-[#232323]">
             <div className="flex items-center gap-2">
+              {onPrintOrder && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onPrintOrder(order)}
+                  className="text-xs font-medium px-3 h-8 border-[#ECECEC] dark:border-[#232323] hover:bg-[#FAFAFA] dark:hover:bg-[#151515]"
+                >
+                  Print Order
+                </Button>
+              )}
+
               {isVerifiable && onVerifyOrder && (
                 <Button
                   size="sm"
@@ -307,7 +331,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   size="sm"
                   disabled={isCancelling}
                   onClick={() => setShowCancelConfirm(true)}
-                  className="text-xs text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30"
+                  className="text-xs text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-950/30 h-8"
                 >
                   Cancel Order
                 </Button>
@@ -318,7 +342,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
               variant="outline"
               size="sm"
               onClick={onClose}
-              className="text-xs border-[#ECECEC] dark:border-[#232323]"
+              className="text-xs border-[#ECECEC] dark:border-[#232323] h-8"
             >
               Close
             </Button>

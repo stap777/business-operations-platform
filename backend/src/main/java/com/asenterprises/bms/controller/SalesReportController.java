@@ -31,4 +31,13 @@ public class SalesReportController {
             @RequestParam(required = false, defaultValue = "DAILY") String granularity) {
         return ResponseEntity.ok(salesReportService.getSalesReport(startDate, endDate, granularity));
     }
+
+    @GetMapping("/unified")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<com.asenterprises.bms.dto.UnifiedReportResponse> getUnifiedReport(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "DAILY") String granularity) {
+        return ResponseEntity.ok(salesReportService.getUnifiedReport(startDate, endDate, granularity));
+    }
 }

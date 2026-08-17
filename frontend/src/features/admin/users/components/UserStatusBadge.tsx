@@ -18,7 +18,7 @@ export const UserRoleBadge: React.FC<{ role: UserRole }> = ({ role }) => {
   if (role === 'MANAGER') {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
-        Manager
+        Sales Representative
       </span>
     );
   }
