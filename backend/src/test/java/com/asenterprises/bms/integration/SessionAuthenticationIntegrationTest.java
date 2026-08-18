@@ -46,6 +46,9 @@ public class SessionAuthenticationIntegrationTest {
     private UserSessionRepository userSessionRepository;
 
     @Autowired
+    private com.asenterprises.bms.repository.AuditLogRepository auditLogRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -55,6 +58,7 @@ public class SessionAuthenticationIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        auditLogRepository.deleteAll();
         userSessionRepository.deleteAll();
         userRepository.deleteAll();
 

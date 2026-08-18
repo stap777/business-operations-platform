@@ -28,6 +28,7 @@ public class AdminUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public UserResponse createManager(CreateUserRequest request) {
@@ -62,6 +63,7 @@ public class AdminUserService {
                 .build();
 
         User savedUser = userRepository.save(user);
+        auditLogService.recordAuditLog("USER", savedUser.getId(), "USER_CREATED", resolveActor(savedUser), "Created user " + savedUser.getUsername() + " with role " + role);
         log.info("Created user {} with role {}", savedUser.getUsername(), role);
         return mapToResponse(savedUser);
     }
@@ -91,6 +93,7 @@ public class AdminUserService {
 
         user.setStatus(UserStatus.ACTIVE);
         User updatedUser = userRepository.save(user);
+        auditLogService.recordAuditLog("USER", updatedUser.getId(), "USER_ACTIVATED", resolveActor(updatedUser), "Activated user " + updatedUser.getUsername());
         log.info("Activated user {}", updatedUser.getUsername());
         return mapToResponse(updatedUser);
     }
@@ -109,6 +112,7 @@ public class AdminUserService {
 
         user.setStatus(UserStatus.INACTIVE);
         User updatedUser = userRepository.save(user);
+        auditLogService.recordAuditLog("USER", updatedUser.getId(), "USER_DEACTIVATED", resolveActor(updatedUser), "Deactivated user " + updatedUser.getUsername());
         log.info("Deactivated user {}", updatedUser.getUsername());
         return mapToResponse(updatedUser);
     }
@@ -122,8 +126,22 @@ public class AdminUserService {
         user.setFirstLogin(true);
 
         User updatedUser = userRepository.save(user);
+        auditLogService.recordAuditLog("USER", updatedUser.getId(), "PASSWORD_CHANGED", resolveActor(updatedUser), "Reset password for user " + updatedUser.getUsername());
         log.info("Reset password for user {}", updatedUser.getUsername());
         return mapToResponse(updatedUser);
+    }
+
+    private User resolveActor(User defaultUser) {
+        try {
+            var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
+                String username = auth.getName();
+                return userRepository.findByUsername(username).orElse(defaultUser);
+            }
+        } catch (Exception e) {
+            log.debug("Could not resolve current authenticated actor", e);
+        }
+        return defaultUser;
     }
 
     @Transactional(readOnly = true)

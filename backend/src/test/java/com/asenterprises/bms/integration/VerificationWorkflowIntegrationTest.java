@@ -101,8 +101,12 @@ public class VerificationWorkflowIntegrationTest {
     @Autowired
     private com.asenterprises.bms.repository.PasswordResetTokenRepository passwordResetTokenRepository;
 
+    @Autowired
+    private com.asenterprises.bms.repository.AuditLogRepository auditLogRepository;
+
     @BeforeEach
     void setUp() {
+        auditLogRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
         userSessionRepository.deleteAll();
         invoiceRepository.deleteAll();

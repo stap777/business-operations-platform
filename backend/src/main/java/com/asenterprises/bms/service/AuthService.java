@@ -53,6 +53,7 @@ public class AuthService {
     private final CustomUserDetailsService customUserDetailsService;
     private final LoginAttemptService loginAttemptService;
     private final EmailService emailService;
+    private final AuditLogService auditLogService;
 
     @Value("${app.frontend-url:https://aven-frontend.onrender.com}")
     private String frontendUrl;
@@ -77,6 +78,8 @@ public class AuthService {
                 });
 
         if (user.getStatus() != UserStatus.ACTIVE) {
+            loginAttemptService.loginFailed(normalizedUsername);
+            auditLogService.recordAuditLog("USER", user.getId(), "LOGIN_FAILURE", user, "Failed login attempt: account inactive");
             log.warn("Authentication failed: account inactive for user: {}", normalizedUsername);
             throw new DisabledException("User account is inactive");
         }
@@ -85,11 +88,13 @@ public class AuthService {
 
         if (!passwordMatch) {
             loginAttemptService.loginFailed(normalizedUsername);
+            auditLogService.recordAuditLog("USER", user.getId(), "LOGIN_FAILURE", user, "Failed login attempt: invalid password");
             log.warn("Authentication failed for username: {}", normalizedUsername);
             throw new BadCredentialsException("Invalid username or password");
         }
 
         loginAttemptService.loginSucceeded(normalizedUsername);
+        auditLogService.recordAuditLog("USER", user.getId(), "LOGIN_SUCCESS", user, "User authenticated successfully");
 
         String rawToken = sessionService.createSession(user, httpRequest);
 
@@ -357,6 +362,7 @@ public class AuthService {
         passwordResetTokenRepository.save(resetToken);
 
         passwordResetTokenRepository.invalidateAllActiveTokensForUser(user, LocalDateTime.now());
+        auditLogService.recordAuditLog("USER", user.getId(), "PASSWORD_CHANGED", user, "Password reset via token");
         log.info("Password reset successfully completed for user [redacted]");
     }
 

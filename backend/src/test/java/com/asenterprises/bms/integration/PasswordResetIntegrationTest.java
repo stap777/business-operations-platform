@@ -40,6 +40,9 @@ public class PasswordResetIntegrationTest {
     private PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Autowired
+    private com.asenterprises.bms.repository.AuditLogRepository auditLogRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -54,6 +57,7 @@ public class PasswordResetIntegrationTest {
     void setUp() {
         org.mockito.Mockito.when(mailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage((jakarta.mail.Session) null));
 
+        auditLogRepository.deleteAll();
         passwordResetTokenRepository.deleteAll();
         userRepository.deleteAll();
 

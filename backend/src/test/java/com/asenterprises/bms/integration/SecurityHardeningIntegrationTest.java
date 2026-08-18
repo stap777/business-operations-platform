@@ -56,8 +56,12 @@ public class SecurityHardeningIntegrationTest {
     @Autowired
     private com.asenterprises.bms.repository.AuditLogRepository auditLogRepository;
 
+    @Autowired
+    private com.asenterprises.bms.repository.UserSessionRepository userSessionRepository;
+
     private void clearAllData() {
         auditLogRepository.deleteAll();
+        userSessionRepository.deleteAll();
         paymentAllocationRepository.deleteAll();
         paymentRepository.deleteAll();
         invoiceRepository.deleteAll();

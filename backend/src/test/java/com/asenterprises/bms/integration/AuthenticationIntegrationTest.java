@@ -35,6 +35,9 @@ public class AuthenticationIntegrationTest {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private com.asenterprises.bms.repository.AuditLogRepository auditLogRepository;
+
     private User adminUser;
     private User managerUser;
     private User deliveryUser;
@@ -42,6 +45,7 @@ public class AuthenticationIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        auditLogRepository.deleteAll();
         userRepository.deleteAll();
 
         adminUser = userRepository.save(User.builder()

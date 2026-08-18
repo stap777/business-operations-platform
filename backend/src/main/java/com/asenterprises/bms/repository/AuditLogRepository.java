@@ -16,6 +16,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     Page<AuditLog> findByEntityTypeAndEntityId(String entityType, Long entityId, Pageable pageable);
 
+    java.util.List<AuditLog> findByEntityTypeAndAction(String entityType, String action);
+
     @Query(value = "SELECT a FROM AuditLog a LEFT JOIN FETCH a.performedBy " +
            "WHERE (:entityType IS NULL OR a.entityType = :entityType) " +
            "AND (:action IS NULL OR a.action = :action) " +
