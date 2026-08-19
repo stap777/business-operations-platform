@@ -5,10 +5,12 @@ import { ProductFilters } from './components/ProductFilters';
 import { ProductTable } from './components/ProductTable';
 import { ProductForm } from './components/ProductForm';
 import { ProductDetails } from './components/ProductDetails';
+import { StockUpdateModal } from './components/StockUpdateModal';
 import { CategoryTable } from './components/CategoryTable';
 import { CategoryForm } from './components/CategoryForm';
 import { Button } from '../../components/ui/button';
 import { Plus, Package, FolderTree, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import type { ProductResponse } from './product.types';
 
 export const ProductsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
@@ -28,6 +30,7 @@ export const ProductsPage: React.FC = () => {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [stockProduct, setStockProduct] = useState<ProductResponse | null>(null);
 
   // Queries
   const productsQuery = useProducts({
@@ -151,6 +154,7 @@ export const ProductsPage: React.FC = () => {
             onViewProduct={handleViewProduct}
             onAddProductClick={() => setIsAddProductOpen(true)}
             onDeactivateProduct={(id) => deactivateProductMutation.mutate(id)}
+            onUpdateStock={(product) => setStockProduct(product)}
           />
 
           {/* Pagination Controls */}
@@ -265,6 +269,11 @@ export const ProductsPage: React.FC = () => {
         productId={selectedProductId}
         open={isDetailsOpen}
         onOpenChange={setIsDetailsOpen}
+      />
+      <StockUpdateModal
+        product={stockProduct}
+        isOpen={!!stockProduct}
+        onClose={() => setStockProduct(null)}
       />
     </>
   );

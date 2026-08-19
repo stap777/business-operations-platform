@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ProductResponse } from '../product.types';
 import { ProductStatusBadge } from './ProductStatusBadge';
-import { Eye, Plus, PackageX, RefreshCw } from 'lucide-react';
+import { Eye, Plus, PackageX, RefreshCw, Boxes } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
 interface ProductTableProps {
@@ -13,6 +13,7 @@ interface ProductTableProps {
   onViewProduct: (id: number) => void;
   onAddProductClick: () => void;
   onDeactivateProduct?: (id: number) => void;
+  onUpdateStock?: (product: ProductResponse) => void;
 }
 
 export const ProductTable: React.FC<ProductTableProps> = ({
@@ -24,6 +25,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
   onViewProduct,
   onAddProductClick,
   onDeactivateProduct,
+  onUpdateStock,
 }) => {
   if (isLoading) {
     return (
@@ -140,6 +142,15 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                   </td>
                   <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      {onUpdateStock && (
+                        <button
+                          onClick={() => onUpdateStock(product)}
+                          className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors"
+                          title="Quick Adjust Stock"
+                        >
+                          <Boxes className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => onViewProduct(product.id)}
                         className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A] transition-colors"

@@ -50,3 +50,19 @@ export interface DeliveryQueryParams {
   page?: number;
   size?: number;
 }
+
+export interface DeliveryPersonResponse {
+  id: number;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  role: string;
+  status: string;
+}
+
+export interface UserPageResponse {
+  content: DeliveryPersonResponse[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+}

@@ -4,6 +4,7 @@ import {
   usePaymentReport,
   useInventoryReport,
   useOperatingExpenses,
+  useExportReport,
 } from './hooks/useReports';
 import { useBusinessSettings } from '../settings/hooks/useBusinessSettings';
 import { ReportFilterBar } from './components/ReportFilterBar';
@@ -20,7 +21,10 @@ import {
   AlertTriangle,
   Loader2,
   DollarSign,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const ReportsPage: React.FC = () => {
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
@@ -32,7 +36,27 @@ export const ReportsPage: React.FC = () => {
   const paymentQuery = usePaymentReport({ startDate, endDate });
   const inventoryQuery = useInventoryReport();
   const expensesQuery = useOperatingExpenses({ startDate, endDate });
+  const exportMutation = useExportReport();
   const { data: businessSettings } = useBusinessSettings();
+
+  const handleExport = (reportType: string, format: 'csv' | 'pdf') => {
+    exportMutation.mutate(
+      {
+        reportType,
+        format,
+        params: { startDate, endDate },
+      },
+      {
+        onSuccess: () => {
+          toast.success(`${reportType.toUpperCase()} report exported as ${format.toUpperCase()}`);
+        },
+        onError: (err: any) => {
+          const msg = err?.response?.data?.message || `Failed to export ${reportType} report.`;
+          toast.error(msg);
+        },
+      }
+    );
+  };
 
   const handleDateChange = (start?: string, end?: string) => {
     setStartDate(start);
@@ -84,13 +108,33 @@ export const ReportsPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] text-xs font-semibold hover:opacity-90 transition-opacity self-start sm:self-auto shadow-2xs cursor-pointer"
-        >
-          <Printer className="w-3.5 h-3.5" />
-          Print Report
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => handleExport('sales', 'csv')}
+            disabled={exportMutation.isPending}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-opacity shadow-2xs disabled:opacity-50 cursor-pointer"
+          >
+            {exportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
+            Export CSV
+          </button>
+
+          <button
+            onClick={() => handleExport('sales', 'pdf')}
+            disabled={exportMutation.isPending}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-opacity shadow-2xs disabled:opacity-50 cursor-pointer"
+          >
+            {exportMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            Export PDF
+          </button>
+
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] text-xs font-semibold hover:opacity-90 transition-opacity shadow-2xs cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5" />
+            Print Report
+          </button>
+        </div>
       </div>
 
       {/* Date & Period Filter Bar */}

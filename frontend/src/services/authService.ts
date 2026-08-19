@@ -50,7 +50,7 @@ export const authService = {
 
   // First-Time System Setup: Create Initial Admin
   setupFirstAdmin: async (request: SetupAdminRequest): Promise<User> => {
-    const response = await apiClient.post<User>('/auth/setup-admin', request);
+    const response = await apiClient.post<User>('/auth/setup', request);
     return response.data;
   },
 

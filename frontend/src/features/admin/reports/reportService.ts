@@ -30,7 +30,7 @@ export const reportService = {
   },
 
   /**
-   * Fetch operating expenses: GET /api/v1/operating-expenses
+   * Fetch operating expenses: GET /operating-expenses
    */
   getOperatingExpenses: async (params: ReportFilterParams = {}): Promise<PageResponse<OperatingExpenseResponse>> => {
     const queryParams: Record<string, any> = {
@@ -40,40 +40,40 @@ export const reportService = {
     if (params.startDate) queryParams.startDate = params.startDate;
     if (params.endDate) queryParams.endDate = params.endDate;
 
-    const response = await apiClient.get<PageResponse<OperatingExpenseResponse>>('/api/v1/operating-expenses', {
+    const response = await apiClient.get<PageResponse<OperatingExpenseResponse>>('/operating-expenses', {
       params: queryParams,
     });
     return response.data;
   },
 
   /**
-   * Create operating expense: POST /api/v1/operating-expenses
+   * Create operating expense: POST /operating-expenses
    */
   createOperatingExpense: async (data: OperatingExpenseRequest): Promise<OperatingExpenseResponse> => {
-    const response = await apiClient.post<OperatingExpenseResponse>('/api/v1/operating-expenses', data);
+    const response = await apiClient.post<OperatingExpenseResponse>('/operating-expenses', data);
     return response.data;
   },
 
   /**
-   * Update operating expense: PUT /api/v1/operating-expenses/{id}
+   * Update operating expense: PUT /operating-expenses/{id}
    */
   updateOperatingExpense: async (id: number, data: OperatingExpenseRequest): Promise<OperatingExpenseResponse> => {
-    const response = await apiClient.put<OperatingExpenseResponse>(`/api/v1/operating-expenses/${id}`, data);
+    const response = await apiClient.put<OperatingExpenseResponse>(`/operating-expenses/${id}`, data);
     return response.data;
   },
 
   /**
-   * Delete operating expense: DELETE /api/v1/operating-expenses/{id}
+   * Delete operating expense: DELETE /operating-expenses/{id}
    */
   deleteOperatingExpense: async (id: number): Promise<void> => {
-    await apiClient.delete(`/api/v1/operating-expenses/${id}`);
+    await apiClient.delete(`/operating-expenses/${id}`);
   },
 
   /**
-   * Fetch operating expense categories: GET /api/v1/operating-expenses/categories
+   * Fetch operating expense categories: GET /operating-expenses/categories
    */
   getOperatingExpenseCategories: async (): Promise<string[]> => {
-    const response = await apiClient.get<string[]>('/api/v1/operating-expenses/categories');
+    const response = await apiClient.get<string[]>('/operating-expenses/categories');
     return response.data;
   },
 
@@ -148,5 +148,43 @@ export const reportService = {
       params: queryParams,
     });
     return response.data;
+  },
+
+  /**
+   * Export report file: GET /exports/{reportType}
+   * Supports format 'csv' | 'pdf' and triggers browser download
+   */
+  exportReport: async (
+    reportType: string,
+    format: 'csv' | 'pdf' = 'csv',
+    params: { startDate?: string; endDate?: string; customerId?: number } = {}
+  ): Promise<void> => {
+    const queryParams: Record<string, any> = { format };
+    if (params.startDate) queryParams.startDate = params.startDate;
+    if (params.endDate) queryParams.endDate = params.endDate;
+    if (params.customerId) queryParams.customerId = params.customerId;
+
+    const response = await apiClient.get(`/exports/${reportType}`, {
+      params: queryParams,
+      responseType: 'blob',
+    });
+
+    const disposition = response.headers['content-disposition'];
+    let filename = `${reportType}-report.${format}`;
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^";]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      }
+    }
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   },
 };

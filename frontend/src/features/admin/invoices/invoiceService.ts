@@ -62,4 +62,19 @@ export const invoiceService = {
 
     return allInvoices;
   },
+
+  /**
+   * Fetch backend batch print payload for all invoices in a date range: GET /print/invoices/batch
+   */
+  getBatchPrintQueue: async (startDate?: string, endDate?: string, invoiceIds?: number[]) => {
+    const queryParams: Record<string, any> = {};
+    if (startDate) queryParams.startDate = startDate;
+    if (endDate) queryParams.endDate = endDate;
+    if (invoiceIds && invoiceIds.length > 0) queryParams.invoiceIds = invoiceIds.join(',');
+
+    const response = await apiClient.get('/print/invoices/batch', {
+      params: queryParams,
+    });
+    return response.data;
+  },
 };

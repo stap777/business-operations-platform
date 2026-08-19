@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus } from './order.types';
-import { useOrders, useCancelOrder, useVerifyOrder } from './hooks/useOrders';
+import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders } from './hooks/useOrders';
 import { useAuth } from '../../context/AuthContext';
 import { useBusinessSettings } from '../admin/settings/hooks/useBusinessSettings';
 import { OrderFilters } from './components/OrderFilters';
@@ -9,13 +9,14 @@ import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { PrintableOrder } from './components/PrintableOrder';
 import { Button } from '../../components/ui/button';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw, ClipboardList } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, RefreshCw, ClipboardList, CheckCircle2 } from 'lucide-react';
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: businessSettings } = useBusinessSettings();
 
+  const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_VERIFICATION'>('ALL');
   const [searchOrderNumber, setSearchOrderNumber] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | undefined>(undefined);
   const [startDate, setStartDate] = useState<string | undefined>(undefined);
@@ -41,6 +42,11 @@ export const OrdersPage: React.FC = () => {
     page,
     size: 20,
   });
+
+  const {
+    data: pendingData,
+    isLoading: isPendingLoading,
+  } = usePendingVerificationOrders(page, 20);
 
   const cancelOrderMutation = useCancelOrder();
   const verifyOrderMutation = useVerifyOrder();
@@ -146,20 +152,56 @@ export const OrdersPage: React.FC = () => {
 
       {/* Main View Container */}
       <div className="space-y-4 print:hidden">
-        {/* Toolbar Filters */}
-        <OrderFilters
-          onSearchChange={handleSearchChange}
-          onStatusChange={handleStatusChange}
-          onDateRangeChange={handleDateRangeChange}
-          onClearFilters={handleClearFilters}
-          initialOrderNumber={searchOrderNumber}
-          initialStatus={selectedStatus}
-          initialStartDate={startDate}
-          initialEndDate={endDate}
-        />
+        {/* Admin Workflow Navigation Tabs */}
+        {user?.role === 'ADMIN' && (
+          <div className="flex items-center gap-2 border-b border-[#ECECEC] dark:border-[#232323] pb-2 text-xs">
+            <button
+              onClick={() => { setActiveTab('ALL'); setPage(0); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'ALL'
+                  ? 'bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111]'
+                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A]'
+              }`}
+            >
+              <ClipboardList className="w-3.5 h-3.5" />
+              All Orders
+            </button>
+
+            <button
+              onClick={() => { setActiveTab('PENDING_VERIFICATION'); setPage(0); }}
+              className={`px-3 py-1.5 rounded-lg font-semibold transition-colors flex items-center gap-2 cursor-pointer ${
+                activeTab === 'PENDING_VERIFICATION'
+                  ? 'bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111]'
+                  : 'text-[#71717A] dark:text-[#A1A1AA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A]'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              Pending Verification Queue
+              {pendingData && pendingData.totalElements > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] font-bold font-mono rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-[#111111]">
+                  {pendingData.totalElements}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Toolbar Filters (shown on ALL tab) */}
+        {activeTab === 'ALL' && (
+          <OrderFilters
+            onSearchChange={handleSearchChange}
+            onStatusChange={handleStatusChange}
+            onDateRangeChange={handleDateRangeChange}
+            onClearFilters={handleClearFilters}
+            initialOrderNumber={searchOrderNumber}
+            initialStatus={selectedStatus}
+            initialStartDate={startDate}
+            initialEndDate={endDate}
+          />
+        )}
 
         {/* Error State */}
-        {isError && (
+        {isError && activeTab === 'ALL' && (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-xs text-red-600 dark:text-red-400 flex items-center justify-between">
             <span>Unable to load orders from server. Please check your connection or retry.</span>
             <Button
@@ -176,8 +218,8 @@ export const OrdersPage: React.FC = () => {
 
         {/* Data Table */}
         <OrderTable
-          orders={orders}
-          isLoading={isLoading}
+          orders={activeTab === 'PENDING_VERIFICATION' ? (pendingData?.content || []) : orders}
+          isLoading={activeTab === 'PENDING_VERIFICATION' ? isPendingLoading : isLoading}
           onViewOrder={handleViewOrder}
           onPrintOrder={handlePrintOrder}
           onCancelOrder={handleCancelOrder}

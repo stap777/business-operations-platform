@@ -1,6 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { deliveryService, type DeliveryPersonResponse } from '../../../../services/deliveryService';
+import { deliveryService } from '../../../delivery/deliveryService';
+import type { DeliveryPersonResponse } from '../../../delivery/delivery.types';
 
 interface DeliveryAndNotesProps {
   selectedDeliveryPersonId: number | null;

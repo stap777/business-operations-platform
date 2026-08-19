@@ -3,10 +3,27 @@ import type {
   DeliveryOrderResponse,
   DeliveryPageResponse,
   DeliveryPaymentRequest,
+  DeliveryPersonResponse,
   DeliveryQueryParams,
+  UserPageResponse,
 } from './delivery.types';
 
 export const deliveryService = {
+  /**
+   * Fetch active delivery agents for order assignment dropdown
+   */
+  getDeliveryPeople: async (): Promise<DeliveryPersonResponse[]> => {
+    const response = await apiClient.get<UserPageResponse>('/admin/users/search', {
+      params: {
+        role: 'DELIVERY',
+        status: 'ACTIVE',
+        page: 0,
+        size: 100,
+      },
+    });
+    return response.data.content || [];
+  },
+
   /**
    * Fetch orders assigned to the logged-in delivery person (backend principal scoped)
    */

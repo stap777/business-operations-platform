@@ -38,10 +38,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearAuthStorage = () => {
     localStorage.removeItem('aven_session_token');
-    localStorage.removeItem('bms_jwt_token');
-    localStorage.removeItem('bms_user_info');
-    sessionStorage.removeItem('bms_jwt_token');
-    sessionStorage.removeItem('bms_user_info');
   };
 
   const login = (authData: AuthResponse) => {

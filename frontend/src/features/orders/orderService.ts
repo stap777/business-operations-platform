@@ -54,4 +54,14 @@ export const orderService = {
     const response = await apiClient.post<InvoiceResponse>(`/admin/orders/${orderId}/verify`);
     return response.data;
   },
+
+  /**
+   * Fetch delivered orders awaiting admin verification: GET /admin/orders/pending-verification
+   */
+  getPendingVerificationOrders: async (page = 0, size = 50) => {
+    const response = await apiClient.get<OrderPageResponse>('/admin/orders/pending-verification', {
+      params: { page, size },
+    });
+    return response.data;
+  },
 };

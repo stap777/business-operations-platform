@@ -47,6 +47,13 @@ export const productService = {
     return response.data;
   },
 
+  updateStock: async (id: number, availableStock: number): Promise<ProductResponse> => {
+    const response = await apiClient.patch<ProductResponse>(`/products/${id}/update-stock`, {
+      availableStock,
+    });
+    return response.data;
+  },
+
   getProductDropdown: async (): Promise<ProductDropdownResponse[]> => {
     const response = await apiClient.get<ProductDropdownResponse[]>('/products/dropdown');
     return response.data;

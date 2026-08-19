@@ -58,6 +58,14 @@ export const useCancelOrder = () => {
   });
 };
 
+export const usePendingVerificationOrders = (page = 0, size = 50) => {
+  return useQuery({
+    queryKey: ['admin', 'orders', 'pending-verification', page, size],
+    queryFn: () => orderService.getPendingVerificationOrders(page, size),
+    staleTime: 10_000,
+  });
+};
+
 export const useVerifyOrder = () => {
   const queryClient = useQueryClient();
 
@@ -66,6 +74,7 @@ export const useVerifyOrder = () => {
     onSuccess: (invoice) => {
       toast.success(`Order #${invoice.orderNumber} verified! Invoice #${invoice.invoiceNumber} generated.`);
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders', 'pending-verification'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['coupons'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });

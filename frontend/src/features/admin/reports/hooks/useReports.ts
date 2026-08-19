@@ -100,3 +100,17 @@ export const useAuditLogsReport = (params: ReportFilterParams = {}, enabled: boo
     staleTime: 2 * 60 * 1000,
   });
 };
+
+export const useExportReport = () => {
+  return useMutation({
+    mutationFn: ({
+      reportType,
+      format = 'csv',
+      params = {},
+    }: {
+      reportType: string;
+      format?: 'csv' | 'pdf';
+      params?: { startDate?: string; endDate?: string; customerId?: number };
+    }) => reportService.exportReport(reportType, format, params),
+  });
+};

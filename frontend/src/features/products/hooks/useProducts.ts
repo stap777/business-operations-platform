@@ -62,3 +62,25 @@ export const useDeactivateProduct = () => {
     },
   });
 };
+
+export const useUpdateStock = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, availableStock }: { id: number; availableStock: number }) =>
+      productService.updateStock(id, availableStock),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      toast.success(`Stock level for "${updated.name}" updated to ${updated.availableStock}.`);
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to update stock level.';
+      toast.error(message);
+    },
+  });
+};

@@ -44,3 +44,12 @@ export const usePaymentHistory = (customerId?: number, enabled: boolean = true) 
     staleTime: 60 * 1000,
   });
 };
+
+export const usePaymentSuggestion = (customerId?: number, amount?: number, enabled: boolean = false) => {
+  return useQuery({
+    queryKey: ['payments', 'suggest', customerId, amount],
+    queryFn: () => paymentService.suggestAllocations(customerId!, amount!),
+    enabled: !!customerId && amount !== undefined && amount > 0 && enabled,
+    staleTime: 5 * 1000,
+  });
+};

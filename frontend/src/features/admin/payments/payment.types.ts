@@ -66,3 +66,19 @@ export interface CreditOrderSummary {
   orderStatus: OrderStatus;
   createdAt: string;
 }
+
+export interface SuggestedAllocationItem {
+  orderId: number;
+  orderNumber: string;
+  allocatedAmount: number;
+  outstandingBalanceBefore: number;
+  outstandingBalanceAfter: number;
+}
+
+export interface PaymentSuggestionResponse {
+  customerId: number;
+  customerName: string;
+  paymentAmount: number;
+  remainingUnallocatedAmount: number;
+  suggestedAllocations: SuggestedAllocationItem[];
+}

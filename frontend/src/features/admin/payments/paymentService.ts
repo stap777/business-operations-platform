@@ -54,4 +54,14 @@ export const paymentService = {
     });
     return response.data;
   },
+
+  /**
+   * Suggest FIFO allocations across customer's outstanding orders: GET /payments/suggest
+   */
+  suggestAllocations: async (customerId: number, amount: number) => {
+    const response = await apiClient.get('/payments/suggest', {
+      params: { customerId, amount },
+    });
+    return response.data;
+  },
 };
