@@ -30,4 +30,4 @@ USER appuser
 EXPOSE 10000
 
 # Execute Spring Boot application with non-blocking entropy source
-ENTRYPOINT ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
