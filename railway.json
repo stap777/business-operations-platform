@@ -5,8 +5,8 @@
     "buildCommand": "cd backend && chmod +x mvnw && ./mvnw clean package -DskipTests"
   },
   "deploy": {
-    "startCommand": "java -jar backend/target/as-enterprises-bms-0.0.1-SNAPSHOT.jar",
-    "healthcheckPath": "/api/v1/actuator/health",
+    "startCommand": "java -jar app.jar",
+    "healthcheckPath": "/api/v1/actuator/healt",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
