@@ -55,8 +55,11 @@ public class AuthService {
     private final EmailService emailService;
     private final AuditLogService auditLogService;
 
-    @Value("${app.frontend-url:https://aven-frontend.onrender.com}")
+    @Value("${app.frontend-url:https://app.asenterprises.in}")
     private String frontendUrl;
+
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
 
     public LoginResponse login(LoginRequest request) {
         return login(request, null, null);
@@ -101,7 +104,7 @@ public class AuthService {
         if (httpResponse != null) {
             ResponseCookie cookie = ResponseCookie.from(sessionService.getCookieName(), rawToken)
                     .httpOnly(true)
-                    .secure(true)
+                    .secure(cookieSecure)
                     .sameSite("None")
                     .path("/")
                     .maxAge(sessionService.getSessionExpirationMillis() / 1000)
@@ -189,7 +192,7 @@ public class AuthService {
         if (response == null) return;
         ResponseCookie cookie = ResponseCookie.from(sessionService.getCookieName(), "")
                 .httpOnly(true)
-                .secure(true)
+                .secure(cookieSecure)
                 .sameSite("None")
                 .path("/")
                 .maxAge(0)

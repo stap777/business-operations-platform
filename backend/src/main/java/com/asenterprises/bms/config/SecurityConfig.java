@@ -44,7 +44,7 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint authEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://aven-frontend.onrender.com}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
     private String allowedOriginsProperty;
 
     @Bean
@@ -101,6 +101,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/health", "/api/v1/health",
+                                "/actuator/health", "/api/v1/actuator/health",
                                 "/auth/login", "/api/v1/auth/login",
                                 "/auth/logout", "/api/v1/auth/logout",
                                 "/auth/logout-all", "/api/v1/auth/logout-all",
