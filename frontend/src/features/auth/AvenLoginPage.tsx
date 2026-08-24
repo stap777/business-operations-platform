@@ -220,7 +220,10 @@ export const AvenLoginPage: React.FC = () => {
             type="button"
             variant="outline"
             size="lg"
-            onClick={() => navigate('/workspace-setup')}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/workspace-setup');
+            }}
             className="w-full font-medium text-sm"
           >
             Create Workspace

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
-import { apiClient } from '../../api/apiClient';
+import { authService, type SetupAdminRequest } from '../../services/authService';
 import { AvenAuthLayout } from '../auth/AvenAuthLayout';
 import { AvenLogo } from '../../components/aven/AvenLogo';
 import { Input } from '../../components/ui/input';
@@ -131,26 +131,31 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
     });
 
   // Step 1 Submit -> Advance to Step 2
-  const onStep1Submit = (_data: Step1FormData) => {
+  const onStep1Submit = (_data: Step1FormData, e?: React.BaseSyntheticEvent) => {
+    if (e) e.preventDefault();
     setCurrentStep(2);
   };
 
   // Step 2 Submit -> Advance to Step 3
-  const onStep2Submit = (_data: Step2FormData) => {
+  const onStep2Submit = (_data: Step2FormData, e?: React.BaseSyntheticEvent) => {
+    if (e) e.preventDefault();
     setCurrentStep(3);
   };
 
   // Step 3 Submit -> Advance to Step 4 (Review)
-  const onStep3Submit = (_data: Step3FormData) => {
+  const onStep3Submit = (_data: Step3FormData, e?: React.BaseSyntheticEvent) => {
+    if (e) e.preventDefault();
     setCurrentStep(4);
   };
 
-  const handleSkipTeamSetup = () => {
+  const handleSkipTeamSetup = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     setCurrentStep(4);
   };
 
   // Final Setup Completion (Step 4 -> Step 5)
-  const handleCompleteSetup = async () => {
+  const handleCompleteSetup = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setIsSubmitting(true);
 
     try {
@@ -158,7 +163,7 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
       const step2Data = getValuesStep2();
       const step3Data = getValuesStep3();
 
-      const setupPayload = {
+      const setupPayload: SetupAdminRequest = {
         adminFullName: step1Data.adminFullName,
         adminUsername: step1Data.adminUsername,
         adminEmail: step1Data.adminEmail,
@@ -176,7 +181,7 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
         teamMembers: step3Data.teamMembers || [],
       };
 
-      await apiClient.post('/auth/setup', setupPayload);
+      await authService.setupFirstAdmin(setupPayload);
 
       toast.success('Workspace Created Successfully!', {
         description: 'Your Aven workspace and administrator account have been initialized.',
@@ -656,97 +661,102 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-3 text-xs">
-              {/* Workspace Details Card */}
-              <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-2">
-                <div className="flex items-center gap-2 font-semibold text-[#111111] dark:text-[#FAFAFA] border-b border-[#ECECEC] dark:border-[#232323] pb-2">
-                  <Building2 className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
-                  <span>Business & Workspace</span>
+            <form onSubmit={handleCompleteSetup} className="space-y-6" noValidate autoComplete="off">
+              <div className="space-y-3 text-xs">
+                {/* Workspace Details Card */}
+                <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-[#111111] dark:text-[#FAFAFA] border-b border-[#ECECEC] dark:border-[#232323] pb-2">
+                    <Building2 className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
+                    <span>Business & Workspace</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[#71717A] dark:text-[#A1A1AA] pt-1">
+                    <span>Workspace Name:</span>
+                    <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step2Values.businessName || '—'}</span>
+                    <span>Workspace URL:</span>
+                    <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">
+                      {step2Values.businessName
+                        ? `${step2Values.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.aven.app`
+                        : 'workspace.aven.app'}
+                    </span>
+                    <span>Industry:</span>
+                    <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step2Values.industry || '—'}</span>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-[#71717A] dark:text-[#A1A1AA] pt-1">
-                  <span>Workspace Name:</span>
-                  <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step2Values.businessName || '—'}</span>
-                  <span>Workspace URL:</span>
-                  <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">
-                    {step2Values.businessName
-                      ? `${step2Values.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.aven.app`
-                      : 'workspace.aven.app'}
-                  </span>
-                  <span>Industry:</span>
-                  <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step2Values.industry || '—'}</span>
+
+                {/* Administrator Details Card */}
+                <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-[#111111] dark:text-[#FAFAFA] border-b border-[#ECECEC] dark:border-[#232323] pb-2">
+                    <UserCheck className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
+                    <span>Administrator Account</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[#71717A] dark:text-[#A1A1AA] pt-1">
+                    <span>Primary Admin:</span>
+                    <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step1Values.adminFullName || '—'}</span>
+                    <span>Username:</span>
+                    <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step1Values.adminUsername || '—'}</span>
+                    <span>Email:</span>
+                    <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step1Values.adminEmail || '—'}</span>
+                  </div>
+                </div>
+
+                {/* Initial Team Card */}
+                <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-[#111111] dark:text-[#FAFAFA] border-b border-[#ECECEC] dark:border-[#232323] pb-2">
+                    <Users className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
+                    <span>Initial Team Members</span>
+                  </div>
+                  <div className="text-[#71717A] dark:text-[#A1A1AA] pt-1 space-y-1">
+                    {step3Values.teamMembers.length > 0 ? (
+                      step3Values.teamMembers.map((m, idx) => (
+                        <div key={idx} className="flex justify-between">
+                          <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{m.fullName || m.username}</span>
+                          <span className="uppercase text-[10px] bg-neutral-100 dark:bg-neutral-800 text-[#111111] dark:text-[#FAFAFA] px-1.5 py-0.5 rounded">
+                            {m.role}
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[11px]">No team members added yet.</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Administrator Details Card */}
-              <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-2">
-                <div className="flex items-center gap-2 font-semibold text-[#111111] dark:text-[#FAFAFA] border-b border-[#ECECEC] dark:border-[#232323] pb-2">
-                  <UserCheck className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
-                  <span>Administrator Account</span>
-                </div>
-                <div className="grid grid-cols-2 gap-1 text-[#71717A] dark:text-[#A1A1AA] pt-1">
-                  <span>Primary Admin:</span>
-                  <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step1Values.adminFullName || '—'}</span>
-                  <span>Username:</span>
-                  <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step1Values.adminUsername || '—'}</span>
-                  <span>Email:</span>
-                  <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step1Values.adminEmail || '—'}</span>
-                </div>
-              </div>
-
-              {/* Initial Team Card */}
-              <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-2">
-                <div className="flex items-center gap-2 font-semibold text-[#111111] dark:text-[#FAFAFA] border-b border-[#ECECEC] dark:border-[#232323] pb-2">
-                  <Users className="w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
-                  <span>Initial Team Members</span>
-                </div>
-                <div className="text-[#71717A] dark:text-[#A1A1AA] pt-1 space-y-1">
-                  {step3Values.teamMembers.length > 0 ? (
-                    step3Values.teamMembers.map((m, idx) => (
-                      <div key={idx} className="flex justify-between">
-                        <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{m.fullName || m.username}</span>
-                        <span className="uppercase text-[10px] bg-neutral-100 dark:bg-neutral-800 text-[#111111] dark:text-[#FAFAFA] px-1.5 py-0.5 rounded">
-                          {m.role}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-[11px]">No team members added yet.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Complete Setup Button */}
-            <div className="pt-2 space-y-3">
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleCompleteSetup}
-                disabled={isSubmitting}
-                className="w-full font-medium text-sm"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Initializing Workspace...
-                  </span>
-                ) : (
-                  'Complete Setup'
-                )}
-              </Button>
-
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
+              {/* Complete Setup Button */}
+              <div className="pt-2 space-y-3">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="lg"
                   disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] transition-colors font-medium cursor-pointer"
+                  className="w-full font-medium text-sm"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back</span>
-                </button>
+                  {isSubmitting ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Initializing Workspace...
+                    </span>
+                  ) : (
+                    'Complete Setup'
+                  )}
+                </Button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentStep(3);
+                    }}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-1.5 text-xs text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] transition-colors font-medium cursor-pointer"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            </form>
           </motion.div>
         )}
 

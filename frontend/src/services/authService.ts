@@ -7,9 +7,27 @@ export interface LoginRequest {
 }
 
 export interface SetupAdminRequest {
-  fullName: string;
-  username: string;
-  password: string;
+  adminFullName: string;
+  adminUsername: string;
+  adminEmail?: string;
+  adminPassword: string;
+  adminPhone?: string;
+
+  businessName: string;
+  industry?: string;
+  businessType?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  gstNumber?: string;
+
+  teamMembers?: Array<{
+    fullName: string;
+    username: string;
+    password: string;
+    role: 'MANAGER' | 'DELIVERY';
+    phoneNumber?: string;
+  }>;
 }
 
 export interface SystemStatusResponse {
@@ -48,10 +66,9 @@ export const authService = {
     return response.data;
   },
 
-  // First-Time System Setup: Create Initial Admin
-  setupFirstAdmin: async (request: SetupAdminRequest): Promise<User> => {
-    const response = await apiClient.post<User>('/auth/setup', request);
-    return response.data;
+  // First-Time System Setup: Create Initial Admin and Workspace
+  setupFirstAdmin: async (request: SetupAdminRequest): Promise<void> => {
+    await apiClient.post('/auth/setup', request);
   },
 
   // Password Recovery: Request Password Reset Link
