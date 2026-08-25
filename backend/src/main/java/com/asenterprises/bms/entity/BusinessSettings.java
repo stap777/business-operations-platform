@@ -57,6 +57,7 @@ public class BusinessSettings extends BaseEntity {
     private String logoUrl;
 
     @jakarta.persistence.Lob
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.VARBINARY)
     @Column(name = "logo_data")
     private byte[] logoData;
 

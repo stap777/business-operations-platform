@@ -51,4 +51,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("DELETE FROM User u WHERE u.role != :role")
     void deleteByRoleNot(@Param("role") Role role);
+
+    @Modifying
+    @Query("DELETE FROM User u WHERE u.id != :id")
+    void deleteByIdNot(@Param("id") Long id);
 }
+

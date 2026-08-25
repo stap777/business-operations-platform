@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ import { AvenAuthLayout } from './AvenAuthLayout';
 import { AvenLogo } from '../../components/aven/AvenLogo';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 
@@ -27,7 +27,19 @@ export const AvenLoginPage: React.FC = () => {
   const [apiError, setApiError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, getRoleRedirectPath } = useAuth();
+
+  const isResetSuccess = searchParams.get('workspace_reset') === 'true';
+
+  useEffect(() => {
+    if (isResetSuccess) {
+      toast.success('Workspace Reset Successful', {
+        description: 'All operational data has been safely purged. Please re-authenticate to continue.',
+        duration: 6000,
+      });
+    }
+  }, [isResetSuccess]);
 
   const {
     register,
@@ -89,6 +101,19 @@ export const AvenLoginPage: React.FC = () => {
             Sign in to continue to your workspace.
           </p>
         </div>
+
+        {/* Reset Success Banner */}
+        {isResetSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-start gap-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Workspace Reset Completed</p>
+              <p className="text-[11px] opacity-90 mt-0.5">
+                All transactions, orders, customers, and secondary accounts have been purged. Please sign in with your Admin credentials.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Global Error Banner */}
         <AnimatePresence>

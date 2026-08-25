@@ -7,9 +7,11 @@ import com.asenterprises.bms.entity.BusinessSettings;
 import com.asenterprises.bms.entity.Role;
 import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
-import com.asenterprises.bms.repository.*;
+import com.asenterprises.bms.repository.BusinessSettingsRepository;
+import com.asenterprises.bms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,23 +27,8 @@ public class BusinessSettingsService {
 
     private final BusinessSettingsRepository businessSettingsRepository;
     private final UserRepository userRepository;
-    private final UserSessionRepository userSessionRepository;
-    private final PaymentAllocationRepository paymentAllocationRepository;
-    private final PaymentRepository paymentRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final InvoiceItemRepository invoiceItemRepository;
-    private final InvoiceRepository invoiceRepository;
-    private final OrderRepository orderRepository;
-    private final StockAdjustmentRepository stockAdjustmentRepository;
-    private final ProductRepository productRepository;
-    private final CategoryRepository categoryRepository;
-    private final CustomerRepository customerRepository;
-    private final CouponRepository couponRepository;
-    private final OperatingExpenseRepository operatingExpenseRepository;
-    private final AuditLogRepository auditLogRepository;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final PasswordEncoder passwordEncoder;
-    private final AuditLogService auditLogService;
+    private final JdbcTemplate jdbcTemplate;
 
     @Transactional
     public BusinessSettingsResponse getBusinessSettings() {
@@ -141,31 +128,48 @@ public class BusinessSettingsService {
 
         log.warn("CRITICAL WORKSPACE RESET INITIATED BY ADMIN: {}", currentAdmin.getUsername());
 
-        // Capture counts before deletion for audit summary
-        long orderCount = orderRepository.count();
-        long customerCount = customerRepository.count();
-        long productCount = productRepository.count();
-        long paymentCount = paymentRepository.count();
+        // 4. Perform PostgreSQL-native TRUNCATE CASCADE
+        try {
+            jdbcTemplate.execute("""
+                TRUNCATE TABLE
+                    payment_allocations,
+                    payments,
+                    invoice_items,
+                    invoices,
+                    order_items,
+                    orders,
+                    stock_adjustments,
+                    products,
+                    categories,
+                    customers,
+                    coupons,
+                    operating_expenses,
+                    audit_logs,
+                    password_reset_tokens,
+                    user_sessions
+                RESTART IDENTITY CASCADE;
+            """);
+        } catch (Exception e) {
+            log.warn("PostgreSQL multi-table TRUNCATE CASCADE failed (likely H2 test environment), executing H2 fallback: {}", e.getMessage());
+            jdbcTemplate.execute("DELETE FROM payment_allocations");
+            jdbcTemplate.execute("DELETE FROM payments");
+            jdbcTemplate.execute("DELETE FROM invoice_items");
+            jdbcTemplate.execute("DELETE FROM invoices");
+            jdbcTemplate.execute("DELETE FROM order_items");
+            jdbcTemplate.execute("DELETE FROM orders");
+            jdbcTemplate.execute("DELETE FROM stock_adjustments");
+            jdbcTemplate.execute("DELETE FROM products");
+            jdbcTemplate.execute("DELETE FROM categories");
+            jdbcTemplate.execute("DELETE FROM customers");
+            jdbcTemplate.execute("DELETE FROM coupons");
+            jdbcTemplate.execute("DELETE FROM operating_expenses");
+            jdbcTemplate.execute("DELETE FROM audit_logs");
+            jdbcTemplate.execute("DELETE FROM password_reset_tokens");
+            jdbcTemplate.execute("DELETE FROM user_sessions");
+        }
 
-        // 4. Perform full entity data purge in exact reverse foreign-key dependency order
-        paymentAllocationRepository.deleteAllInBatch();
-        paymentRepository.deleteAllInBatch();
-        invoiceItemRepository.deleteAllInBatch();
-        invoiceRepository.deleteAllInBatch();
-        orderItemRepository.deleteAllInBatch();
-        orderRepository.deleteAllInBatch();
-        stockAdjustmentRepository.deleteAllInBatch();
-        productRepository.deleteAllInBatch();
-        categoryRepository.deleteAllInBatch();
-        customerRepository.deleteAllInBatch();
-        couponRepository.deleteAllInBatch();
-        operatingExpenseRepository.deleteAllInBatch();
-        auditLogRepository.deleteAllInBatch();
-        passwordResetTokenRepository.deleteAllInBatch();
-        userSessionRepository.deleteAllInBatch();
-
-        // 5. Safe User Cleanup: Remove non-admin users, keep authenticated Admin owner
-        userRepository.deleteByRoleNot(Role.ADMIN);
+        // 5. Remove all users except current authenticated admin (owner)
+        userRepository.deleteByIdNot(currentAdmin.getId());
 
         // DO NOT delete businessSettingsRepository (Preserves branding, logo, and printer settings)
 
@@ -173,11 +177,9 @@ public class BusinessSettingsService {
 
         return java.util.Map.of(
                 "message", "Workspace reset completed successfully.",
-                "deleted", java.util.Map.of(
-                        "orders", orderCount,
-                        "customers", customerCount,
-                        "products", productCount,
-                        "payments", paymentCount
+                "preserved", java.util.Map.of(
+                        "adminAccount", true,
+                        "businessSettings", true
                 )
         );
     }
