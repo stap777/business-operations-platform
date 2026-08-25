@@ -69,11 +69,17 @@ public class GlobalExceptionHandler {
             errors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
+        String detailedMessage = errors.isEmpty()
+                ? "Validation failed for input fields"
+                : "Validation failed: " + errors.entrySet().stream()
+                        .map(entry -> entry.getKey() + ": " + entry.getValue())
+                        .collect(java.util.stream.Collectors.joining("; "));
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Bad Request")
-                .message("Validation failed for input fields")
+                .message(detailedMessage)
                 .path(request.getServletPath())
                 .validationErrors(errors)
                 .build();

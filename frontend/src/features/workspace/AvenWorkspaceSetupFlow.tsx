@@ -32,7 +32,10 @@ import {
 const step1Schema = z
   .object({
     adminFullName: z.string().min(2, 'Full Name must be at least 2 characters'),
-    adminUsername: z.string().min(3, 'Username must be at least 3 characters'),
+    adminUsername: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain alphanumeric characters, dots, underscores, and hyphens'),
     adminEmail: z.string().email('Please enter a valid email address'),
     adminPassword: z.string().min(8, 'Password must be at least 8 characters'),
     adminConfirmPassword: z.string().min(8, 'Password must be at least 8 characters'),
@@ -54,7 +57,10 @@ const step2Schema = z.object({
 
 const teamMemberSchema = z.object({
   fullName: z.string().min(2, 'Name required'),
-  username: z.string().min(3, 'Username required'),
+  username: z
+    .string()
+    .min(3, 'Username required')
+    .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain alphanumeric characters, dots, underscores, and hyphens'),
   password: z.string().min(6, 'Password min 6 chars'),
   role: z.enum(['MANAGER', 'DELIVERY']),
 });
@@ -183,6 +189,10 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
       const step2Data = getValuesStep2();
       const step3Data = getValuesStep3();
 
+      const validTeamMembers = (step3Data.teamMembers || []).filter(
+        (m) => m.fullName?.trim() && m.username?.trim() && m.password?.trim()
+      );
+
       const setupPayload: SetupAdminRequest = {
         adminFullName: step1Data.adminFullName,
         adminUsername: step1Data.adminUsername,
@@ -198,7 +208,7 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
         address: step2Data.address,
         gstNumber: step2Data.gstNumber,
 
-        teamMembers: step3Data.teamMembers || [],
+        teamMembers: validTeamMembers,
       };
 
       await authService.setupFirstAdmin(setupPayload);
@@ -218,7 +228,11 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
           setTimeout(() => navigate('/login', { replace: true }), 1500);
           return;
         }
-        if (error.response?.data?.message) {
+        if (error.response?.data?.validationErrors && Object.keys(error.response.data.validationErrors).length > 0) {
+          errorMsg = Object.entries(error.response.data.validationErrors)
+            .map(([field, msg]) => `${field}: ${msg}`)
+            .join('; ');
+        } else if (error.response?.data?.message) {
           errorMsg = error.response.data.message;
         }
       }

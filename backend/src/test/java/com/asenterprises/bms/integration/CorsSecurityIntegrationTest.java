@@ -153,4 +153,22 @@ public class CorsSecurityIntegrationTest {
                         .content(objectMapper.writeValueAsString(setupRequest)))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    @DisplayName("CORS 5 — POST /api/v1/auth/setup returns 400 BAD REQUEST with detailed field errors on invalid input")
+    void testSetupValidationFailureReturnsFieldErrors() throws Exception {
+        WorkspaceSetupRequest invalidRequest = WorkspaceSetupRequest.builder()
+                .adminFullName("Railway Admin")
+                .adminUsername("invalid username with spaces") // Fails @Pattern regex
+                .adminPassword("short") // Fails @Size min 8
+                .businessName("Railway Enterprise")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/setup").contextPath("/api/v1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.validationErrors.adminUsername").exists())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.validationErrors.adminPassword").exists());
+    }
 }

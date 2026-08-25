@@ -68,6 +68,7 @@ export const authService = {
 
   // First-Time System Setup: Create Initial Admin and Workspace
   setupFirstAdmin: async (request: SetupAdminRequest): Promise<void> => {
+    console.log('[AUTH-SERVICE] Submitting workspace setup payload:', JSON.stringify(request, null, 2));
     await apiClient.post('/auth/setup', request);
   },
 
