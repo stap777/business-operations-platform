@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,6 +74,26 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    let isMounted = true;
+    authService
+      .checkSystemStatus()
+      .then((status) => {
+        if (isMounted && status.adminExists) {
+          toast.info('Workspace already initialized', {
+            description: 'A primary administrator account already exists. Please log in.',
+          });
+          navigate('/login', { replace: true });
+        }
+      })
+      .catch(() => {
+        // Ignore errors on initial system status check
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
   // Step 1 Form
   const {
@@ -190,8 +210,17 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
       setCurrentStep(5);
     } catch (error) {
       let errorMsg = 'Failed to create workspace. Please check your inputs and try again.';
-      if (error instanceof AxiosError && error.response?.data?.message) {
-        errorMsg = error.response.data.message;
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 409) {
+          toast.error('Workspace Already Initialized', {
+            description: 'Workspace setup has already been completed. Redirecting to login...',
+          });
+          setTimeout(() => navigate('/login', { replace: true }), 1500);
+          return;
+        }
+        if (error.response?.data?.message) {
+          errorMsg = error.response.data.message;
+        }
       }
       toast.error('Setup Failed', {
         description: errorMsg,

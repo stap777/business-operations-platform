@@ -200,12 +200,19 @@ public class AuthService {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
+    public boolean isWorkspaceInitialized() {
+        return userRepository.countByRole(Role.ADMIN) > 0;
+    }
+
     @Transactional
     public void setupWorkspace(WorkspaceSetupRequest request) {
         // Enforce ONE-TIME initialization: block if an administrator already exists
-        if (userRepository.existsByRole(Role.ADMIN)) {
+        if (userRepository.countByRole(Role.ADMIN) > 0) {
             log.warn("Workspace setup rejected: system already initialized with an administrator");
-            throw new IllegalStateException("Workspace setup has already been completed. Additional setup calls are strictly prohibited.");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Workspace has already been initialized."
+            );
         }
 
         String adminUsername = request.getAdminUsername().trim();

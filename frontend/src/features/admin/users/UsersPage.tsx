@@ -3,7 +3,6 @@ import {
   useUsers,
   useActivateEmployee,
   useDeactivateEmployee,
-  useDeleteEmployee,
 } from './hooks/useUsers';
 import type { UserResponse, UserRole, UserStatus } from './user.types';
 import { UserFilters } from './components/UserFilters';
@@ -11,6 +10,7 @@ import { UserTable } from './components/UserTable';
 import { UserForm } from './components/UserForm';
 import { UserDetails } from './components/UserDetails';
 import { ResetPasswordModal } from './components/ResetPasswordModal';
+import { DeleteUserModal } from './components/DeleteUserModal';
 import { Pagination } from '../../../components/common/Pagination';
 import { Button } from '../../../components/ui/button';
 import { Plus, Users, ShieldAlert } from 'lucide-react';
@@ -32,6 +32,11 @@ export const UsersPage: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedDetailsUserId, setSelectedDetailsUserId] = useState<number | null>(null);
   const [selectedResetUserId, setSelectedResetUserId] = useState<number | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserResponse | null>(null);
+
+  // Query to track global count of ADMIN accounts for UI safety warnings
+  const { data: adminUsersData } = useUsers({ role: 'ADMIN', size: 100 });
+  const adminCount = adminUsersData?.totalElements ?? 1;
 
   // Debounce search query
   useEffect(() => {
@@ -53,7 +58,6 @@ export const UsersPage: React.FC = () => {
 
   const activateMutation = useActivateEmployee();
   const deactivateMutation = useDeactivateEmployee();
-  const deleteMutation = useDeleteEmployee();
 
   if (!isAdmin) {
     return (
@@ -78,9 +82,7 @@ export const UsersPage: React.FC = () => {
   };
 
   const handleDeleteUser = (u: UserResponse) => {
-    if (window.confirm(`Are you sure you want to delete user account "${u.fullName}" (@${u.username})? This action cannot be undone.`)) {
-      deleteMutation.mutate(u.id);
-    }
+    setUserToDelete(u);
   };
 
   return (
@@ -170,6 +172,16 @@ export const UsersPage: React.FC = () => {
         onOpenChange={(open) => {
           if (!open) setSelectedResetUserId(null);
         }}
+      />
+
+      {/* Delete User Safety Modal */}
+      <DeleteUserModal
+        user={userToDelete}
+        open={userToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setUserToDelete(null);
+        }}
+        adminCount={adminCount}
       />
     </div>
   );

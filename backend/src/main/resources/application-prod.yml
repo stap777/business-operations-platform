@@ -47,7 +47,7 @@ app:
     from: ${MAIL_FROM:noreply@asenterprises.com}
     from-name: ${MAIL_FROM_NAME:A.S. Enterprises BMS}
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:${APP_FRONTEND_URL:https://app.asenterprises.in}}}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://asenterprise.up.railway.app}}
   cookie:
     secure: ${APP_COOKIE_SECURE:true}
 

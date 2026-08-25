@@ -38,7 +38,7 @@ public class FlywayMigrationVerificationTest {
 
         assertThat(applied)
             .as("Flyway applied migrations count")
-            .hasSize(5);
+            .hasSize(6);
 
         assertThat(applied[0].getScript())
             .as("First migration script name")
@@ -59,6 +59,10 @@ public class FlywayMigrationVerificationTest {
         assertThat(applied[4].getScript())
             .as("Fifth migration script name")
             .isEqualTo("V1_4__create_operating_expenses_table.sql");
+
+        assertThat(applied[5].getScript())
+            .as("Sixth migration script name")
+            .isEqualTo("V1_5__add_business_settings_logo_data.sql");
 
         assertThat(flyway.info().pending())
             .as("No pending migrations remain")

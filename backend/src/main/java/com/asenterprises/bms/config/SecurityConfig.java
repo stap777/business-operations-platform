@@ -46,7 +46,7 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint authEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    @Value("${app.cors.allowed-origins:https://as-enterprises.up.railway.app,http://localhost:5173,http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,https://asenterprise.up.railway.app,http://localhost:3000,https://as-enterprises.up.railway.app}")
     private String allowedOriginsProperty;
 
     @Bean
@@ -77,6 +77,12 @@ public class SecurityConfig {
                         .toList()
         );
 
+        if (!origins.contains("https://asenterprise.up.railway.app")) {
+            origins.add("https://asenterprise.up.railway.app");
+        }
+        if (!origins.contains("http://localhost:5173")) {
+            origins.add("http://localhost:5173");
+        }
         if (!origins.contains("https://as-enterprises.up.railway.app")) {
             origins.add("https://as-enterprises.up.railway.app");
         }
@@ -114,6 +120,7 @@ public class SecurityConfig {
                                 "/auth/login", "/api/v1/auth/login",
                                 "/auth/logout", "/api/v1/auth/logout",
                                 "/auth/logout-all", "/api/v1/auth/logout-all",
+                                "/auth/status", "/api/v1/auth/status",
                                 "/auth/setup", "/api/v1/auth/setup",
                                 "/auth/forgot-password", "/api/v1/auth/forgot-password",
                                 "/auth/reset-password", "/api/v1/auth/reset-password",

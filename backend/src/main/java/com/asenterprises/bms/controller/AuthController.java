@@ -74,6 +74,11 @@ public class AuthController {
         return ResponseEntity.ok(authService.getCurrentUser(authentication.getName()));
     }
 
+    @GetMapping("/status")
+    public ResponseEntity<Map<String, Boolean>> checkSystemStatus() {
+        return ResponseEntity.ok(Map.of("adminExists", authService.isWorkspaceInitialized()));
+    }
+
     @PostMapping("/setup")
     public ResponseEntity<Void> setupWorkspace(@Valid @RequestBody WorkspaceSetupRequest request) {
         authService.setupWorkspace(request);

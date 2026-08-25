@@ -52,9 +52,9 @@ public class AdminUserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         if (user.getRole() == Role.ADMIN) {
-            long activeAdminCount = userRepository.countByRoleAndStatus(Role.ADMIN, UserStatus.ACTIVE);
-            if (activeAdminCount <= 1) {
-                throw new IllegalStateException("Cannot delete the last remaining active administrator account.");
+            long remainingAdmins = userRepository.countByRole(Role.ADMIN);
+            if (remainingAdmins <= 1) {
+                throw new IllegalStateException("The last administrator account cannot be deleted.");
             }
         }
 
