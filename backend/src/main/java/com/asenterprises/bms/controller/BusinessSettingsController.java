@@ -36,6 +36,19 @@ public class BusinessSettingsController {
         return ResponseEntity.ok(businessSettingsService.updateBusinessSettings(request));
     }
 
+    @GetMapping("/logo")
+    public ResponseEntity<byte[]> getLogo() {
+        byte[] logoData = businessSettingsService.getLogoData();
+        if (logoData == null || logoData.length == 0) {
+            return ResponseEntity.notFound().build();
+        }
+        String contentType = businessSettingsService.getLogoContentType();
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.parseMediaType(contentType != null ? contentType : "image/png"))
+                .header(org.springframework.http.HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                .body(logoData);
+    }
+
     @org.springframework.web.bind.annotation.PostMapping(value = "/logo", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<BusinessSettingsResponse> uploadLogo(

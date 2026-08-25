@@ -20,144 +20,130 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
     }
   );
 
-  const businessName = businessSettings?.businessName || 'A.S. ENTERPRISES';
-  const businessPhone = businessSettings?.phone || '+91 98765 43210';
-  const businessAddress =
-    businessSettings?.address || 'Main Street, Commercial Complex, Maharashtra, India';
-  const logoUrl = businessSettings?.logoUrl;
+  const businessName =
+    invoice.enterpriseName || businessSettings?.businessName || 'A.S. Enterprises';
+  const logoUrl = invoice.logoUrl || businessSettings?.logoUrl || '/api/v1/business-settings/logo';
   const invoiceFooter =
-    businessSettings?.invoiceFooter || 'Thank you for your business! This is a computer-generated tax invoice.';
+    invoice.invoiceFooter || businessSettings?.invoiceFooter || 'Thank You\nVisit Again';
 
-  const amountPaid = invoice.paymentReceivedAtGeneration ?? 0;
-  const balanceDue = Math.max(0, (invoice.totalAmount ?? 0) - amountPaid);
+  const paidAmount = invoice.paidAmount ?? invoice.paymentReceivedAtGeneration ?? 0;
+  const creditRemaining =
+    invoice.creditRemaining ?? Math.max(0, (invoice.totalAmount ?? 0) - paidAmount);
+  const paymentMethod = invoice.paymentMethod || 'Cash';
 
   return (
-    <div className="printable-invoice bg-white text-black p-8 max-w-3xl mx-auto space-y-6 font-sans text-xs border border-neutral-200">
-      {/* Header Row: Business Info + Tax Invoice Title */}
-      <div className="flex items-start justify-between pb-6 border-b border-neutral-300">
-        <div className="space-y-1.5 max-w-sm">
-          {logoUrl ? (
-            <img src={logoUrl} alt={businessName} className="h-12 object-contain mb-2" />
-          ) : (
-            <h1 className="text-xl font-extrabold uppercase tracking-wider text-black">
-              {businessName}
-            </h1>
-          )}
-          <p className="text-[#333333] leading-relaxed whitespace-pre-line">{businessAddress}</p>
-          <p className="text-[#333333] font-mono">Ph: {businessPhone}</p>
+    <div className="printable-invoice thermal-receipt bg-white text-black font-['Courier_New',Courier,monospace] text-[11px] leading-[1.25] w-[72mm] max-w-[72mm] mx-auto p-[4mm] space-y-2 border border-neutral-300 print:border-none print:p-[4mm] print:m-0">
+      {/* Business Logo (Center aligned, height limited, hides gracefully if logo absent or broken) */}
+      {logoUrl && (
+        <div className="text-center pt-0.5 pb-1">
+          <img
+            src={logoUrl}
+            alt={businessName}
+            className="h-10 max-h-12 w-auto object-contain mx-auto"
+            onError={(e) => {
+              // Hide image container completely if logo is missing or 404
+              (e.target as HTMLElement).style.display = 'none';
+            }}
+          />
         </div>
+      )}
 
-        <div className="text-right space-y-1">
-          <h2 className="text-lg font-black uppercase tracking-widest text-neutral-900">
-            TAX INVOICE
-          </h2>
-          <div className="font-mono text-xs text-neutral-900 pt-1">
-            <p>
-              <strong className="text-neutral-600">INVOICE #:</strong> {invoice.invoiceNumber}
-            </p>
-            <p>
-              <strong className="text-neutral-600">DATE:</strong> {formattedInvoiceDate}
-            </p>
-            <p>
-              <strong className="text-neutral-600">ORDER #:</strong> {invoice.orderNumber}
-            </p>
-          </div>
-        </div>
+      {/* Business Name Header */}
+      <div className="text-center">
+        <h1 className="text-xs font-bold uppercase tracking-wide leading-tight text-black">
+          {businessName}
+        </h1>
       </div>
 
-      {/* Bill To & Payment Summary Grid */}
-      <div className="grid grid-cols-2 gap-6 py-2">
-        <div className="space-y-1 p-3 border border-neutral-200 rounded-md bg-neutral-50/50">
-          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">
-            BILL TO (CUSTOMER)
-          </span>
-          <p className="text-sm font-bold text-black">{invoice.customerNameSnapshot}</p>
-          {invoice.customerPhoneSnapshot && (
-            <p className="font-mono text-neutral-700">Ph: {invoice.customerPhoneSnapshot}</p>
-          )}
-          {invoice.customerAddressSnapshot && (
-            <p className="text-neutral-700 leading-snug">{invoice.customerAddressSnapshot}</p>
-          )}
-        </div>
-
-        <div className="space-y-1 p-3 border border-neutral-200 rounded-md bg-neutral-50/50 text-right">
-          <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">
-            PAYMENT STATUS
-          </span>
-          <div className="inline-block px-2.5 py-0.5 rounded text-[11px] font-bold uppercase border border-neutral-400 bg-neutral-100 text-neutral-800 my-1">
-            {invoice.paymentStatus}
-          </div>
-          <p className="text-neutral-600 text-[11px] pt-1">
-            Generated By: {invoice.generatedByName || 'Admin System'}
-          </p>
-        </div>
-      </div>
-
-      {/* Items Table */}
-      <div className="pt-2">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b-2 border-neutral-800 text-neutral-700 font-bold text-[10px] uppercase tracking-wider">
-              <th className="py-2.5 px-2">#</th>
-              <th className="py-2.5 px-2">Item Description</th>
-              <th className="py-2.5 px-2 text-right">Qty</th>
-              <th className="py-2.5 px-2 text-right">Unit Price (₹)</th>
-              <th className="py-2.5 px-2 text-right">Line Total (₹)</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-200 text-xs">
-            {invoice.items?.map((item, idx) => (
-              <tr key={item.id || idx}>
-                <td className="py-2.5 px-2 font-mono text-neutral-500">{idx + 1}</td>
-                <td className="py-2.5 px-2 font-medium text-black">{item.productNameSnapshot}</td>
-                <td className="py-2.5 px-2 text-right font-mono text-neutral-800">{item.quantity}</td>
-                <td className="py-2.5 px-2 text-right font-mono text-neutral-800">
-                  ₹{item.sellingPriceSnapshot?.toFixed(2)}
-                </td>
-                <td className="py-2.5 px-2 text-right font-mono font-semibold text-black">
-                  ₹{item.lineTotal?.toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Totals Breakdown */}
-      <div className="flex justify-end pt-4 border-t border-neutral-300">
-        <div className="w-72 space-y-1.5 font-mono text-xs">
-          <div className="flex justify-between text-neutral-700">
-            <span>Subtotal:</span>
-            <span>₹{invoice.subtotal?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          </div>
-          {invoice.discountAmount > 0 && (
-            <div className="flex justify-between text-neutral-700">
-              <span>Discount:</span>
-              <span>-₹{invoice.discountAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          <div className="flex justify-between font-extrabold text-sm text-black pt-2 border-t-2 border-neutral-800">
-            <span>TOTAL AMOUNT:</span>
-            <span>₹{invoice.totalAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          </div>
-          <div className="flex justify-between text-neutral-700 pt-1">
-            <span>Amount Paid:</span>
-            <span>₹{amountPaid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          </div>
-          <div className="flex justify-between font-bold text-neutral-900 border-t border-neutral-200 pt-1">
-            <span>Balance Due:</span>
-            <span>₹{balanceDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Terms & Footer */}
-      <div className="pt-8 border-t border-neutral-300 text-center text-[10px] text-neutral-600 leading-relaxed">
-        <p className="italic">{invoiceFooter}</p>
-        <p className="mt-1 font-mono text-[9px] text-neutral-400">
-          Invoice Reference: {invoice.invoiceNumber} · Order Reference: {invoice.orderNumber}
+      {/* Metadata: Invoice Number & Date */}
+      <div className="pt-1 text-left space-y-0.5 text-[11px] text-black">
+        <p className="font-semibold">
+          Invoice No: <span className="font-bold">{invoice.invoiceNumber}</span>
         </p>
+        <p>Date: {formattedInvoiceDate}</p>
+      </div>
+
+      {/* Customer Information */}
+      <div className="pt-0.5 text-left">
+        <p className="font-semibold text-black">Customer:</p>
+        <p className="font-bold text-black text-[11px] leading-snug break-words">
+          {invoice.customerNameSnapshot}
+        </p>
+        {invoice.customerPhoneSnapshot && (
+          <p className="text-[10px] text-neutral-800">Ph: {invoice.customerPhoneSnapshot}</p>
+        )}
+      </div>
+
+      {/* Separator Line */}
+      <div className="border-t border-dashed border-black my-1" />
+
+      {/* Product Items (Supports Multi-line Product Wrapping & Unlimited Rows) */}
+      <div className="space-y-1.5">
+        {invoice.items?.map((item, idx) => (
+          <div key={item.id || idx} className="text-[11px] text-black">
+            <div
+              className="font-semibold leading-snug text-black"
+              style={{ wordBreak: 'break-word', whiteSpace: 'normal' }}
+            >
+              {item.productNameSnapshot}
+            </div>
+            <div className="flex justify-between items-center text-[10px] pt-0.5">
+              <span>
+                {item.quantity} × ₹{item.sellingPriceSnapshot?.toFixed(0)}
+              </span>
+              <span className="font-bold">₹{item.lineTotal?.toFixed(0)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Separator Line */}
+      <div className="border-t border-dashed border-black my-1" />
+
+      {/* Totals Section */}
+      <div className="space-y-0.5 text-[11px] text-black">
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span>₹{invoice.subtotal?.toFixed(0)}</span>
+        </div>
+
+        {invoice.discountAmount > 0 && (
+          <div className="flex justify-between">
+            <span>Discount</span>
+            <span>-₹{invoice.discountAmount?.toFixed(0)}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between font-bold text-xs text-black py-0.5 border-t border-b border-black">
+          <span>Total</span>
+          <span>₹{invoice.totalAmount?.toFixed(0)}</span>
+        </div>
+
+        <div className="flex justify-between pt-0.5">
+          <span>Paid</span>
+          <span>₹{paidAmount.toFixed(0)}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span>Credit Remaining</span>
+          <span>₹{creditRemaining.toFixed(0)}</span>
+        </div>
+
+        <div className="flex justify-between font-semibold pt-0.5">
+          <span>Payment:</span>
+          <span>{paymentMethod}</span>
+        </div>
+      </div>
+
+      {/* Separator Line */}
+      <div className="border-t border-dashed border-black my-1" />
+
+      {/* Receipt Footer */}
+      <div className="text-center text-[11px] text-black pt-1 pb-1 whitespace-pre-line leading-relaxed">
+        <p className="font-semibold">{invoiceFooter}</p>
       </div>
     </div>
   );
 };
+
+export default PrintableInvoice;

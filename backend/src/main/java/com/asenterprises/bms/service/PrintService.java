@@ -5,13 +5,16 @@ import com.asenterprises.bms.dto.BatchInvoicePrintResponse.PrintableInvoiceData;
 import com.asenterprises.bms.dto.BusinessSettingsResponse;
 import com.asenterprises.bms.dto.PrintableInvoiceItemDto;
 import com.asenterprises.bms.entity.Invoice;
+import com.asenterprises.bms.entity.PaymentAllocation;
 import com.asenterprises.bms.repository.InvoiceRepository;
+import com.asenterprises.bms.repository.PaymentAllocationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,6 +33,8 @@ public class PrintService {
 
     private final InvoiceRepository invoiceRepository;
     private final BusinessSettingsService businessSettingsService;
+    private final PaymentAllocationRepository paymentAllocationRepository;
+    private final InvoiceCalculationService invoiceCalculationService;
 
     @Transactional(readOnly = true)
     public BatchInvoicePrintResponse prepareBatchPrintQueue(LocalDate startDate, LocalDate endDate, List<Long> invoiceIds) {
@@ -53,6 +58,11 @@ public class PrintService {
                     .lineTotal(item.getLineTotal())
                     .build()).collect(Collectors.toList());
 
+            BigDecimal paidAmount = invoiceCalculationService.calculatePaidAmount(inv.getOrder().getId(), inv.getPaymentReceivedAtGeneration());
+            BigDecimal creditRemaining = invoiceCalculationService.calculateRemainingCredit(inv.getTotalAmount(), paidAmount);
+            List<PaymentAllocation> allocations = paymentAllocationRepository.findByOrderId(inv.getOrder().getId());
+            String paymentMethod = invoiceCalculationService.resolvePaymentMethod(inv.getOrder(), allocations);
+
             return PrintableInvoiceData.builder()
                     .invoiceNumber(inv.getInvoiceNumber())
                     .orderNumber(inv.getOrder().getOrderNumber())
@@ -67,6 +77,10 @@ public class PrintService {
                     .discountAmount(inv.getDiscountAmount())
                     .totalAmount(inv.getTotalAmount())
                     .paymentStatus(inv.getPaymentStatus().name())
+                    .logoUrl(settings.getLogoUrl())
+                    .paidAmount(paidAmount)
+                    .creditRemaining(creditRemaining)
+                    .paymentMethod(paymentMethod)
                     .invoiceFooter(settings.getInvoiceFooter())
                     .items(itemDtos)
                     .build();

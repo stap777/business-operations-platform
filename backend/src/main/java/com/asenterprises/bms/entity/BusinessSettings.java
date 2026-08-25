@@ -56,6 +56,13 @@ public class BusinessSettings extends BaseEntity {
     @Column(name = "logo_url", length = 500)
     private String logoUrl;
 
+    @jakarta.persistence.Lob
+    @Column(name = "logo_data")
+    private byte[] logoData;
+
+    @Column(name = "logo_content_type", length = 100)
+    private String logoContentType;
+
     @Size(max = 500, message = "Default payment terms cannot exceed 500 characters")
     @Column(name = "default_payment_terms", length = 500)
     private String defaultPaymentTerms;

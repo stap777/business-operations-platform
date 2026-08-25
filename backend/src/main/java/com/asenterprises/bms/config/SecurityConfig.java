@@ -117,6 +117,8 @@ public class SecurityConfig {
                                 "/auth/setup", "/api/v1/auth/setup",
                                 "/auth/forgot-password", "/api/v1/auth/forgot-password",
                                 "/auth/reset-password", "/api/v1/auth/reset-password",
+                                "/business-settings/logo", "/api/v1/business-settings/logo",
+                                "/settings/logo", "/api/v1/settings/logo",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()

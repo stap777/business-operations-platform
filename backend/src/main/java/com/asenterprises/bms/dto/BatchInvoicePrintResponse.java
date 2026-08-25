@@ -40,6 +40,10 @@ public class BatchInvoicePrintResponse {
         private BigDecimal discountAmount;
         private BigDecimal totalAmount;
         private String paymentStatus;
+        private String logoUrl;
+        private BigDecimal paidAmount;
+        private BigDecimal creditRemaining;
+        private String paymentMethod;
         private String invoiceFooter;
         private List<PrintableInvoiceItemDto> items;
     }

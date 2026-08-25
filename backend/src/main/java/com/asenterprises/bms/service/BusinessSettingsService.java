@@ -58,33 +58,20 @@ public class BusinessSettingsService {
         }
 
         try {
-            String uploadDirStr = "./uploads/logos";
-            java.io.File uploadDir = new java.io.File(uploadDirStr);
-            if (!uploadDir.exists()) {
-                uploadDir.mkdirs();
-            }
-
-            String originalFilename = file.getOriginalFilename();
-            String extension = ".png";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-
-            String filename = "company_logo_" + System.currentTimeMillis() + extension;
-            java.io.File destFile = new java.io.File(uploadDir, filename);
-            file.transferTo(destFile);
-
-            String logoUrl = "/uploads/logos/" + filename;
+            byte[] logoBytes = file.getBytes();
 
             BusinessSettings settings = businessSettingsRepository.findFirstByOrderByIdAsc()
                     .orElseGet(this::seedDefaultBusinessSettings);
-            settings.setLogoUrl(logoUrl);
+
+            settings.setLogoData(logoBytes);
+            settings.setLogoContentType(contentType);
+            settings.setLogoUrl("/api/v1/business-settings/logo");
 
             BusinessSettings updated = businessSettingsRepository.save(settings);
-            log.info("Uploaded new company logo: {}", logoUrl);
+            log.info("Uploaded new company logo to PostgreSQL (size: {} bytes, type: {})", logoBytes.length, contentType);
             return mapToResponse(updated);
         } catch (java.io.IOException e) {
-            log.error("Failed to save logo file: {}", e.getMessage(), e);
+            log.error("Failed to read logo file bytes: {}", e.getMessage(), e);
             throw new IllegalStateException("Failed to save company logo image", e);
         }
     }
@@ -93,10 +80,26 @@ public class BusinessSettingsService {
     public BusinessSettingsResponse removeLogo() {
         BusinessSettings settings = businessSettingsRepository.findFirstByOrderByIdAsc()
                 .orElseGet(this::seedDefaultBusinessSettings);
+        settings.setLogoData(null);
+        settings.setLogoContentType(null);
         settings.setLogoUrl(null);
         BusinessSettings updated = businessSettingsRepository.save(settings);
         log.info("Removed company logo");
         return mapToResponse(updated);
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getLogoData() {
+        return businessSettingsRepository.findFirstByOrderByIdAsc()
+                .map(BusinessSettings::getLogoData)
+                .orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public String getLogoContentType() {
+        return businessSettingsRepository.findFirstByOrderByIdAsc()
+                .map(BusinessSettings::getLogoContentType)
+                .orElse("image/png");
     }
 
     private synchronized BusinessSettings seedDefaultBusinessSettings() {

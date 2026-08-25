@@ -1,11 +1,13 @@
 package com.asenterprises.bms.service;
 
+import com.asenterprises.bms.dto.BusinessSettingsResponse;
 import com.asenterprises.bms.dto.InvoiceItemResponse;
 import com.asenterprises.bms.dto.InvoiceResponse;
 import com.asenterprises.bms.entity.Invoice;
 import com.asenterprises.bms.entity.InvoiceItem;
 import com.asenterprises.bms.entity.Order;
 import com.asenterprises.bms.entity.OrderItem;
+import com.asenterprises.bms.entity.PaymentAllocation;
 import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
 import com.asenterprises.bms.repository.InvoiceRepository;
@@ -36,6 +38,8 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final PaymentAllocationRepository paymentAllocationRepository;
+    private final BusinessSettingsService businessSettingsService;
+    private final InvoiceCalculationService invoiceCalculationService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -137,6 +141,18 @@ public class InvoiceService {
                         .build())
                 .collect(Collectors.toList());
 
+        BigDecimal paidAmount = invoiceCalculationService.calculatePaidAmount(invoice.getOrder().getId(), invoice.getPaymentReceivedAtGeneration());
+        BigDecimal creditRemaining = invoiceCalculationService.calculateRemainingCredit(invoice.getTotalAmount(), paidAmount);
+        List<PaymentAllocation> allocations = paymentAllocationRepository.findByOrderId(invoice.getOrder().getId());
+        String paymentMethod = invoiceCalculationService.resolvePaymentMethod(invoice.getOrder(), allocations);
+
+        BusinessSettingsResponse settings = null;
+        try {
+            settings = businessSettingsService.getBusinessSettings();
+        } catch (Exception e) {
+            log.warn("Could not load business settings for invoice response mapping: {}", e.getMessage());
+        }
+
         return InvoiceResponse.builder()
                 .id(invoice.getId())
                 .invoiceNumber(invoice.getInvoiceNumber())
@@ -151,6 +167,14 @@ public class InvoiceService {
                 .totalAmount(invoice.getTotalAmount())
                 .paymentStatus(invoice.getPaymentStatus())
                 .paymentReceivedAtGeneration(invoice.getPaymentReceivedAtGeneration())
+                .paidAmount(paidAmount)
+                .creditRemaining(creditRemaining)
+                .paymentMethod(paymentMethod)
+                .logoUrl(settings != null ? settings.getLogoUrl() : null)
+                .enterpriseName(settings != null ? settings.getBusinessName() : "A.S. Enterprises")
+                .enterpriseAddress(settings != null ? settings.getAddress() : null)
+                .enterprisePhone(settings != null ? settings.getPhone() : null)
+                .invoiceFooter(settings != null ? settings.getInvoiceFooter() : "Thank You Visit Again")
                 .generatedById(invoice.getGeneratedBy().getId())
                 .generatedByName(invoice.getGeneratedBy().getFullName())
                 .items(itemResponses)

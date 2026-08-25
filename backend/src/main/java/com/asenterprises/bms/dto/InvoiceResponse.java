@@ -32,6 +32,14 @@ public class InvoiceResponse {
     private BigDecimal totalAmount;
     private PaymentStatus paymentStatus;
     private BigDecimal paymentReceivedAtGeneration;
+    private BigDecimal paidAmount;
+    private BigDecimal creditRemaining;
+    private String paymentMethod;
+    private String logoUrl;
+    private String enterpriseName;
+    private String enterpriseAddress;
+    private String enterprisePhone;
+    private String invoiceFooter;
     private Long generatedById;
     private String generatedByName;
     private List<InvoiceItemResponse> items;

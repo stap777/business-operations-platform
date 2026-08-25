@@ -22,6 +22,14 @@ export interface InvoiceResponse {
   totalAmount: number;
   paymentStatus: PaymentStatus;
   paymentReceivedAtGeneration: number;
+  paidAmount?: number;
+  creditRemaining?: number;
+  paymentMethod?: string;
+  logoUrl?: string;
+  enterpriseName?: string;
+  enterpriseAddress?: string;
+  enterprisePhone?: string;
+  invoiceFooter?: string;
   generatedById: number;
   generatedByName: string;
   items: InvoiceItemResponse[];
