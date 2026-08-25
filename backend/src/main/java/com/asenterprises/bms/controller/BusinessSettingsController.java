@@ -64,11 +64,8 @@ public class BusinessSettingsController {
 
     @org.springframework.web.bind.annotation.PostMapping("/reset-workspace")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<java.util.Map<String, String>> resetWorkspace(
+    public ResponseEntity<java.util.Map<String, Object>> resetWorkspace(
             @Valid @RequestBody com.asenterprises.bms.dto.ResetWorkspaceRequest request) {
-        businessSettingsService.resetWorkspace(request);
-        return ResponseEntity.ok(java.util.Map.of(
-                "message", "Workspace data has been completely reset. All business records have been purged."
-        ));
+        return ResponseEntity.ok(businessSettingsService.resetWorkspace(request));
     }
 }

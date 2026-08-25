@@ -29,6 +29,7 @@ public class BusinessSettingsService {
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final PaymentRepository paymentRepository;
     private final OrderItemRepository orderItemRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
     private final InvoiceRepository invoiceRepository;
     private final OrderRepository orderRepository;
     private final StockAdjustmentRepository stockAdjustmentRepository;
@@ -112,7 +113,7 @@ public class BusinessSettingsService {
     }
 
     @Transactional
-    public void resetWorkspace(ResetWorkspaceRequest request) {
+    public java.util.Map<String, Object> resetWorkspace(ResetWorkspaceRequest request) {
         // 1. Resolve authenticated user
         var auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {
@@ -140,11 +141,18 @@ public class BusinessSettingsService {
 
         log.warn("CRITICAL WORKSPACE RESET INITIATED BY ADMIN: {}", currentAdmin.getUsername());
 
-        // 4. Perform full entity data purge in cascading dependency order
+        // Capture counts before deletion for audit summary
+        long orderCount = orderRepository.count();
+        long customerCount = customerRepository.count();
+        long productCount = productRepository.count();
+        long paymentCount = paymentRepository.count();
+
+        // 4. Perform full entity data purge in exact reverse foreign-key dependency order
         paymentAllocationRepository.deleteAllInBatch();
         paymentRepository.deleteAllInBatch();
-        orderItemRepository.deleteAllInBatch();
+        invoiceItemRepository.deleteAllInBatch();
         invoiceRepository.deleteAllInBatch();
+        orderItemRepository.deleteAllInBatch();
         orderRepository.deleteAllInBatch();
         stockAdjustmentRepository.deleteAllInBatch();
         productRepository.deleteAllInBatch();
@@ -152,19 +160,26 @@ public class BusinessSettingsService {
         customerRepository.deleteAllInBatch();
         couponRepository.deleteAllInBatch();
         operatingExpenseRepository.deleteAllInBatch();
-        passwordResetTokenRepository.deleteAllInBatch();
-
-        // 5. Purge user sessions and ALL user accounts (including Admin)
-        userSessionRepository.deleteAllInBatch();
-        userRepository.deleteAllInBatch();
-
-        // 6. Purge business settings
-        businessSettingsRepository.deleteAllInBatch();
-
-        // 7. Purge audit logs
         auditLogRepository.deleteAllInBatch();
+        passwordResetTokenRepository.deleteAllInBatch();
+        userSessionRepository.deleteAllInBatch();
 
-        log.info("TOTAL WORKSPACE DATA PURGE COMPLETED SUCCESSFULLY. ALL ACCOUNTS AND SETTINGS DELETED.");
+        // 5. Safe User Cleanup: Remove non-admin users, keep authenticated Admin owner
+        userRepository.deleteByRoleNot(Role.ADMIN);
+
+        // DO NOT delete businessSettingsRepository (Preserves branding, logo, and printer settings)
+
+        log.info("WORKSPACE DATA PURGE COMPLETED SUCCESSFULLY BY ADMIN {}", currentAdmin.getUsername());
+
+        return java.util.Map.of(
+                "message", "Workspace reset completed successfully.",
+                "deleted", java.util.Map.of(
+                        "orders", orderCount,
+                        "customers", customerCount,
+                        "products", productCount,
+                        "payments", paymentCount
+                )
+        );
     }
 
     @Transactional(readOnly = true)

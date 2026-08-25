@@ -467,13 +467,13 @@ export const BusinessSettingsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION 4: DANGER ZONE - WORKSPACE RESET */}
+      {/* SECTION 4: DANGER ZONE - CLEAR BUSINESS DATA */}
       <div className="bg-white dark:bg-[#0F0F0F] rounded-xl border border-red-500/30 p-5 space-y-4 shadow-sm">
         <div className="flex items-center justify-between pb-3 border-b border-red-500/20">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-red-500" />
             <h2 className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
-              Danger Zone - System Reset
+              Danger Zone - Data Operations
             </h2>
           </div>
           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-600 border border-red-500/20">
@@ -483,9 +483,9 @@ export const BusinessSettingsPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
           <div className="space-y-1 max-w-xl">
-            <h4 className="font-semibold text-[#111111] dark:text-[#FAFAFA]">Delete Workspace Data</h4>
+            <h4 className="font-semibold text-[#111111] dark:text-[#FAFAFA]">Clear Business Data</h4>
             <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-              Permanently purge all orders, invoices, payments, products, customers, and non-admin employee accounts. Requires strict administrator password authentication.
+              Deletes customers, products, orders, invoices, and payments. Business settings and the owner account are preserved.
             </p>
           </div>
 
@@ -495,7 +495,7 @@ export const BusinessSettingsPage: React.FC = () => {
             className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold gap-1.5 shrink-0 shadow-sm"
           >
             <Trash2 className="w-4 h-4" />
-            Delete Workspace...
+            Clear Business Data...
           </Button>
         </div>
       </div>

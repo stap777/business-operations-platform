@@ -57,10 +57,10 @@ export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, 
             </div>
             <div>
               <h2 className="text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
-                Permanent Workspace Reset
+                Clear Business Data
               </h2>
               <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                Irreversible system data purge operation.
+                Deletes operational business data while preserving your account and settings.
               </p>
             </div>
           </div>
@@ -77,20 +77,20 @@ export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, 
           <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-700 dark:text-red-300 space-y-2">
             <div className="flex items-center gap-2 font-bold text-xs">
               <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-              <span>CRITICAL DATA LOSS WARNING</span>
+              <span>BUSINESS DATA PURGE WARNING</span>
             </div>
             <p className="text-[11px] leading-relaxed opacity-90">
-              This action will <strong>permanently purge ALL enterprise business data & user accounts</strong>, including:
+              This action will <strong>permanently purge operational data</strong>, including:
             </p>
             <ul className="text-[11px] list-disc list-inside space-y-1 opacity-90 pl-1">
               <li>All Orders, Invoices, and Dispatch Sheets</li>
               <li>All Payments, Receivables, and Financial History</li>
               <li>All Customers, Products, Stock Adjustments, and Categories</li>
-              <li>ALL Admin, Manager, and Delivery Accounts (System Reset)</li>
-              <li>All Business Settings (You will be redirected to set up a new workspace)</li>
+              <li>All Non-Admin Employee Accounts & Audit Logs</li>
+              <li className="font-semibold text-emerald-600 dark:text-emerald-400 list-none pt-1">✓ Business Settings, Logo, and Owner Account are safely preserved</li>
             </ul>
             <p className="text-[11px] font-bold text-red-600 dark:text-red-400 pt-1">
-              This action cannot be undone under any circumstances.
+              This data deletion cannot be undone under any circumstances.
             </p>
           </div>
 
@@ -150,12 +150,12 @@ export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, 
               {resetMutation.isPending ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Purging Workspace Data...
+                  Clearing Business Data...
                 </>
               ) : (
                 <>
                   <Trash2 className="w-4 h-4" />
-                  PERMANENTLY RESET WORKSPACE
+                  CLEAR BUSINESS DATA
                 </>
               )}
             </Button>
