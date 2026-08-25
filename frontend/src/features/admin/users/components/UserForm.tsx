@@ -97,7 +97,7 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange }) => {
                 Add New Employee
               </h2>
               <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                Create a sales representative or delivery account.
+                Create an administrator, sales representative, or delivery staff account.
               </p>
             </div>
           </div>
@@ -234,7 +234,7 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange }) => {
               className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
             >
               {createMutation.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              Create {role === 'MANAGER' ? 'Sales Representative' : 'Delivery Account'}
+              Create {role === 'ADMIN' ? 'Administrator' : role === 'MANAGER' ? 'Sales Representative' : 'Delivery Account'}
             </Button>
           </div>
         </form>
