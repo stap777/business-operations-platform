@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useResetWorkspace } from '../hooks/useBusinessSettings';
 import { Button } from '../../../../components/ui/button';
 import { AlertTriangle, X, Loader2, ShieldAlert, Trash2 } from 'lucide-react';
@@ -10,6 +11,7 @@ interface ResetWorkspaceModalProps {
 
 export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, onOpenChange }) => {
   const resetMutation = useResetWorkspace();
+  const queryClient = useQueryClient();
 
   const [adminPassword, setAdminPassword] = useState('');
   const [confirmationText, setConfirmationText] = useState('');
@@ -34,9 +36,14 @@ export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, 
           onOpenChange(false);
           setAdminPassword('');
           setConfirmationText('');
-          localStorage.removeItem('aven_session_token');
-          // Redirect user to workspace setup to create a brand-new workspace
-          window.location.href = '/workspace-setup?reset=true';
+          
+          // Clear all client-side cache and storage completely
+          queryClient.clear();
+          localStorage.clear();
+          sessionStorage.clear();
+
+          // Hard replace to login page with reset success flag
+          window.location.replace('/login?workspace_reset=true');
         },
         onError: (err: any) => {
           const msg = err.response?.data?.message || err.message || 'Workspace reset failed.';

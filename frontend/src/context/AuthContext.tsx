@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authService } from '../services/authService';
 import type { AuthResponse, Role, User } from '../types';
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Verify server session on application mount
@@ -41,6 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (authData: AuthResponse) => {
+    queryClient.clear();
     clearAuthStorage();
     if (authData.token) {
       localStorage.setItem('aven_session_token', authData.token);
@@ -60,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {
       console.warn('Backend logout call failed or session already expired', e);
     } finally {
+      queryClient.clear();
       setUser(null);
       clearAuthStorage();
     }
