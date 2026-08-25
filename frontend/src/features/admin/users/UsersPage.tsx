@@ -3,8 +3,9 @@ import {
   useUsers,
   useActivateEmployee,
   useDeactivateEmployee,
+  useDeleteEmployee,
 } from './hooks/useUsers';
-import type { UserRole, UserStatus } from './user.types';
+import type { UserResponse, UserRole, UserStatus } from './user.types';
 import { UserFilters } from './components/UserFilters';
 import { UserTable } from './components/UserTable';
 import { UserForm } from './components/UserForm';
@@ -52,6 +53,7 @@ export const UsersPage: React.FC = () => {
 
   const activateMutation = useActivateEmployee();
   const deactivateMutation = useDeactivateEmployee();
+  const deleteMutation = useDeleteEmployee();
 
   if (!isAdmin) {
     return (
@@ -72,6 +74,12 @@ export const UsersPage: React.FC = () => {
   const handleDeactivateUser = (id: number) => {
     if (window.confirm('Deactivate this employee account? They will no longer be able to log in until reactivated.')) {
       deactivateMutation.mutate(id);
+    }
+  };
+
+  const handleDeleteUser = (u: UserResponse) => {
+    if (window.confirm(`Are you sure you want to delete user account "${u.fullName}" (@${u.username})? This action cannot be undone.`)) {
+      deleteMutation.mutate(u.id);
     }
   };
 
@@ -129,6 +137,7 @@ export const UsersPage: React.FC = () => {
         onActivateUser={handleActivateUser}
         onDeactivateUser={handleDeactivateUser}
         onResetPassword={(id) => setSelectedResetUserId(id)}
+        onDeleteUser={handleDeleteUser}
       />
 
       {/* Pagination */}

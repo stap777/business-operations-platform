@@ -20,6 +20,9 @@ public class DispatchSheetOrderDto {
     private String orderStatus;
     private String deliveryStatus;
     private String paymentMethod;
+    private java.math.BigDecimal totalAmount;
+    private java.math.BigDecimal amountReceived;
+    private java.math.BigDecimal balanceDue;
     private String notes;
     private List<DispatchSheetProductDto> products;
 }

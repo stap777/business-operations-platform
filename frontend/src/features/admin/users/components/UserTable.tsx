@@ -1,7 +1,7 @@
 import React from 'react';
 import type { UserResponse } from '../user.types';
 import { UserRoleBadge, UserStatusBadge } from './UserStatusBadge';
-import { Eye, Plus, UserX, UserCheck, Key, RefreshCw } from 'lucide-react';
+import { Eye, Plus, UserX, UserCheck, Key, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 
 interface UserTableProps {
@@ -15,6 +15,7 @@ interface UserTableProps {
   onActivateUser: (id: number) => void;
   onDeactivateUser: (id: number) => void;
   onResetPassword: (id: number) => void;
+  onDeleteUser: (user: UserResponse) => void;
 }
 
 export const UserTable: React.FC<UserTableProps> = ({
@@ -28,6 +29,7 @@ export const UserTable: React.FC<UserTableProps> = ({
   onActivateUser,
   onDeactivateUser,
   onResetPassword,
+  onDeleteUser,
 }) => {
   if (isLoading) {
     return (
@@ -144,7 +146,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                     {user.status === 'ACTIVE' ? (
                       <button
                         onClick={() => onDeactivateUser(user.id)}
-                        className="p-1.5 rounded-lg text-[#71717A] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        className="p-1.5 rounded-lg text-[#71717A] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
                         title="Deactivate Account"
                       >
                         <UserX className="w-4 h-4" />
@@ -158,6 +160,14 @@ export const UserTable: React.FC<UserTableProps> = ({
                         <UserCheck className="w-4 h-4" />
                       </button>
                     )}
+
+                    <button
+                      onClick={() => onDeleteUser(user)}
+                      className="p-1.5 rounded-lg text-[#71717A] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                      title="Delete User"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>

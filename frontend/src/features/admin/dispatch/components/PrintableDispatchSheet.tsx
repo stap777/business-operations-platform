@@ -133,9 +133,16 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
                   {/* Order Ref & Outlined Payment Label */}
                   <div className="flex items-center justify-between text-[10px] pl-[26px] pt-1 border-t border-dotted border-neutral-400">
                     <span className="font-mono font-bold">#{order.orderNumber}</span>
-                    <span className="font-bold font-mono px-1 border border-black text-[9px] uppercase">
-                      {formatPaymentLabel(order.paymentMethod)}
-                    </span>
+                    <div className="text-right space-x-1">
+                      <span className="font-bold font-mono px-1 border border-black text-[9px] uppercase">
+                        {formatPaymentLabel(order.paymentMethod)}
+                      </span>
+                      {order.balanceDue !== undefined && (
+                        <span className="font-bold font-mono text-[10px] text-black">
+                          COLLECT: ₹{order.balanceDue.toFixed(0)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Product List */}
@@ -271,13 +278,22 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
                   </div>
 
                   <div className="flex flex-col items-end gap-1.5 pl-3 flex-shrink-0">
-                    {/* Outlined Thermal-Friendly Payment Label */}
-                    <span className="font-mono font-bold px-2 py-0.5 border-2 border-black rounded text-xs uppercase bg-white text-black">
-                      {formatPaymentLabel(order.paymentMethod)}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-neutral-700">
-                      #{order.orderNumber}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold px-2 py-0.5 border-2 border-black rounded text-xs uppercase bg-white text-black">
+                        {formatPaymentLabel(order.paymentMethod)}
+                      </span>
+                      <span className="text-xs font-mono font-bold text-neutral-700">
+                        #{order.orderNumber}
+                      </span>
+                    </div>
+                    {order.totalAmount !== undefined && (
+                      <div className="text-right border-2 border-black px-2.5 py-1 rounded bg-neutral-50 print:bg-white text-xs font-mono">
+                        <div className="text-[10px] text-neutral-600 font-bold uppercase">Order Total: ₹{order.totalAmount.toFixed(0)}</div>
+                        <div className="text-xs font-bold text-black border-t border-neutral-300 pt-0.5">
+                          TO COLLECT: ₹{(order.balanceDue ?? order.totalAmount).toFixed(0)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

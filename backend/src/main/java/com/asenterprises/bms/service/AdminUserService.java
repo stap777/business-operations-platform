@@ -27,8 +27,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminUserService {
 
     private final UserRepository userRepository;
+    private final com.asenterprises.bms.repository.UserSessionRepository userSessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+
+    @Transactional
+    public UserResponse createAdmin(CreateUserRequest request) {
+        return createUserWithRole(request, Role.ADMIN);
+    }
 
     @Transactional
     public UserResponse createManager(CreateUserRequest request) {
@@ -38,6 +44,32 @@ public class AdminUserService {
     @Transactional
     public UserResponse createDeliveryUser(CreateUserRequest request) {
         return createUserWithRole(request, Role.DELIVERY);
+    }
+
+    @Transactional
+    public void deleteUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (user.getRole() == Role.ADMIN) {
+            long activeAdminCount = userRepository.countByRoleAndStatus(Role.ADMIN, UserStatus.ACTIVE);
+            if (activeAdminCount <= 1) {
+                throw new IllegalStateException("Cannot delete the last remaining active administrator account.");
+            }
+        }
+
+        userSessionRepository.deleteByUserId(userId);
+
+        try {
+            userRepository.delete(user);
+            auditLogService.recordAuditLog("USER", userId, "USER_DELETED", resolveActor(user), "Deleted user " + user.getUsername());
+            log.info("Deleted user {}", user.getUsername());
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.warn("Cannot hard-delete user {} due to existing transaction history. Deactivating user instead.", user.getUsername());
+            user.setStatus(UserStatus.INACTIVE);
+            userRepository.save(user);
+            auditLogService.recordAuditLog("USER", userId, "USER_DEACTIVATED", resolveActor(user), "Deactivated user " + user.getUsername() + " due to existing transaction history");
+        }
     }
 
     private UserResponse createUserWithRole(CreateUserRequest request, Role role) {

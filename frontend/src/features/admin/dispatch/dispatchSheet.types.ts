@@ -12,6 +12,9 @@ export interface DispatchSheetOrderDto {
   orderStatus: string;
   deliveryStatus: string;
   paymentMethod: string;
+  totalAmount?: number;
+  amountReceived?: number;
+  balanceDue?: number;
   notes?: string;
   products: DispatchSheetProductDto[];
 }

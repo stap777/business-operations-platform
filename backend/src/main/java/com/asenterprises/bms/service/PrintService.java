@@ -112,8 +112,15 @@ public class PrintService {
         BusinessSettingsResponse settings = businessSettingsService.getBusinessSettings();
         List<Order> rawOrders = orderRepository.findOrdersForDispatchDate(startOfDay, endOfDay);
 
+        // Deduplicate orders by ID preserving insertion order
+        List<Order> uniqueOrders = new ArrayList<>(
+                rawOrders.stream()
+                        .collect(Collectors.toMap(Order::getId, o -> o, (e, n) -> e, java.util.LinkedHashMap::new))
+                        .values()
+        );
+
         // Sort pending deliveries first, then by creation time ASC
-        List<Order> sortedOrders = rawOrders.stream()
+        List<Order> sortedOrders = uniqueOrders.stream()
                 .sorted(Comparator.comparing((Order o) -> isDelivered(o) ? 1 : 0)
                         .thenComparing(Order::getCreatedAt))
                 .collect(Collectors.toList());
@@ -129,6 +136,10 @@ public class PrintService {
             List<PaymentAllocation> allocations = paymentAllocationRepository.findByOrderId(order.getId());
             String paymentMethod = invoiceCalculationService.resolvePaymentMethod(order, allocations);
 
+            BigDecimal totalAmount = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
+            BigDecimal amountReceived = order.getAmountReceived() != null ? order.getAmountReceived() : BigDecimal.ZERO;
+            BigDecimal balanceDue = totalAmount.subtract(amountReceived).max(BigDecimal.ZERO);
+
             return DispatchSheetOrderDto.builder()
                     .orderId(order.getId())
                     .orderNumber(order.getOrderNumber())
@@ -138,6 +149,9 @@ public class PrintService {
                     .orderStatus(order.getOrderStatus() != null ? order.getOrderStatus().name() : "PENDING")
                     .deliveryStatus(order.getDeliveryStatus() != null ? order.getDeliveryStatus().name() : "PENDING")
                     .paymentMethod(paymentMethod)
+                    .totalAmount(totalAmount)
+                    .amountReceived(amountReceived)
+                    .balanceDue(balanceDue)
                     .notes(order.getNotes())
                     .products(productDtos)
                     .build();

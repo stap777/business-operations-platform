@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +29,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for administrative user management (/admin/users).
- * User deletion is strictly forbidden to preserve transactional entity integrity.
  */
 @RestController
 @RequestMapping("/admin/users")
@@ -38,6 +38,11 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
+    @PostMapping("/admin")
+    public ResponseEntity<UserResponse> createAdmin(@Valid @RequestBody CreateUserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminUserService.createAdmin(request));
+    }
+
     @PostMapping("/manager")
     public ResponseEntity<UserResponse> createManager(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminUserService.createManager(request));
@@ -46,6 +51,12 @@ public class AdminUserController {
     @PostMapping("/delivery")
     public ResponseEntity<UserResponse> createDeliveryUser(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminUserService.createDeliveryUser(request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        adminUserService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")

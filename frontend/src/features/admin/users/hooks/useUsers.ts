@@ -28,7 +28,10 @@ export const useCreateEmployee = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ data, role }: { data: CreateUserRequest; role: 'MANAGER' | 'DELIVERY' }) => {
+    mutationFn: ({ data, role }: { data: CreateUserRequest; role: 'ADMIN' | 'MANAGER' | 'DELIVERY' }) => {
+      if (role === 'ADMIN') {
+        return userService.createAdmin(data);
+      }
       if (role === 'MANAGER') {
         return userService.createManager(data);
       }
@@ -42,7 +45,26 @@ export const useCreateEmployee = () => {
       const message =
         error.response?.data?.message ||
         error.message ||
-        'Failed to create employee account.';
+        'Failed to create account.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useDeleteEmployee = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => userService.deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USER_KEYS.all });
+      toast.success('User account deleted successfully.');
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to delete user account.';
       toast.error(message);
     },
   });

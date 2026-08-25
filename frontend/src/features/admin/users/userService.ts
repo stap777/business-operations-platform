@@ -27,6 +27,11 @@ export const userService = {
     return response.data;
   },
 
+  createAdmin: async (data: CreateUserRequest): Promise<UserResponse> => {
+    const response = await apiClient.post<UserResponse>('/admin/users/admin', data);
+    return response.data;
+  },
+
   createManager: async (data: CreateUserRequest): Promise<UserResponse> => {
     const response = await apiClient.post<UserResponse>('/admin/users/manager', data);
     return response.data;
@@ -35,6 +40,10 @@ export const userService = {
   createDeliveryUser: async (data: CreateUserRequest): Promise<UserResponse> => {
     const response = await apiClient.post<UserResponse>('/admin/users/delivery', data);
     return response.data;
+  },
+
+  deleteUser: async (id: number): Promise<void> => {
+    await apiClient.delete(`/admin/users/${id}`);
   },
 
   updateUser: async (id: number, data: UpdateUserRequest): Promise<UserResponse> => {

@@ -11,7 +11,7 @@ interface UserFormProps {
 export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange }) => {
   const createMutation = useCreateEmployee();
 
-  const [role, setRole] = useState<'MANAGER' | 'DELIVERY'>('MANAGER');
+  const [role, setRole] = useState<'ADMIN' | 'MANAGER' | 'DELIVERY'>('MANAGER');
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -111,12 +111,23 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange }) => {
 
         {/* Modal Form */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-          {/* Role Selector Tabs (Only MANAGER & DELIVERY) */}
+          {/* Role Selector Tabs (ADMIN, MANAGER & DELIVERY) */}
           <div>
             <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1.5">
               Employee Role *
             </label>
-            <div className="grid grid-cols-2 gap-2 p-1 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg">
+            <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg">
+              <button
+                type="button"
+                onClick={() => setRole('ADMIN')}
+                className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  role === 'ADMIN'
+                    ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] shadow-sm'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+                }`}
+              >
+                Admin
+              </button>
               <button
                 type="button"
                 onClick={() => setRole('MANAGER')}
