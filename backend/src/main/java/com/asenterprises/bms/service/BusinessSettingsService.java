@@ -2,10 +2,16 @@ package com.asenterprises.bms.service;
 
 import com.asenterprises.bms.dto.BusinessSettingsRequest;
 import com.asenterprises.bms.dto.BusinessSettingsResponse;
+import com.asenterprises.bms.dto.ResetWorkspaceRequest;
 import com.asenterprises.bms.entity.BusinessSettings;
-import com.asenterprises.bms.repository.BusinessSettingsRepository;
+import com.asenterprises.bms.entity.Role;
+import com.asenterprises.bms.entity.User;
+import com.asenterprises.bms.exception.ResourceNotFoundException;
+import com.asenterprises.bms.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +24,23 @@ import org.springframework.transaction.annotation.Transactional;
 public class BusinessSettingsService {
 
     private final BusinessSettingsRepository businessSettingsRepository;
+    private final UserRepository userRepository;
+    private final UserSessionRepository userSessionRepository;
+    private final PaymentAllocationRepository paymentAllocationRepository;
+    private final PaymentRepository paymentRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final OrderRepository orderRepository;
+    private final StockAdjustmentRepository stockAdjustmentRepository;
+    private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
+    private final CustomerRepository customerRepository;
+    private final CouponRepository couponRepository;
+    private final OperatingExpenseRepository operatingExpenseRepository;
+    private final AuditLogRepository auditLogRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public BusinessSettingsResponse getBusinessSettings() {
@@ -86,6 +109,59 @@ public class BusinessSettingsService {
         BusinessSettings updated = businessSettingsRepository.save(settings);
         log.info("Removed company logo");
         return mapToResponse(updated);
+    }
+
+    @Transactional
+    public void resetWorkspace(ResetWorkspaceRequest request) {
+        // 1. Resolve authenticated user
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new IllegalStateException("Authentication required to reset workspace.");
+        }
+
+        String username = auth.getName();
+        User currentAdmin = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated administrator account not found."));
+
+        if (currentAdmin.getRole() != Role.ADMIN) {
+            throw new org.springframework.security.access.AccessDeniedException("Only Administrators can perform a full workspace reset.");
+        }
+
+        // 2. Strictly authenticate password
+        if (!passwordEncoder.matches(request.getAdminPassword(), currentAdmin.getPassword())) {
+            throw new IllegalArgumentException("Invalid administrator password. Workspace reset operation canceled.");
+        }
+
+        // 3. Strictly verify confirmation phrase
+        String confirmation = request.getConfirmationText() != null ? request.getConfirmationText().trim() : "";
+        if (!"DELETE MY WORKSPACE".equals(confirmation)) {
+            throw new IllegalArgumentException("Confirmation phrase does not match 'DELETE MY WORKSPACE' exactly.");
+        }
+
+        log.warn("CRITICAL WORKSPACE RESET INITIATED BY ADMIN: {}", currentAdmin.getUsername());
+
+        // 4. Perform full entity data purge in cascading dependency order
+        paymentAllocationRepository.deleteAllInBatch();
+        paymentRepository.deleteAllInBatch();
+        orderItemRepository.deleteAllInBatch();
+        invoiceRepository.deleteAllInBatch();
+        orderRepository.deleteAllInBatch();
+        stockAdjustmentRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+        categoryRepository.deleteAllInBatch();
+        customerRepository.deleteAllInBatch();
+        couponRepository.deleteAllInBatch();
+        operatingExpenseRepository.deleteAllInBatch();
+        auditLogRepository.deleteAllInBatch();
+        passwordResetTokenRepository.deleteAllInBatch();
+
+        // Remove non-admin users
+        userRepository.deleteByRoleNot(Role.ADMIN);
+
+        // Record fresh audit log for reset
+        auditLogService.recordAuditLog("WORKSPACE", currentAdmin.getId(), "WORKSPACE_RESET", currentAdmin, "Full workspace data reset performed by Admin " + currentAdmin.getUsername());
+
+        log.info("WORKSPACE DATA PURGE COMPLETED SUCCESSFULLY BY ADMIN {}", currentAdmin.getUsername());
     }
 
     @Transactional(readOnly = true)

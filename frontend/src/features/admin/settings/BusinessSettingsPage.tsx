@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useBusinessSettings, useUpdateBusinessSettings } from './hooks/useBusinessSettings';
 import type { BusinessSettingsRequest } from './businessSettings.types';
 import { Button } from '../../../components/ui/button';
-import { Settings, Save, Loader2, RefreshCw, Building2, FileText, Image as ImageIcon, ShieldAlert } from 'lucide-react';
+import { Settings, Save, Loader2, RefreshCw, Building2, FileText, Image as ImageIcon, ShieldAlert, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
+import { ResetWorkspaceModal } from './components/ResetWorkspaceModal';
 
 export const BusinessSettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -11,6 +12,8 @@ export const BusinessSettingsPage: React.FC = () => {
 
   const { data: settings, isLoading, isError, error, refetch } = useBusinessSettings();
   const updateMutation = useUpdateBusinessSettings();
+
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const [formData, setFormData] = useState<BusinessSettingsRequest>({
     businessName: '',
@@ -463,6 +466,39 @@ export const BusinessSettingsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* SECTION 4: DANGER ZONE - WORKSPACE RESET */}
+      <div className="bg-white dark:bg-[#0F0F0F] rounded-xl border border-red-500/30 p-5 space-y-4 shadow-sm">
+        <div className="flex items-center justify-between pb-3 border-b border-red-500/20">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-500" />
+            <h2 className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">
+              Danger Zone - System Reset
+            </h2>
+          </div>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-500/10 text-red-600 border border-red-500/20">
+            ADMIN ONLY
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs">
+          <div className="space-y-1 max-w-xl">
+            <h4 className="font-semibold text-[#111111] dark:text-[#FAFAFA]">Delete Workspace Data</h4>
+            <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
+              Permanently purge all orders, invoices, payments, products, customers, and non-admin employee accounts. Requires strict administrator password authentication.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => setIsResetModalOpen(true)}
+            className="bg-red-600 hover:bg-red-700 text-white text-xs font-bold gap-1.5 shrink-0 shadow-sm"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Workspace...
+          </Button>
+        </div>
+      </div>
+
       {/* Bottom Save Action Bar */}
       <div className="pt-4 border-t border-[#ECECEC] dark:border-[#232323] flex items-center justify-between">
         <span className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
@@ -489,6 +525,12 @@ export const BusinessSettingsPage: React.FC = () => {
           )}
         </Button>
       </div>
+
+      {/* Reset Workspace Authentication Modal */}
+      <ResetWorkspaceModal
+        open={isResetModalOpen}
+        onOpenChange={setIsResetModalOpen}
+      />
     </form>
   );
 };

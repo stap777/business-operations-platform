@@ -33,3 +33,23 @@ export const useUpdateBusinessSettings = () => {
     },
   });
 };
+
+export const useResetWorkspace = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { adminPassword: string; confirmationText: string }) =>
+      businessSettingsService.resetWorkspace(data),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries();
+      toast.success(res.message || 'Workspace reset successfully.');
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to reset workspace data.';
+      toast.error(message);
+    },
+  });
+};

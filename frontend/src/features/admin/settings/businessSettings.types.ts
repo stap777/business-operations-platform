@@ -21,3 +21,8 @@ export interface BusinessSettingsRequest {
   defaultPaymentTerms?: string;
   invoiceFooter?: string;
 }
+
+export interface ResetWorkspaceRequest {
+  adminPassword: string;
+  confirmationText: string;
+}
