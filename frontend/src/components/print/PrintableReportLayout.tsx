@@ -68,7 +68,7 @@ export const PrintableReportLayout: React.FC<PrintableReportLayoutProps> = ({
 
       {/* Footer */}
       <div className="pt-6 border-t border-neutral-300 text-center text-[10px] text-neutral-500">
-        <p>A.S. Enterprises Business Management System — Confidential Operational Report</p>
+        <p>{businessName} Operations Platform — Confidential Operational Report</p>
       </div>
     </div>
   );

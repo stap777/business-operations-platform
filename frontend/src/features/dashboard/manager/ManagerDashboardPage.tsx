@@ -13,9 +13,10 @@ import {
   Loader2,
   CheckCircle,
 } from 'lucide-react';
-import { useDashboardSummary } from '../useDashboardQueries';
+import { useDashboardSummary, useInventoryReport } from '../useDashboardQueries';
 import { Button } from '../../../components/ui/button';
 import { OrdersDashboardSection } from '../../orders/components/OrdersDashboardSection';
+import { InventoryAlert } from '../components/InventoryAlert';
 
 export const ManagerDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -32,8 +33,9 @@ export const ManagerDashboardPage: React.FC = () => {
 
   const firstName = user?.fullName ? user.fullName.split(' ')[0] : user?.username || 'Sales Representative';
 
-  // 1. Real summary metrics from backend
+  // Real summary & inventory metrics from backend
   const summaryQuery = useDashboardSummary();
+  const inventoryQuery = useInventoryReport();
 
   return (
     <div className="space-y-6 pb-8">
@@ -180,6 +182,13 @@ export const ManagerDashboardPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Task 3: Low Stock Dashboard Alerts (Hidden if none low) */}
+      <InventoryAlert
+        data={inventoryQuery.data}
+        isLoading={inventoryQuery.isLoading}
+        isError={inventoryQuery.isError}
+      />
 
       {/* Orders Dashboard Section */}
       <OrdersDashboardSection title="Orders Management" showCreateButton={true} />

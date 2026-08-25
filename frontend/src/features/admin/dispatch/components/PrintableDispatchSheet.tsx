@@ -317,7 +317,7 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
 
       {/* Document Footer */}
       <div className="border-t border-neutral-400 pt-2 text-center text-[10px] text-neutral-600 print:text-black">
-        <p>A.S. Enterprises Operations Platform • Internal Delivery Dispatch Sheet • Driver Signature: _______________________</p>
+        <p>{dispatchSheet.businessName || 'Business Operations Platform'} • Internal Delivery Dispatch Sheet • Driver Signature: _______________________</p>
       </div>
     </div>
   );

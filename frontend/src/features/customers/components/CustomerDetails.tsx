@@ -122,12 +122,12 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
               </p>
             </div>
 
-            {/* CREDIT / UDHAR SECTION */}
-            <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-[#FAFAFA] dark:bg-[#141414] space-y-3 text-xs">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 font-bold uppercase text-[11px] tracking-wider text-[#111111] dark:text-[#FAFAFA]">
-                  <CreditCard className="w-4 h-4 text-amber-500" />
-                  <span>Credit / Udhar</span>
+            {/* CREDIT / UDHAR OUTSTANDING SUMMARY CARD (Task 2) */}
+            <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-900/60 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 space-y-3 text-xs shadow-2xs">
+              <div className="flex items-center justify-between border-b border-amber-200 dark:border-amber-900/40 pb-2">
+                <div className="flex items-center gap-2 font-bold uppercase text-[11px] tracking-wider text-amber-900 dark:text-amber-300">
+                  <CreditCard className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Customer Outstanding Summary (Udhar)</span>
                 </div>
                 {pendingOrders && pendingOrders.length > 0 && (
                   <button
@@ -135,9 +135,9 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                       onOpenChange(false);
                       navigate('/admin/payments');
                     }}
-                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
+                    className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold"
                   >
-                    View in Payments
+                    Manage Payments →
                   </button>
                 )}
               </div>
@@ -154,22 +154,70 @@ export const CustomerDetails: React.FC<CustomerDetailsProps> = ({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323]">
-                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-semibold uppercase">
-                        Total Outstanding
+                  {/* Task 2: Outstanding Summary Grid Card */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F0F0F] border border-amber-200 dark:border-amber-900/40 shadow-2xs">
+                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-bold uppercase block">
+                        Outstanding
                       </span>
-                      <p className="text-sm font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5">
+                      <p className="text-base font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5">
                         {formatCurrency(totalOutstanding)}
                       </p>
                     </div>
-                    <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323]">
-                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-semibold uppercase">
-                        Open Credit Orders
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F0F0F] border border-amber-200 dark:border-amber-900/40 shadow-2xs">
+                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-bold uppercase block">
+                        Pending Bills
                       </span>
-                      <p className="text-sm font-bold font-mono text-[#111111] dark:text-[#FAFAFA] mt-0.5">
+                      <p className="text-base font-bold font-mono text-[#111111] dark:text-[#FAFAFA] mt-0.5">
                         {pendingOrders ? pendingOrders.length : 0}
                       </p>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F0F0F] border border-amber-200 dark:border-amber-900/40 shadow-2xs">
+                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-bold uppercase block">
+                        Last Payment
+                      </span>
+                      {(() => {
+                        const paymentEntries = ledger?.entries?.filter(e => e.creditAmount > 0) || [];
+                        const lastPayment = paymentEntries.length > 0 ? paymentEntries[0] : null;
+                        if (lastPayment) {
+                          const dt = new Date(lastPayment.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                          return (
+                            <p className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                              {formatCurrency(lastPayment.creditAmount)} ({dt})
+                            </p>
+                          );
+                        }
+                        return <p className="text-xs font-mono text-neutral-500 mt-0.5">None</p>;
+                      })()}
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-white dark:bg-[#0F0F0F] border border-amber-200 dark:border-amber-900/40 shadow-2xs">
+                      <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-bold uppercase block">
+                        Last Order
+                      </span>
+                      {(() => {
+                        const orderEntries = ledger?.entries?.filter(e => e.debitAmount > 0) || [];
+                        const lastOrderEntry = orderEntries.length > 0 ? orderEntries[0] : null;
+                        if (lastOrderEntry) {
+                          const dt = new Date(lastOrderEntry.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                          return (
+                            <p className="text-xs font-bold font-mono text-[#111111] dark:text-[#FAFAFA] mt-0.5">
+                              {dt}
+                            </p>
+                          );
+                        }
+                        if (pendingOrders && pendingOrders.length > 0) {
+                          const dt = new Date(pendingOrders[0].orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                          return (
+                            <p className="text-xs font-bold font-mono text-[#111111] dark:text-[#FAFAFA] mt-0.5">
+                              {dt}
+                            </p>
+                          );
+                        }
+                        return <p className="text-xs font-mono text-neutral-500 mt-0.5">None</p>;
+                      })()}
                     </div>
                   </div>
 
