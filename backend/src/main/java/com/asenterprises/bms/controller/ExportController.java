@@ -36,9 +36,22 @@ public class ExportController {
 
         byte[] data = exportService.exportReport(reportType, format, startDate, endDate, customerId);
 
-        String fileExtension = "pdf".equalsIgnoreCase(format) ? "pdf" : "csv";
-        String filename = reportType + "-report." + fileExtension;
-        MediaType mediaType = "pdf".equalsIgnoreCase(format) ? MediaType.APPLICATION_PDF : MediaType.TEXT_PLAIN;
+        boolean isPdf = "pdf".equalsIgnoreCase(format);
+        boolean isXlsx = "xlsx".equalsIgnoreCase(format) || "excel".equalsIgnoreCase(format);
+
+        String fileExtension = isPdf ? "pdf" : (isXlsx ? "xlsx" : "csv");
+        String formattedTitle = reportType.substring(0, 1).toUpperCase() + reportType.substring(1);
+        String dateSuffix = LocalDate.now().toString();
+        String filename = formattedTitle + "_" + dateSuffix + "." + fileExtension;
+
+        MediaType mediaType;
+        if (isPdf) {
+            mediaType = MediaType.APPLICATION_PDF;
+        } else if (isXlsx) {
+            mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        } else {
+            mediaType = MediaType.TEXT_PLAIN;
+        }
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")

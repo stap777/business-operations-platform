@@ -131,10 +131,19 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
-        // TODO (V2 Improvement): Check if product exists in any ACTIVE or PENDING orders before allowing deactivation.
         product.setStatus(ProductStatus.INACTIVE);
         Product deactivatedProduct = productRepository.save(product);
         return mapToResponse(deactivatedProduct);
+    }
+
+    @Transactional
+    public ProductResponse restoreProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        product.setStatus(ProductStatus.ACTIVE);
+        Product restoredProduct = productRepository.save(product);
+        return mapToResponse(restoredProduct);
     }
 
     @Transactional

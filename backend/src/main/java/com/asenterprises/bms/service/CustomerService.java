@@ -105,6 +105,16 @@ public class CustomerService {
         return mapToResponse(deactivatedCustomer);
     }
 
+    @Transactional
+    public CustomerResponse restoreCustomer(Long id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+
+        customer.setStatus(CustomerStatus.ACTIVE);
+        Customer restoredCustomer = customerRepository.save(customer);
+        return mapToResponse(restoredCustomer);
+    }
+
     /**
      * TODO (V2 Improvement): The current MAX(id)+1 calculation is suitable for V1, but can suffer from race conditions
      * during concurrent customer creation under heavy load. Replace in V2 with a dedicated PostgreSQL database sequence

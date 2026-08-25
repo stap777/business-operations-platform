@@ -52,6 +52,7 @@ public class OrderService {
     private final com.asenterprises.bms.repository.CouponRepository couponRepository;
     private final com.asenterprises.bms.repository.PaymentAllocationRepository paymentAllocationRepository;
     private final InvoiceService invoiceService;
+    private final AuditLogService auditLogService;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
@@ -73,7 +74,6 @@ public class OrderService {
         if (authenticatedUsername != null) {
             User actor = userRepository.findByUsername(authenticatedUsername).orElse(null);
             if (actor != null && actor.getRole() == Role.MANAGER) {
-                // MANAGER identity is derived directly from authenticated principal
                 manager = actor;
             } else if (actor != null && actor.getRole() == Role.ADMIN && request.getManagerId() != null) {
                 manager = userRepository.findById(request.getManagerId())
@@ -109,7 +109,6 @@ public class OrderService {
                 throw new IllegalArgumentException("Assigned delivery user must have DELIVERY role");
             }
         } else {
-            // Auto-select first active delivery person if available when creating order
             deliveryPerson = userRepository.findFirstByRoleAndStatusOrderByIdAsc(Role.DELIVERY, UserStatus.ACTIVE)
                     .orElse(null);
         }
@@ -225,6 +224,11 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
         
+        // Audit log event
+        if (manager != null) {
+            auditLogService.recordAuditLog("ORDER", savedOrder.getId(), "ORDER_CREATED", manager, "Created Order #" + savedOrder.getOrderNumber());
+        }
+
         // Auto-create initial invoice immediately upon order placement
         invoiceService.createInvoiceForOrder(savedOrder, manager);
 
@@ -305,6 +309,8 @@ public class OrderService {
                 .map(this::mapToItemResponse)
                 .toList();
 
+        boolean isLocked = order.getOrderStatus() == OrderStatus.VERIFIED || order.getOrderStatus() == OrderStatus.COMPLETED;
+
         return OrderResponse.builder()
                 .id(order.getId())
                 .orderNumber(order.getOrderNumber())
@@ -327,6 +333,7 @@ public class OrderService {
                 .deliveryInstructions(order.getDeliveryInstructions())
                 .notes(order.getNotes())
                 .items(itemResponses)
+                .isLocked(isLocked)
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();

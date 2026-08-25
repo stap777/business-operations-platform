@@ -4,7 +4,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from './OrderStatusBadge';
 import { ActionDropdownMenu } from '../../../components/common/ActionDropdownMenu';
 import type { ActionMenuItem } from '../../../components/common/ActionDropdownMenu';
 import { Button } from '../../../components/ui/button';
-import { Eye, Printer, ShieldCheck, XCircle } from 'lucide-react';
+import { Eye, Lock, Printer, ShieldCheck, XCircle } from 'lucide-react';
 
 interface OrderTableProps {
   orders: OrderResponse[];
@@ -150,7 +150,15 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                       <PaymentStatusBadge status={order.paymentStatus} />
                     </td>
                     <td className="py-3 px-3.5">
-                      <OrderStatusBadge status={order.orderStatus} />
+                      <div className="flex items-center gap-1.5">
+                        <OrderStatusBadge status={order.orderStatus} />
+                        {(order.isLocked || order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                            <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                            Verified
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-3.5 text-right">
                       <div className="flex items-center justify-end gap-1.5">
@@ -227,7 +235,15 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 <span className="font-mono font-bold text-sm text-[#111111] dark:text-[#FAFAFA]">
                   {order.orderNumber}
                 </span>
-                <OrderStatusBadge status={order.orderStatus} />
+                <div className="flex items-center gap-1.5">
+                  <OrderStatusBadge status={order.orderStatus} />
+                  {(order.isLocked || order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      Verified
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Customer & Date */}

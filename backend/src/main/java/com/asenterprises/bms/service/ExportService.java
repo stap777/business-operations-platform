@@ -12,6 +12,8 @@ import java.time.LocalDate;
 
 /**
  * Service formatting business reports into CSV, Excel-compatible text structures, and PDF placeholder reports.
+ *
+ * TODO (V2 Improvement): For large datasets (>10,000 records), switch from standard POI workbook to streaming SXSSFWorkbook to avoid memory overhead.
  */
 @Slf4j
 @Service
@@ -22,6 +24,8 @@ public class ExportService {
     private final PaymentReportService paymentReportService;
     private final InventoryReportService inventoryReportService;
     private final CustomerLedgerService customerLedgerService;
+    private final com.asenterprises.bms.repository.OrderRepository orderRepository;
+    private final com.asenterprises.bms.repository.CustomerRepository customerRepository;
 
     public byte[] exportReport(String reportType, String format, LocalDate startDate, LocalDate endDate, Long customerId) {
         String normalizedType = reportType.toLowerCase();
@@ -29,6 +33,14 @@ public class ExportService {
 
         String content;
         switch (normalizedType) {
+            case "orders":
+                content = formatOrdersReport(normalizedFormat);
+                break;
+
+            case "customers":
+                content = formatCustomersReport(normalizedFormat);
+                break;
+
             case "sales":
                 SalesReportResponse sales = salesReportService.getSalesReport(startDate, endDate, "DAILY");
                 content = formatSalesReport(sales, normalizedFormat);
@@ -145,6 +157,43 @@ public class ExportService {
               .append(e.getCreditAmount()).append(",")
               .append(e.getRunningBalance()).append(",")
               .append(e.getRemarks()).append("\n");
+        });
+        return sb.toString();
+    }
+
+    private String formatOrdersReport(String format) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Order Number,Customer,Products,Total Amount,Payment Method,Date,Status\n");
+        orderRepository.findAll().forEach(order -> {
+            String productSummary = order.getItems().stream()
+                    .map(item -> item.getProduct().getName() + " (x" + item.getQuantity() + ")")
+                    .reduce((a, b) -> a + "; " + b).orElse("-");
+            productSummary = "\"" + productSummary.replace("\"", "\"\"") + "\"";
+            String custName = "\"" + (order.getCustomer() != null ? order.getCustomer().getFullName().replace("\"", "\"\"") : "") + "\"";
+
+            sb.append(order.getOrderNumber()).append(",")
+              .append(custName).append(",")
+              .append(productSummary).append(",")
+              .append(order.getTotalAmount()).append(",")
+              .append(order.getPaymentMethod() != null ? order.getPaymentMethod() : "PENDING").append(",")
+              .append(order.getCreatedAt() != null ? order.getCreatedAt().toString() : "").append(",")
+              .append(order.getOrderStatus()).append("\n");
+        });
+        return sb.toString();
+    }
+
+    private String formatCustomersReport(String format) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Customer Code,Full Name,Phone Number,Alternate Phone,Address,Status\n");
+        customerRepository.findAll().forEach(cust -> {
+            String name = "\"" + (cust.getFullName() != null ? cust.getFullName().replace("\"", "\"\"") : "") + "\"";
+            String addr = "\"" + (cust.getAddress() != null ? cust.getAddress().replace("\"", "\"\"") : "") + "\"";
+            sb.append(cust.getCustomerCode()).append(",")
+              .append(name).append(",")
+              .append(cust.getPhoneNumber() != null ? cust.getPhoneNumber() : "").append(",")
+              .append(cust.getAlternatePhoneNumber() != null ? cust.getAlternatePhoneNumber() : "").append(",")
+              .append(addr).append(",")
+              .append(cust.getStatus()).append("\n");
         });
         return sb.toString();
     }

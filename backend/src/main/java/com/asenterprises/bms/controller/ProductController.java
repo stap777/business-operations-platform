@@ -77,6 +77,12 @@ public class ProductController {
         return ResponseEntity.ok(productService.deactivateProduct(id));
     }
 
+    @PatchMapping("/{id}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductResponse> restoreProduct(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.restoreProduct(id));
+    }
+
     @PatchMapping("/{id}/update-stock")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProductResponse> updateStock(

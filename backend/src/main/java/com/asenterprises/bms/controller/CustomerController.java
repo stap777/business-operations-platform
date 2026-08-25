@@ -73,6 +73,12 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.deactivateCustomer(id));
     }
 
+    @PatchMapping("/{id}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CustomerResponse> restoreCustomer(@PathVariable Long id) {
+        return ResponseEntity.ok(customerService.restoreCustomer(id));
+    }
+
     @GetMapping("/{id}/pending-orders")
     public ResponseEntity<List<PendingOrderResponse>> getPendingOrdersForCustomer(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.getPendingOrdersForCustomer(id));

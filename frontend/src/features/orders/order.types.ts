@@ -47,6 +47,7 @@ export interface OrderResponse {
   deliveryInstructions?: string | null;
   notes?: string | null;
   items: OrderItemResponse[];
+  isLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 }
