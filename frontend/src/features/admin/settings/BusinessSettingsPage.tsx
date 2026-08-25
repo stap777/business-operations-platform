@@ -5,6 +5,7 @@ import { Button } from '../../../components/ui/button';
 import { Settings, Save, Loader2, RefreshCw, Building2, FileText, Image as ImageIcon, ShieldAlert, AlertTriangle, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { ResetWorkspaceModal } from './components/ResetWorkspaceModal';
+import { getResolvedLogoUrl } from '../../../utils/logoUtils';
 
 export const BusinessSettingsPage: React.FC = () => {
   const { user } = useAuth();
@@ -380,7 +381,7 @@ export const BusinessSettingsPage: React.FC = () => {
             <div className="w-24 h-16 rounded-lg bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] flex items-center justify-center p-2 shrink-0 overflow-hidden">
               {formData.logoUrl ? (
                 <img
-                  src={formData.logoUrl}
+                  src={getResolvedLogoUrl(formData.logoUrl)}
                   alt="Company Logo"
                   className="max-h-full max-w-full object-contain"
                   onError={(e) => {

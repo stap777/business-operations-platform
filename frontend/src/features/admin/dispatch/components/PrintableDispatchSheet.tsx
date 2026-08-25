@@ -1,5 +1,6 @@
 import React from 'react';
 import type { DispatchSheetResponse } from '../dispatchSheet.types';
+import { getResolvedLogoUrl } from '../../../../utils/logoUtils';
 
 interface PrintableDispatchSheetProps {
   dispatchSheet: DispatchSheetResponse;
@@ -22,7 +23,8 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
     hour12: true,
   });
 
-  const logoUrl = dispatchSheet.logoUrl || '/api/v1/business-settings/logo';
+  const rawLogoUrl = dispatchSheet.logoUrl || '/api/v1/business-settings/logo';
+  const logoUrl = getResolvedLogoUrl(rawLogoUrl);
 
   const formatPaymentLabel = (method?: string) => {
     if (!method) return '[CASH]';

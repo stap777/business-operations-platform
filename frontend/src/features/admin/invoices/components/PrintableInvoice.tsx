@@ -1,6 +1,7 @@
 import React from 'react';
 import type { InvoiceResponse } from '../invoice.types';
 import type { BusinessSettingsResponse } from '../../settings/businessSettings.types';
+import { getResolvedLogoUrl } from '../../../../utils/logoUtils';
 
 interface PrintableInvoiceProps {
   invoice: InvoiceResponse;
@@ -22,7 +23,8 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
 
   const businessName =
     invoice.enterpriseName || businessSettings?.businessName || 'A.S. Enterprises';
-  const logoUrl = invoice.logoUrl || businessSettings?.logoUrl || '/api/v1/business-settings/logo';
+  const rawLogoUrl = businessSettings?.logoUrl || invoice.logoUrl || '/api/v1/business-settings/logo';
+  const logoUrl = getResolvedLogoUrl(rawLogoUrl);
   const invoiceFooter =
     invoice.invoiceFooter || businessSettings?.invoiceFooter || 'Thank You\nVisit Again';
 

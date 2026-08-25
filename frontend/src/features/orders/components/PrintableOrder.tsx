@@ -1,5 +1,6 @@
 import React from 'react';
 import type { OrderResponse } from '../order.types';
+import { getResolvedLogoUrl } from '../../../utils/logoUtils';
 
 interface PrintableOrderProps {
   order: OrderResponse | null;
@@ -22,16 +23,22 @@ export const PrintableOrder: React.FC<PrintableOrderProps> = ({
     return 'PARTIALLY PAID';
   };
 
+  const rawLogoUrl = businessSettings?.logoUrl || '/api/v1/business-settings/logo';
+  const logoUrl = getResolvedLogoUrl(rawLogoUrl);
+
   return (
     <div className="printable-order-container hidden print:block fixed inset-0 bg-white text-black p-8 z-[9999] font-sans text-xs overflow-y-auto">
       {/* 1. COMPANY HEADER */}
       <div className="flex justify-between items-start border-b border-black pb-4 mb-4">
         <div className="space-y-1">
-          {businessSettings?.logoUrl ? (
+          {logoUrl ? (
             <img
-              src={businessSettings.logoUrl}
+              src={logoUrl}
               alt="Company Logo"
               className="h-12 w-auto object-contain mb-2"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
             />
           ) : null}
           <h1 className="text-xl font-bold uppercase tracking-wide text-black">

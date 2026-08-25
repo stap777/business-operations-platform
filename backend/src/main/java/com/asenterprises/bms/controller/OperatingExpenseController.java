@@ -19,7 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/operating-expenses")
+@RequestMapping("/operating-expenses")
 @RequiredArgsConstructor
 public class OperatingExpenseController {
 

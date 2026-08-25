@@ -1,4 +1,5 @@
 import React from 'react';
+import { getResolvedLogoUrl } from '../../utils/logoUtils';
 
 interface PrintableReportLayoutProps {
   title: string;
@@ -29,13 +30,22 @@ export const PrintableReportLayout: React.FC<PrintableReportLayoutProps> = ({
     day: 'numeric',
   });
 
+  const resolvedLogoUrl = getResolvedLogoUrl(logoUrl);
+
   return (
     <div className="printable-report-container hidden print:block fixed inset-0 bg-white text-black p-8 z-[9999] font-sans text-xs overflow-y-auto">
       {/* Header Row */}
       <div className="flex items-start justify-between pb-6 border-b-2 border-neutral-800">
         <div className="space-y-1 max-w-sm">
-          {logoUrl ? (
-            <img src={logoUrl} alt={businessName} className="h-10 object-contain mb-2" />
+          {resolvedLogoUrl ? (
+            <img
+              src={resolvedLogoUrl}
+              alt={businessName}
+              className="h-10 object-contain mb-2"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
           ) : (
             <h1 className="text-xl font-extrabold uppercase tracking-wider text-black">
               {businessName}
