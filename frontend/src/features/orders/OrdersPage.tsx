@@ -9,12 +9,14 @@ import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { PrintableOrder } from './components/PrintableOrder';
 import { Button } from '../../components/ui/button';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw, ClipboardList, CheckCircle2 } from 'lucide-react';
+import { DispatchSheetModal } from '../admin/dispatch/components/DispatchSheetModal';
+import { Plus, ChevronLeft, ChevronRight, RefreshCw, ClipboardList, CheckCircle2, ClipboardCheck } from 'lucide-react';
 
 export const OrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: businessSettings } = useBusinessSettings();
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'PENDING_VERIFICATION'>('ALL');
   const [searchOrderNumber, setSearchOrderNumber] = useState<string>('');
@@ -140,14 +142,26 @@ export const OrdersPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          size="sm"
-          onClick={() => navigate('/orders/create')}
-          className="bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111] hover:opacity-90 text-xs font-semibold px-4 py-2 rounded-lg shadow-2xs gap-1.5 self-start sm:self-auto cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Create Order
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDispatchModalOpen(true)}
+            className="border-[#ECECEC] dark:border-[#232323] text-[#111111] dark:text-[#FAFAFA] text-xs font-semibold px-3 py-2 rounded-lg gap-1.5 cursor-pointer"
+          >
+            <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            Print Dispatch Sheet
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={() => navigate('/orders/create')}
+            className="bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111] hover:opacity-90 text-xs font-semibold px-4 py-2 rounded-lg shadow-2xs gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Create Order
+          </Button>
+        </div>
       </div>
 
       {/* Main View Container */}
@@ -272,6 +286,11 @@ export const OrdersPage: React.FC = () => {
         isCancelling={cancelOrderMutation.isPending}
         isVerifying={verifyOrderMutation.isPending}
         userRole={user?.role}
+      />
+
+      <DispatchSheetModal
+        isOpen={isDispatchModalOpen}
+        onClose={() => setIsDispatchModalOpen(false)}
       />
     </div>
   );

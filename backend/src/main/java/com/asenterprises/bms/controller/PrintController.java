@@ -32,4 +32,13 @@ public class PrintController {
             @RequestParam(required = false) List<Long> invoiceIds) {
         return ResponseEntity.ok(printService.prepareBatchPrintQueue(startDate, endDate, invoiceIds));
     }
+
+    @GetMapping("/dispatch-sheet")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES_REPRESENTATIVE')")
+    public ResponseEntity<com.asenterprises.bms.dto.DispatchSheetResponse> getDispatchSheet(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            java.security.Principal principal) {
+        String username = principal != null ? principal.getName() : "Admin";
+        return ResponseEntity.ok(printService.generateDispatchSheet(date, username));
+    }
 }

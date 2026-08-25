@@ -23,8 +23,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.asenterprises.bms.dto.DispatchSheetOrderDto;
+import com.asenterprises.bms.dto.DispatchSheetProductDto;
+import com.asenterprises.bms.dto.DispatchSheetResponse;
+import com.asenterprises.bms.entity.Order;
+import com.asenterprises.bms.repository.OrderRepository;
+import java.util.Comparator;
+
 /**
- * Service formatting batch printable invoice queues for physical/digital printing.
+ * Service formatting batch printable invoice queues and dispatch sheet checklists.
  */
 @Slf4j
 @Service
@@ -35,6 +42,7 @@ public class PrintService {
     private final BusinessSettingsService businessSettingsService;
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final InvoiceCalculationService invoiceCalculationService;
+    private final OrderRepository orderRepository;
 
     @Transactional(readOnly = true)
     public BatchInvoicePrintResponse prepareBatchPrintQueue(LocalDate startDate, LocalDate endDate, List<Long> invoiceIds) {
@@ -93,5 +101,63 @@ public class PrintService {
                 .generatedAt(LocalDateTime.now())
                 .invoices(printableList)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public DispatchSheetResponse generateDispatchSheet(LocalDate targetDate, String username) {
+        LocalDate date = targetDate != null ? targetDate : LocalDate.now();
+        LocalDateTime startOfDay = date.atStartOfDay();
+        LocalDateTime endOfDay = date.atTime(LocalTime.MAX);
+
+        BusinessSettingsResponse settings = businessSettingsService.getBusinessSettings();
+        List<Order> rawOrders = orderRepository.findOrdersForDispatchDate(startOfDay, endOfDay);
+
+        // Sort pending deliveries first, then by creation time ASC
+        List<Order> sortedOrders = rawOrders.stream()
+                .sorted(Comparator.comparing((Order o) -> isDelivered(o) ? 1 : 0)
+                        .thenComparing(Order::getCreatedAt))
+                .collect(Collectors.toList());
+
+        List<DispatchSheetOrderDto> orderDtos = sortedOrders.stream().map(order -> {
+            List<DispatchSheetProductDto> productDtos = order.getItems().stream().map(item ->
+                    DispatchSheetProductDto.builder()
+                            .name(item.getProduct() != null ? item.getProduct().getName() : "Product")
+                            .quantity(item.getQuantity())
+                            .build()
+            ).collect(Collectors.toList());
+
+            List<PaymentAllocation> allocations = paymentAllocationRepository.findByOrderId(order.getId());
+            String paymentMethod = invoiceCalculationService.resolvePaymentMethod(order, allocations);
+
+            return DispatchSheetOrderDto.builder()
+                    .orderId(order.getId())
+                    .orderNumber(order.getOrderNumber())
+                    .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : "Walk-in Customer")
+                    .customerPhone(order.getCustomer() != null ? order.getCustomer().getPhoneNumber() : null)
+                    .customerAddress(order.getCustomer() != null ? order.getCustomer().getAddress() : null)
+                    .orderStatus(order.getOrderStatus() != null ? order.getOrderStatus().name() : "PENDING")
+                    .deliveryStatus(order.getDeliveryStatus() != null ? order.getDeliveryStatus().name() : "PENDING")
+                    .paymentMethod(paymentMethod)
+                    .notes(order.getNotes())
+                    .products(productDtos)
+                    .build();
+        }).collect(Collectors.toList());
+
+        log.info("Generated dispatch sheet for date: {} (total orders: {}, printedBy: {})", date, orderDtos.size(), username);
+
+        return DispatchSheetResponse.builder()
+                .businessName(settings.getBusinessName())
+                .logoUrl(settings.getLogoUrl())
+                .date(date)
+                .printedAt(LocalDateTime.now())
+                .printedByName(username != null && !username.isBlank() ? username : "Admin")
+                .totalOrders(orderDtos.size())
+                .orders(orderDtos)
+                .build();
+    }
+
+    private boolean isDelivered(Order o) {
+        return (o.getOrderStatus() != null && o.getOrderStatus().name().equalsIgnoreCase("DELIVERED"))
+                || (o.getDeliveryStatus() != null && o.getDeliveryStatus().name().equalsIgnoreCase("DELIVERED"));
     }
 }

@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useTheme } from '../../../context/ThemeContext';
-import { Sun, Moon, Plus } from 'lucide-react';
+import { Sun, Moon, Plus, ClipboardCheck } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
+import { DispatchSheetModal } from '../../admin/dispatch/components/DispatchSheetModal';
 
 import {
   useDashboardSummary,
@@ -26,6 +27,7 @@ export const AdminDashboardPage: React.FC = () => {
   const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [salesGranularity, setSalesGranularity] = useState('DAILY');
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
 
   const isAdmin = user?.role === 'ADMIN';
 
@@ -57,6 +59,16 @@ export const AdminDashboardPage: React.FC = () => {
           >
             {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsDispatchModalOpen(true)}
+            className="border-[#ECECEC] dark:border-[#232323] text-[#111111] dark:text-[#FAFAFA] text-xs font-semibold px-3 py-2 rounded-lg gap-1.5 cursor-pointer"
+          >
+            <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            Print Dispatch Sheet
+          </Button>
 
           <Button
             size="sm"
@@ -112,6 +124,11 @@ export const AdminDashboardPage: React.FC = () => {
           isError={auditQuery.isError}
         />
       </div>
+
+      <DispatchSheetModal
+        isOpen={isDispatchModalOpen}
+        onClose={() => setIsDispatchModalOpen(false)}
+      />
     </div>
   );
 };

@@ -110,4 +110,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Order o SET o.createdAt = :createdAt WHERE o.id = :id")
     int overrideCreatedAt(@Param("id") Long id, @Param("createdAt") LocalDateTime createdAt);
+
+    @Query("SELECT DISTINCT o FROM Order o JOIN FETCH o.customer LEFT JOIN FETCH o.items item " +
+           "WHERE o.createdAt >= :startOfDay AND o.createdAt <= :endOfDay " +
+           "AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED " +
+           "ORDER BY o.createdAt ASC")
+    java.util.List<Order> findOrdersForDispatchDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 }

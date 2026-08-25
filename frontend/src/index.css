@@ -114,4 +114,29 @@ body {
     color: #000000 !important;
     background: #ffffff !important;
   }
+
+  .printable-dispatch-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .thermal-dispatch-sheet, .printable-dispatch-sheet-thermal {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    padding: 4mm !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    font-family: "Courier New", Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
 }
