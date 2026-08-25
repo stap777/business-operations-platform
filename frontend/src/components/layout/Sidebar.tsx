@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
           <AvenLogo size="sm" />
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-neutral-100 dark:bg-[#1A1A1A] text-[#71717A] dark:text-[#A1A1AA] border border-[#ECECEC] dark:border-[#232323]">
-              v1.2.2
+              v1.0.0
             </span>
             <button
               onClick={() => setSidebarOpen(false)}
