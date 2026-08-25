@@ -34,10 +34,9 @@ export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, 
           onOpenChange(false);
           setAdminPassword('');
           setConfirmationText('');
-          // Refresh entire app state to reflect clean workspace
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
+          localStorage.removeItem('aven_session_token');
+          // Redirect user to workspace setup to create a brand-new workspace
+          window.location.href = '/workspace-setup?reset=true';
         },
         onError: (err: any) => {
           const msg = err.response?.data?.message || err.message || 'Workspace reset failed.';
@@ -81,13 +80,14 @@ export const ResetWorkspaceModal: React.FC<ResetWorkspaceModalProps> = ({ open, 
               <span>CRITICAL DATA LOSS WARNING</span>
             </div>
             <p className="text-[11px] leading-relaxed opacity-90">
-              This action will <strong>permanently purge ALL enterprise business data</strong>, including:
+              This action will <strong>permanently purge ALL enterprise business data & user accounts</strong>, including:
             </p>
             <ul className="text-[11px] list-disc list-inside space-y-1 opacity-90 pl-1">
               <li>All Orders, Invoices, and Dispatch Sheets</li>
               <li>All Payments, Receivables, and Financial History</li>
               <li>All Customers, Products, Stock Adjustments, and Categories</li>
-              <li>All Non-Admin Employee Accounts and Audit Logs</li>
+              <li>ALL Admin, Manager, and Delivery Accounts (System Reset)</li>
+              <li>All Business Settings (You will be redirected to set up a new workspace)</li>
             </ul>
             <p className="text-[11px] font-bold text-red-600 dark:text-red-400 pt-1">
               This action cannot be undone under any circumstances.

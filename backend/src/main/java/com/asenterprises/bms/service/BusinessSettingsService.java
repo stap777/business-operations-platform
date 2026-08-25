@@ -152,16 +152,19 @@ public class BusinessSettingsService {
         customerRepository.deleteAllInBatch();
         couponRepository.deleteAllInBatch();
         operatingExpenseRepository.deleteAllInBatch();
-        auditLogRepository.deleteAllInBatch();
         passwordResetTokenRepository.deleteAllInBatch();
 
-        // Remove non-admin users
-        userRepository.deleteByRoleNot(Role.ADMIN);
+        // 5. Purge user sessions and ALL user accounts (including Admin)
+        userSessionRepository.deleteAllInBatch();
+        userRepository.deleteAllInBatch();
 
-        // Record fresh audit log for reset
-        auditLogService.recordAuditLog("WORKSPACE", currentAdmin.getId(), "WORKSPACE_RESET", currentAdmin, "Full workspace data reset performed by Admin " + currentAdmin.getUsername());
+        // 6. Purge business settings
+        businessSettingsRepository.deleteAllInBatch();
 
-        log.info("WORKSPACE DATA PURGE COMPLETED SUCCESSFULLY BY ADMIN {}", currentAdmin.getUsername());
+        // 7. Purge audit logs
+        auditLogRepository.deleteAllInBatch();
+
+        log.info("TOTAL WORKSPACE DATA PURGE COMPLETED SUCCESSFULLY. ALL ACCOUNTS AND SETTINGS DELETED.");
     }
 
     @Transactional(readOnly = true)
