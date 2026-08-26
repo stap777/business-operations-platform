@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import type { CouponResponse } from '../coupon.types';
 import { CouponStatusBadge, DiscountTypeBadge } from './CouponStatusBadge';
 import { Button } from '../../../../components/ui/button';
-import { Eye, Power, Loader2, Tag } from 'lucide-react';
+import { Eye, Power, Loader2, Tag, MoreVertical, Edit, RotateCcw } from 'lucide-react';
 
 interface CouponTableProps {
   coupons: CouponResponse[];
   isLoading: boolean;
   onViewDetails: (coupon: CouponResponse) => void;
   onToggleStatus: (id: number) => void;
+  onEditCoupon?: (coupon: CouponResponse) => void;
   isTogglingId?: number | null;
   onCreateClick?: () => void;
 }
@@ -18,10 +19,12 @@ export const CouponTable: React.FC<CouponTableProps> = ({
   isLoading,
   onViewDetails,
   onToggleStatus,
+  onEditCoupon,
   isTogglingId,
   onCreateClick,
 }) => {
   const [confirmToggleCoupon, setConfirmToggleCoupon] = useState<CouponResponse | null>(null);
+  const [openActionId, setOpenActionId] = useState<number | null>(null);
 
   const formatDate = (isoString?: string) => {
     if (!isoString) return '--';
@@ -66,7 +69,7 @@ export const CouponTable: React.FC<CouponTableProps> = ({
             <Button
               onClick={onCreateClick}
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg mt-2"
+              className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] text-xs font-semibold px-4 py-2 rounded-lg mt-2"
             >
               + Create Coupon
             </Button>
@@ -91,7 +94,9 @@ export const CouponTable: React.FC<CouponTableProps> = ({
               {coupons.map((coupon) => (
                 <tr
                   key={coupon.id}
-                  className="hover:bg-neutral-50 dark:hover:bg-[#151515] transition-colors"
+                  className={`hover:bg-neutral-50 dark:hover:bg-[#151515] transition-colors ${
+                    !coupon.active ? 'opacity-60 bg-neutral-50/50 dark:bg-neutral-900/30' : ''
+                  }`}
                 >
                   <td className="py-3.5 px-4 font-mono font-bold text-[#111111] dark:text-[#FAFAFA]">
                     {coupon.code}
@@ -117,39 +122,70 @@ export const CouponTable: React.FC<CouponTableProps> = ({
                   <td className="py-3.5 px-4">
                     <CouponStatusBadge active={coupon.active} />
                   </td>
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewDetails(coupon)}
-                        className="h-7 px-2 text-xs font-semibold text-[#71717A] hover:text-[#111111] dark:text-[#A1A1AA] dark:hover:text-[#FAFAFA]"
-                        title="View Details"
+                  <td className="py-3.5 px-4 text-right relative">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setOpenActionId(openActionId === coupon.id ? null : coupon.id)}
+                        className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A] transition-colors"
+                        title="Actions"
                       >
-                        <Eye className="w-3.5 h-3.5 mr-1" />
-                        View
-                      </Button>
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={isTogglingId === coupon.id}
-                        onClick={() => setConfirmToggleCoupon(coupon)}
-                        className={`h-7 px-2.5 text-xs font-semibold border ${
-                          coupon.active
-                            ? 'border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30'
-                            : 'border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-                        }`}
-                      >
-                        {isTogglingId === coupon.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <>
-                            <Power className="w-3.5 h-3.5 mr-1" />
-                            {coupon.active ? 'Deactivate' : 'Activate'}
-                          </>
-                        )}
-                      </Button>
+                      {openActionId === coupon.id && (
+                        <div
+                          className="absolute right-4 top-10 z-20 w-44 bg-white dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-xl shadow-lg py-1 text-xs text-left"
+                          onMouseLeave={() => setOpenActionId(null)}
+                        >
+                          <button
+                            onClick={() => {
+                              setOpenActionId(null);
+                              onViewDetails(coupon);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-neutral-500" />
+                            View Details
+                          </button>
+
+                          {onEditCoupon && (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onEditCoupon(coupon);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-blue-500" />
+                              Edit Coupon
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setOpenActionId(null);
+                              setConfirmToggleCoupon(coupon);
+                            }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 transition-colors ${
+                              coupon.active
+                                ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30'
+                                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                            }`}
+                          >
+                            {coupon.active ? (
+                              <>
+                                <Power className="w-3.5 h-3.5" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                Activate
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -182,6 +218,7 @@ export const CouponTable: React.FC<CouponTableProps> = ({
               </Button>
               <Button
                 size="sm"
+                disabled={isTogglingId === confirmToggleCoupon.id}
                 onClick={() => {
                   onToggleStatus(confirmToggleCoupon.id);
                   setConfirmToggleCoupon(null);
@@ -192,6 +229,9 @@ export const CouponTable: React.FC<CouponTableProps> = ({
                     : 'bg-emerald-600 hover:bg-emerald-700'
                 }`}
               >
+                {isTogglingId === confirmToggleCoupon.id && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                )}
                 {confirmToggleCoupon.active ? 'Deactivate' : 'Activate'}
               </Button>
             </div>

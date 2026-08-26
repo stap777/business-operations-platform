@@ -36,6 +36,11 @@ export const orderService = {
     return response.data;
   },
 
+  updateOrder: async (id: number, data: OrderRequest): Promise<OrderResponse> => {
+    const response = await apiClient.put<OrderResponse>(`/orders/${id}`, data);
+    return response.data;
+  },
+
   cancelOrder: async (id: number): Promise<OrderResponse> => {
     const response = await apiClient.patch<OrderResponse>(`/orders/${id}/cancel`);
     return response.data;

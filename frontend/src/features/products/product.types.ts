@@ -33,6 +33,7 @@ export interface ProductRequest {
 export interface ProductQueryParams {
   name?: string;
   categoryId?: number;
+  status?: ProductStatus;
   lowStockOnly?: boolean;
   page?: number;
   size?: number;
@@ -72,6 +73,7 @@ export interface CategoryRequest {
 
 export interface CategoryQueryParams {
   query?: string;
+  status?: CategoryStatus;
   page?: number;
   size?: number;
 }

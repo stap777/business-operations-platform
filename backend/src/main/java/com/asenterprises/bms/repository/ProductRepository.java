@@ -26,15 +26,18 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         value = "SELECT p FROM Product p JOIN FETCH p.category " +
                 "WHERE (CAST(:name AS String) IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name AS String)), '%')) " +
                 "AND (CAST(:categoryId AS Long) IS NULL OR p.category.id = :categoryId) " +
+                "AND (:status IS NULL OR p.status = :status) " +
                 "AND (:lowStockOnly = false OR p.availableStock <= p.minimumStock)",
         countQuery = "SELECT COUNT(p) FROM Product p " +
                      "WHERE (CAST(:name AS String) IS NULL OR LOWER(p.name) LIKE CONCAT('%', LOWER(CAST(:name AS String)), '%')) " +
                      "AND (CAST(:categoryId AS Long) IS NULL OR p.category.id = :categoryId) " +
+                     "AND (:status IS NULL OR p.status = :status) " +
                      "AND (:lowStockOnly = false OR p.availableStock <= p.minimumStock)"
     )
     Page<Product> searchProducts(
             @Param("name") String name,
             @Param("categoryId") Long categoryId,
+            @Param("status") ProductStatus status,
             @Param("lowStockOnly") boolean lowStockOnly,
             Pageable pageable
     );

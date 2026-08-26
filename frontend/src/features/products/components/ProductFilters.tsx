@@ -7,6 +7,8 @@ interface ProductFiltersProps {
   onSearchChange: (query: string) => void;
   selectedCategoryId?: number;
   onCategoryChange: (categoryId?: number) => void;
+  selectedStatus?: 'ACTIVE' | 'INACTIVE';
+  onStatusChange: (status?: 'ACTIVE' | 'INACTIVE') => void;
   lowStockOnly: boolean;
   onLowStockToggle: (lowStock: boolean) => void;
 }
@@ -16,6 +18,8 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
   onSearchChange,
   selectedCategoryId,
   onCategoryChange,
+  selectedStatus,
+  onStatusChange,
   lowStockOnly,
   onLowStockToggle,
 }) => {
@@ -35,8 +39,45 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
         />
       </div>
 
-      {/* Filter Dropdowns */}
+      {/* Filter Dropdowns & Status Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto">
+        {/* Status Filter Segmented Control */}
+        <div className="flex items-center p-0.5 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-xs">
+          <button
+            type="button"
+            onClick={() => onStatusChange(undefined)}
+            className={`px-2.5 py-1 rounded-md transition-colors ${
+              !selectedStatus
+                ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] font-medium shadow-xs'
+                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+            }`}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => onStatusChange('ACTIVE')}
+            className={`px-2.5 py-1 rounded-md transition-colors ${
+              selectedStatus === 'ACTIVE'
+                ? 'bg-white dark:bg-[#232323] text-emerald-600 dark:text-emerald-400 font-medium shadow-xs'
+                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            type="button"
+            onClick={() => onStatusChange('INACTIVE')}
+            className={`px-2.5 py-1 rounded-md transition-colors ${
+              selectedStatus === 'INACTIVE'
+                ? 'bg-white dark:bg-[#232323] text-rose-600 dark:text-rose-400 font-medium shadow-xs'
+                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+            }`}
+          >
+            Inactive
+          </button>
+        </div>
+
         {/* Category Dropdown */}
         <div className="relative">
           <select
@@ -66,7 +107,7 @@ export const ProductFilters: React.FC<ProductFiltersProps> = ({
           }`}
         >
           <AlertTriangle className="w-3.5 h-3.5" />
-          Low Stock Only
+          Low Stock
         </button>
       </div>
     </div>

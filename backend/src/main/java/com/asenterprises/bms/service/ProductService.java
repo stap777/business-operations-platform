@@ -112,9 +112,14 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Page<ProductResponse> searchProducts(String name, Long categoryId, Boolean lowStockOnly, Pageable pageable) {
+        return searchProducts(name, categoryId, null, lowStockOnly, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> searchProducts(String name, Long categoryId, ProductStatus status, Boolean lowStockOnly, Pageable pageable) {
         String searchName = name != null && !name.trim().isEmpty() ? name.trim() : null;
         boolean isLowStock = lowStockOnly != null && lowStockOnly;
-        return productRepository.searchProducts(searchName, categoryId, isLowStock, pageable)
+        return productRepository.searchProducts(searchName, categoryId, status, isLowStock, pageable)
                 .map(this::mapToResponse);
     }
 

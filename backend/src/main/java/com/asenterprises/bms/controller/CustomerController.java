@@ -4,6 +4,7 @@ import com.asenterprises.bms.dto.CustomerDropdownResponse;
 import com.asenterprises.bms.dto.CustomerRequest;
 import com.asenterprises.bms.dto.CustomerResponse;
 import com.asenterprises.bms.dto.PendingOrderResponse;
+import com.asenterprises.bms.entity.CustomerStatus;
 import com.asenterprises.bms.service.CustomerService;
 import com.asenterprises.bms.service.PaymentService;
 import jakarta.validation.Valid;
@@ -58,8 +59,9 @@ public class CustomerController {
     @GetMapping("/search")
     public ResponseEntity<Page<CustomerResponse>> searchCustomers(
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) CustomerStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(customerService.searchCustomers(query, pageable));
+        return ResponseEntity.ok(customerService.searchCustomers(query, status, pageable));
     }
 
     @GetMapping("/dropdown")

@@ -4,6 +4,7 @@ import com.asenterprises.bms.dto.ProductDropdownResponse;
 import com.asenterprises.bms.dto.ProductRequest;
 import com.asenterprises.bms.dto.ProductResponse;
 import com.asenterprises.bms.dto.StockUpdateRequest;
+import com.asenterprises.bms.entity.ProductStatus;
 import com.asenterprises.bms.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -60,9 +61,10 @@ public class ProductController {
     public ResponseEntity<Page<ProductResponse>> searchProducts(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) ProductStatus status,
             @RequestParam(required = false) Boolean lowStockOnly,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(productService.searchProducts(name, categoryId, lowStockOnly, pageable));
+        return ResponseEntity.ok(productService.searchProducts(name, categoryId, status, lowStockOnly, pageable));
     }
 
     @GetMapping("/dropdown")

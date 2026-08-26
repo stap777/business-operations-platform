@@ -32,6 +32,7 @@ export interface CustomerPageResponse {
 
 export interface CustomerQueryParams {
   query?: string;
+  status?: CustomerStatus;
   page?: number;
   size?: number;
 }

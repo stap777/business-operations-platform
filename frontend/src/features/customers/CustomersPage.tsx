@@ -1,29 +1,41 @@
 import React, { useState } from 'react';
-import { useCustomers } from './hooks/useCustomers';
+import { useCustomers, useDeactivateCustomer, useRestoreCustomer } from './hooks/useCustomers';
 import { CustomerFilters } from './components/CustomerFilters';
 import { CustomerTable } from './components/CustomerTable';
 import { CustomerForm } from './components/CustomerForm';
 import { CustomerDetails } from './components/CustomerDetails';
 import { Button } from '../../components/ui/button';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { CustomerResponse, CustomerStatus } from './customer.types';
 
 export const CustomersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<CustomerStatus | undefined>(undefined);
   const [page, setPage] = useState(0);
   const [pageSize] = useState(20);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<CustomerResponse | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const customersQuery = useCustomers({
     query: searchQuery,
+    status: statusFilter,
     page,
     size: pageSize,
   });
 
+  const deactivateMutation = useDeactivateCustomer();
+  const restoreMutation = useRestoreCustomer();
+
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
+    setPage(0);
+  };
+
+  const handleStatusChange = (status?: CustomerStatus) => {
+    setStatusFilter(status);
     setPage(0);
   };
 
@@ -46,7 +58,10 @@ export const CustomersPage: React.FC = () => {
         </div>
 
         <Button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={() => {
+            setEditingCustomer(null);
+            setIsAddModalOpen(true);
+          }}
           size="sm"
           className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5 self-start sm:self-auto"
         >
@@ -59,6 +74,8 @@ export const CustomersPage: React.FC = () => {
       <CustomerFilters
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
+        selectedStatus={statusFilter}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Customer Table */}
@@ -73,7 +90,16 @@ export const CustomersPage: React.FC = () => {
         }
         onRetry={() => customersQuery.refetch()}
         onViewCustomer={handleViewCustomer}
-        onAddCustomerClick={() => setIsAddModalOpen(true)}
+        onAddCustomerClick={() => {
+          setEditingCustomer(null);
+          setIsAddModalOpen(true);
+        }}
+        onEditCustomer={(customer) => {
+          setEditingCustomer(customer);
+          setIsAddModalOpen(true);
+        }}
+        onDeactivateCustomer={(id) => deactivateMutation.mutate(id)}
+        onRestoreCustomer={(id) => restoreMutation.mutate(id)}
       />
 
       {/* Pagination Controls */}
@@ -112,7 +138,11 @@ export const CustomersPage: React.FC = () => {
       {/* Modals */}
       <CustomerForm
         open={isAddModalOpen}
-        onOpenChange={setIsAddModalOpen}
+        onOpenChange={(open) => {
+          setIsAddModalOpen(open);
+          if (!open) setEditingCustomer(null);
+        }}
+        initialData={editingCustomer}
       />
 
       <CustomerDetails

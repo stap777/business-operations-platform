@@ -59,3 +59,74 @@ export const useCreateCustomer = () => {
     },
   });
 };
+
+export const useUpdateCustomer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: CustomerRequest }) =>
+      customerService.updateCustomer(id, data),
+    onSuccess: (updated) => {
+      toast.success('Customer Updated', {
+        description: `${updated.fullName} (${updated.customerCode}) has been updated.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', updated.id] });
+    },
+    onError: (error: unknown) => {
+      let message = 'Failed to update customer.';
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+      toast.error('Update Failed', {
+        description: message,
+      });
+    },
+  });
+};
+
+export const useDeactivateCustomer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => customerService.deactivateCustomer(id),
+    onSuccess: (updated) => {
+      toast.success('Customer Deactivated', {
+        description: `${updated.fullName} is now INACTIVE.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
+    onError: (error: unknown) => {
+      let message = 'Failed to deactivate customer.';
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+      toast.error('Deactivation Failed', {
+        description: message,
+      });
+    },
+  });
+};
+
+export const useRestoreCustomer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => customerService.restoreCustomer(id),
+    onSuccess: (updated) => {
+      toast.success('Customer Restored', {
+        description: `${updated.fullName} is now ACTIVE.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
+    onError: (error: unknown) => {
+      let message = 'Failed to restore customer.';
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+      toast.error('Restore Failed', {
+        description: message,
+      });
+    },
+  });
+};

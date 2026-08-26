@@ -22,4 +22,14 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     Page<Category> findByNameContainingIgnoreCase(String name, Pageable pageable);
 
     List<Category> findByStatusOrderByNameAsc(CategoryStatus status);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT c FROM Category c WHERE (:query IS NULL OR LOWER(c.name) LIKE CONCAT('%', LOWER(:query), '%')) " +
+        "AND (:status IS NULL OR c.status = :status)"
+    )
+    Page<Category> searchCategories(
+            @org.springframework.data.repository.query.Param("query") String query,
+            @org.springframework.data.repository.query.Param("status") CategoryStatus status,
+            Pageable pageable
+    );
 }

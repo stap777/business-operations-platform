@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,7 +12,8 @@ import {
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { Button } from '../../../components/ui/button';
-import { useCreateCustomer } from '../hooks/useCustomers';
+import { useCreateCustomer, useUpdateCustomer } from '../hooks/useCustomers';
+import type { CustomerResponse } from '../customer.types';
 import { Loader2 } from 'lucide-react';
 
 const customerSchema = z.object({
@@ -41,10 +42,14 @@ type CustomerFormData = z.infer<typeof customerSchema>;
 interface CustomerFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: CustomerResponse | null;
 }
 
-export const CustomerForm: React.FC<CustomerFormProps> = ({ open, onOpenChange }) => {
+export const CustomerForm: React.FC<CustomerFormProps> = ({ open, onOpenChange, initialData }) => {
   const createMutation = useCreateCustomer();
+  const updateMutation = useUpdateCustomer();
+
+  const isEditMode = !!initialData;
 
   const {
     register,
@@ -61,32 +66,62 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ open, onOpenChange }
     },
   });
 
+  useEffect(() => {
+    if (initialData) {
+      reset({
+        fullName: initialData.fullName || '',
+        phoneNumber: initialData.phoneNumber || '',
+        alternatePhoneNumber: initialData.alternatePhoneNumber || '',
+        address: initialData.address || '',
+      });
+    } else {
+      reset({
+        fullName: '',
+        phoneNumber: '',
+        alternatePhoneNumber: '',
+        address: '',
+      });
+    }
+  }, [initialData, open, reset]);
+
   const onSubmit = (data: CustomerFormData) => {
-    createMutation.mutate(
-      {
-        fullName: data.fullName.trim(),
-        phoneNumber: data.phoneNumber.trim(),
-        alternatePhoneNumber: data.alternatePhoneNumber?.trim() || null,
-        address: data.address.trim(),
-      },
-      {
+    const payload = {
+      fullName: data.fullName.trim(),
+      phoneNumber: data.phoneNumber.trim(),
+      alternatePhoneNumber: data.alternatePhoneNumber?.trim() || null,
+      address: data.address.trim(),
+    };
+
+    if (isEditMode && initialData) {
+      updateMutation.mutate(
+        { id: initialData.id, data: payload },
+        {
+          onSuccess: () => {
+            onOpenChange(false);
+          },
+        }
+      );
+    } else {
+      createMutation.mutate(payload, {
         onSuccess: () => {
           reset();
           onOpenChange(false);
         },
-      }
-    );
+      });
+    }
   };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white dark:bg-[#0F0F0F] border-[#ECECEC] dark:border-[#232323] text-[#111111] dark:text-[#FAFAFA]">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold tracking-tight">
-            Add New Customer
+            {isEditMode ? 'Edit Customer' : 'Add New Customer'}
           </DialogTitle>
           <DialogDescription className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-            Create a new business customer record in the backend database.
+            {isEditMode ? 'Update existing business customer details.' : 'Create a new business customer record in the backend database.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -160,7 +195,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ open, onOpenChange }
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              disabled={createMutation.isPending}
+              disabled={isPending}
               className="text-xs font-medium"
             >
               Cancel
@@ -168,14 +203,16 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ open, onOpenChange }
             <Button
               type="submit"
               size="sm"
-              disabled={createMutation.isPending}
+              disabled={isPending}
               className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium min-w-[90px]"
             >
-              {createMutation.isPending ? (
+              {isPending ? (
                 <span className="flex items-center gap-1.5">
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   Saving...
                 </span>
+              ) : isEditMode ? (
+                'Save Changes'
               ) : (
                 'Save Customer'
               )}

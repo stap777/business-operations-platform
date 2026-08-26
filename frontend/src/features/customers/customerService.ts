@@ -13,6 +13,7 @@ export const customerService = {
     const response = await apiClient.get<CustomerPageResponse>('/customers/search', {
       params: {
         query: params?.query?.trim() || undefined,
+        status: params?.status || undefined,
         page: params?.page ?? 0,
         size: params?.size ?? 20,
       },
@@ -27,6 +28,21 @@ export const customerService = {
 
   createCustomer: async (data: CustomerRequest): Promise<CustomerResponse> => {
     const response = await apiClient.post<CustomerResponse>('/customers', data);
+    return response.data;
+  },
+
+  updateCustomer: async (id: number, data: CustomerRequest): Promise<CustomerResponse> => {
+    const response = await apiClient.put<CustomerResponse>(`/customers/${id}`, data);
+    return response.data;
+  },
+
+  deactivateCustomer: async (id: number): Promise<CustomerResponse> => {
+    const response = await apiClient.patch<CustomerResponse>(`/customers/${id}/deactivate`);
+    return response.data;
+  },
+
+  restoreCustomer: async (id: number): Promise<CustomerResponse> => {
+    const response = await apiClient.patch<CustomerResponse>(`/customers/${id}/restore`);
     return response.data;
   },
 

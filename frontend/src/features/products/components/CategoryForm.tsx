@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
-import { useCreateCategory } from '../hooks/useCategories';
+import React, { useState, useEffect } from 'react';
+import { useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
+import type { CategoryResponse } from '../product.types';
 import { Button } from '../../../components/ui/button';
 import { X, FolderPlus, Loader2 } from 'lucide-react';
 
 interface CategoryFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: CategoryResponse | null;
 }
 
-export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange }) => {
+export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange, initialData }) => {
   const createCategoryMutation = useCreateCategory();
+  const updateCategoryMutation = useUpdateCategory();
+
+  const isEditMode = !!initialData;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -17,6 +22,18 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange }
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        description: initialData.description || '',
+      });
+    } else {
+      setFormData({ name: '', description: '' });
+    }
+    setErrors({});
+  }, [initialData, open]);
 
   if (!open) return null;
 
@@ -39,20 +56,30 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange }
     e.preventDefault();
     if (!validate()) return;
 
-    createCategoryMutation.mutate(
-      {
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-      },
-      {
+    const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim() || undefined,
+    };
+
+    if (isEditMode && initialData) {
+      updateCategoryMutation.mutate(
+        { id: initialData.id, data: payload },
+        {
+          onSuccess: () => {
+            onOpenChange(false);
+          },
+        }
+      );
+    } else {
+      createCategoryMutation.mutate(payload, {
         onSuccess: () => {
           onOpenChange(false);
-          setFormData({ name: '', description: '' });
-          setErrors({});
         },
-      }
-    );
+      });
+    }
   };
+
+  const isPending = createCategoryMutation.isPending || updateCategoryMutation.isPending;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -65,10 +92,10 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange }
             </div>
             <div>
               <h2 className="text-sm font-semibold text-[#111111] dark:text-[#FAFAFA]">
-                Add Category
+                {isEditMode ? 'Edit Category' : 'Add Category'}
               </h2>
               <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                Create a new product category.
+                {isEditMode ? 'Update product category details.' : 'Create a new product category.'}
               </p>
             </div>
           </div>
@@ -128,13 +155,11 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange }
             <Button
               type="submit"
               size="sm"
-              disabled={createCategoryMutation.isPending}
+              disabled={isPending}
               className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
             >
-              {createCategoryMutation.isPending && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              )}
-              Create Category
+              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {isEditMode ? 'Save Changes' : 'Create Category'}
             </Button>
           </div>
         </form>

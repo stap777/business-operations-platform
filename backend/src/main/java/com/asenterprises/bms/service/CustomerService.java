@@ -78,12 +78,13 @@ public class CustomerService {
 
     @Transactional(readOnly = true)
     public Page<CustomerResponse> searchCustomers(String query, Pageable pageable) {
-        if (query == null || query.trim().isEmpty()) {
-            return customerRepository.findAll(pageable).map(this::mapToResponse);
-        }
-        String searchQuery = query.trim();
-        return customerRepository
-                .findByFullNameContainingIgnoreCaseOrPhoneNumberContaining(searchQuery, searchQuery, pageable)
+        return searchCustomers(query, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CustomerResponse> searchCustomers(String query, CustomerStatus status, Pageable pageable) {
+        String searchQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
+        return customerRepository.searchCustomers(searchQuery, status, pageable)
                 .map(this::mapToResponse);
     }
 

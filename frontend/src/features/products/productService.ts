@@ -19,6 +19,7 @@ export const productService = {
       params: {
         name: params?.name?.trim() || undefined,
         categoryId: params?.categoryId || undefined,
+        status: params?.status || undefined,
         lowStockOnly: params?.lowStockOnly ? true : undefined,
         page: params?.page ?? 0,
         size: params?.size ?? 20,
@@ -47,6 +48,11 @@ export const productService = {
     return response.data;
   },
 
+  restoreProduct: async (id: number): Promise<ProductResponse> => {
+    const response = await apiClient.patch<ProductResponse>(`/products/${id}/restore`);
+    return response.data;
+  },
+
   updateStock: async (id: number, availableStock: number): Promise<ProductResponse> => {
     const response = await apiClient.patch<ProductResponse>(`/products/${id}/update-stock`, {
       availableStock,
@@ -64,6 +70,7 @@ export const productService = {
     const response = await apiClient.get<CategoryPageResponse>('/categories/search', {
       params: {
         query: params?.query?.trim() || undefined,
+        status: params?.status || undefined,
         page: params?.page ?? 0,
         size: params?.size ?? 20,
       },
@@ -88,6 +95,11 @@ export const productService = {
 
   deactivateCategory: async (id: number): Promise<CategoryResponse> => {
     const response = await apiClient.patch<CategoryResponse>(`/categories/${id}/deactivate`);
+    return response.data;
+  },
+
+  restoreCategory: async (id: number): Promise<CategoryResponse> => {
+    const response = await apiClient.patch<CategoryResponse>(`/categories/${id}/restore`);
     return response.data;
   },
 

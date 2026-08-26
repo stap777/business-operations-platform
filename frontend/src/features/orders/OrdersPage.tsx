@@ -1,12 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { OrderResponse, OrderStatus } from './order.types';
-import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders } from './hooks/useOrders';
+import type { OrderResponse, OrderStatus, OrderRequest } from './order.types';
+import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder } from './hooks/useOrders';
 import { useAuth } from '../../context/AuthContext';
 import { useBusinessSettings } from '../admin/settings/hooks/useBusinessSettings';
 import { OrderFilters } from './components/OrderFilters';
 import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
+import { EditOrderModal } from './components/EditOrderModal';
 import { PrintableOrder } from './components/PrintableOrder';
 import { Button } from '../../components/ui/button';
 import { DispatchSheetModal } from '../admin/dispatch/components/DispatchSheetModal';
@@ -32,6 +33,7 @@ export const OrdersPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
   const [printOrderData, setPrintOrderData] = useState<OrderResponse | null>(null);
+  const [orderToEdit, setOrderToEdit] = useState<OrderResponse | null>(null);
 
   // React Query Hooks
   const {
@@ -54,6 +56,7 @@ export const OrdersPage: React.FC = () => {
 
   const cancelOrderMutation = useCancelOrder();
   const verifyOrderMutation = useVerifyOrder();
+  const updateOrderMutation = useUpdateOrder();
 
   const handleQuickFilterChange = (filter: QuickFilter) => {
     setQuickFilter(filter);
@@ -110,6 +113,21 @@ export const OrdersPage: React.FC = () => {
   const handleViewOrder = (order: OrderResponse) => {
     setSelectedOrder(order);
     setIsDetailsOpen(true);
+  };
+
+  const handleEditOrder = (order: OrderResponse) => {
+    setOrderToEdit(order);
+  };
+
+  const handleUpdateOrderSubmit = (orderId: number, data: OrderRequest) => {
+    updateOrderMutation.mutate(
+      { id: orderId, data },
+      {
+        onSuccess: () => {
+          setOrderToEdit(null);
+        },
+      }
+    );
   };
 
   const handlePrintOrder = (order: OrderResponse) => {
@@ -257,7 +275,7 @@ export const OrdersPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Task 1 & 2: Sticky Quick Filter Chips with Result Counts */}
+      {/* Sticky Quick Filter Chips with Result Counts */}
       <div className="sticky top-0 z-20 bg-white/95 dark:bg-[#0F0F0F]/95 backdrop-blur-md py-2.5 border-y border-[#ECECEC] dark:border-[#232323] -mx-4 px-4 sm:-mx-6 sm:px-6 print:hidden">
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mr-1 flex items-center gap-1 shrink-0">
@@ -358,6 +376,7 @@ export const OrdersPage: React.FC = () => {
               orders={filteredOrders}
               isLoading={isLoading}
               onViewOrder={handleViewOrder}
+              onEditOrder={handleEditOrder}
               onPrintOrder={handlePrintOrder}
               onCancelOrder={handleCancelOrder}
               onVerifyOrder={handleVerifyOrder}
@@ -422,6 +441,7 @@ export const OrdersPage: React.FC = () => {
               orders={pendingData?.content || []}
               isLoading={isPendingLoading}
               onViewOrder={handleViewOrder}
+              onEditOrder={handleEditOrder}
               onPrintOrder={handlePrintOrder}
               onCancelOrder={handleCancelOrder}
               onVerifyOrder={handleVerifyOrder}
@@ -442,6 +462,14 @@ export const OrdersPage: React.FC = () => {
         isCancelling={cancelOrderMutation.isPending}
         isVerifying={verifyOrderMutation.isPending}
         userRole={user?.role}
+      />
+
+      <EditOrderModal
+        order={orderToEdit}
+        isOpen={orderToEdit !== null}
+        onClose={() => setOrderToEdit(null)}
+        onSubmit={handleUpdateOrderSubmit}
+        isSubmitting={updateOrderMutation.isPending}
       />
 
       <DispatchSheetModal

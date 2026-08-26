@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { UserResponse } from '../user.types';
 import { UserRoleBadge, UserStatusBadge } from './UserStatusBadge';
-import { Eye, Plus, UserX, UserCheck, Key, RefreshCw, Trash2 } from 'lucide-react';
+import { Eye, Plus, UserX, Key, RefreshCw, Trash2, MoreVertical, Edit, RotateCcw } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 
 interface UserTableProps {
@@ -12,6 +12,7 @@ interface UserTableProps {
   onRetry: () => void;
   onViewUser: (id: number) => void;
   onAddUserClick: () => void;
+  onEditUser?: (user: UserResponse) => void;
   onActivateUser: (id: number) => void;
   onDeactivateUser: (id: number) => void;
   onResetPassword: (id: number) => void;
@@ -26,11 +27,14 @@ export const UserTable: React.FC<UserTableProps> = ({
   onRetry,
   onViewUser,
   onAddUserClick,
+  onEditUser,
   onActivateUser,
   onDeactivateUser,
   onResetPassword,
   onDeleteUser,
 }) => {
+  const [openActionId, setOpenActionId] = useState<number | null>(null);
+
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-[#0F0F0F] rounded-xl border border-[#ECECEC] dark:border-[#232323] p-12 flex flex-col items-center justify-center space-y-3">
@@ -99,79 +103,129 @@ export const UserTable: React.FC<UserTableProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-[#ECECEC] dark:divide-[#232323] text-xs text-[#111111] dark:text-[#FAFAFA]">
-            {users.map((user) => (
-              <tr
-                key={user.id}
-                className="hover:bg-neutral-50 dark:hover:bg-[#151515] transition-colors"
-              >
-                <td className="py-3.5 px-4 font-semibold text-[#111111] dark:text-[#FAFAFA]">
-                  {user.fullName}
-                </td>
-                <td className="py-3.5 px-4 font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                  @{user.username}
-                </td>
-                <td className="py-3.5 px-4 font-mono text-[#71717A] dark:text-[#A1A1AA]">
-                  {user.phoneNumber}
-                </td>
-                <td className="py-3.5 px-4">
-                  <UserRoleBadge role={user.role} />
-                </td>
-                <td className="py-3.5 px-4">
-                  <UserStatusBadge status={user.status} />
-                </td>
-                <td className="py-3.5 px-4 text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
-                  {new Date(user.createdAt).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </td>
-                <td className="py-3.5 px-4 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => onViewUser(user.id)}
-                      className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A] transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onResetPassword(user.id)}
-                      className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A] transition-colors"
-                      title="Reset Password"
-                    >
-                      <Key className="w-4 h-4" />
-                    </button>
+            {users.map((user) => {
+              const isInactive = user.status === 'INACTIVE';
 
-                    {user.status === 'ACTIVE' ? (
+              return (
+                <tr
+                  key={user.id}
+                  className={`hover:bg-neutral-50 dark:hover:bg-[#151515] transition-colors ${
+                    isInactive ? 'opacity-60 bg-neutral-50/50 dark:bg-neutral-900/30' : ''
+                  }`}
+                >
+                  <td className="py-3.5 px-4 font-semibold text-[#111111] dark:text-[#FAFAFA]">
+                    {user.fullName}
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    @{user.username}
+                  </td>
+                  <td className="py-3.5 px-4 font-mono text-[#71717A] dark:text-[#A1A1AA]">
+                    {user.phoneNumber}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <UserRoleBadge role={user.role} />
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <UserStatusBadge status={user.status} />
+                  </td>
+                  <td className="py-3.5 px-4 text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
+                    {new Date(user.createdAt).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </td>
+                  <td className="py-3.5 px-4 text-right relative">
+                    <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={() => onDeactivateUser(user.id)}
-                        className="p-1.5 rounded-lg text-[#71717A] hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
-                        title="Deactivate Account"
+                        onClick={() => setOpenActionId(openActionId === user.id ? null : user.id)}
+                        className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A] transition-colors"
+                        title="Actions"
                       >
-                        <UserX className="w-4 h-4" />
+                        <MoreVertical className="w-4 h-4" />
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => onActivateUser(user.id)}
-                        className="p-1.5 rounded-lg text-[#71717A] hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
-                        title="Activate Account"
-                      >
-                        <UserCheck className="w-4 h-4" />
-                      </button>
-                    )}
 
-                    <button
-                      onClick={() => onDeleteUser(user)}
-                      className="p-1.5 rounded-lg text-[#71717A] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                      title="Delete User"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {openActionId === user.id && (
+                        <div
+                          className="absolute right-4 top-10 z-20 w-48 bg-white dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-xl shadow-lg py-1 text-xs text-left"
+                          onMouseLeave={() => setOpenActionId(null)}
+                        >
+                          <button
+                            onClick={() => {
+                              setOpenActionId(null);
+                              onViewUser(user.id);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-neutral-500" />
+                            View Details
+                          </button>
+
+                          {onEditUser && (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onEditUser(user);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-blue-500" />
+                              Edit Profile
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setOpenActionId(null);
+                              onResetPassword(user.id);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                          >
+                            <Key className="w-3.5 h-3.5 text-amber-500" />
+                            Reset Password
+                          </button>
+
+                          {user.status === 'ACTIVE' ? (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onDeactivateUser(user.id);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+                            >
+                              <UserX className="w-3.5 h-3.5" />
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onActivateUser(user.id);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Activate
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setOpenActionId(null);
+                              onDeleteUser(user);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            Delete User
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

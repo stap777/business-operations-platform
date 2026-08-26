@@ -30,6 +30,7 @@ export const UsersPage: React.FC = () => {
 
   // Modal and drawer controls
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [selectedDetailsUserId, setSelectedDetailsUserId] = useState<number | null>(null);
   const [selectedResetUserId, setSelectedResetUserId] = useState<number | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserResponse | null>(null);
@@ -102,7 +103,10 @@ export const UsersPage: React.FC = () => {
         </div>
 
         <Button
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => {
+            setEditingUser(null);
+            setIsFormOpen(true);
+          }}
           size="sm"
           className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5 shadow-sm self-start sm:self-auto"
         >
@@ -135,7 +139,14 @@ export const UsersPage: React.FC = () => {
         errorMessage={(error as any)?.response?.data?.message || (error as any)?.message}
         onRetry={refetch}
         onViewUser={(id) => setSelectedDetailsUserId(id)}
-        onAddUserClick={() => setIsFormOpen(true)}
+        onAddUserClick={() => {
+          setEditingUser(null);
+          setIsFormOpen(true);
+        }}
+        onEditUser={(userToEdit) => {
+          setEditingUser(userToEdit);
+          setIsFormOpen(true);
+        }}
         onActivateUser={handleActivateUser}
         onDeactivateUser={handleDeactivateUser}
         onResetPassword={(id) => setSelectedResetUserId(id)}
@@ -153,8 +164,15 @@ export const UsersPage: React.FC = () => {
         />
       )}
 
-      {/* Add Employee Form Modal */}
-      <UserForm open={isFormOpen} onOpenChange={setIsFormOpen} />
+      {/* Add / Edit Employee Form Modal */}
+      <UserForm
+        open={isFormOpen}
+        onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) setEditingUser(null);
+        }}
+        initialData={editingUser}
+      />
 
       {/* Employee Profile Drawer */}
       <UserDetails

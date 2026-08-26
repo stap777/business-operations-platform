@@ -42,6 +42,23 @@ export const useCreateOrder = () => {
   });
 };
 
+export const useUpdateOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: OrderRequest }) =>
+      orderService.updateOrder(id, data),
+    onSuccess: (data) => {
+      toast.success(`Order ${data.orderNumber} updated successfully.`);
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || 'Failed to update order.';
+      toast.error(msg);
+    },
+  });
+};
+
 export const useCancelOrder = () => {
   const queryClient = useQueryClient();
 

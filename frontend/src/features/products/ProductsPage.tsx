@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useProducts, useDeactivateProduct } from './hooks/useProducts';
-import { useCategories, useDeactivateCategory } from './hooks/useCategories';
+import { useProducts, useDeactivateProduct, useRestoreProduct } from './hooks/useProducts';
+import { useCategories, useDeactivateCategory, useRestoreCategory } from './hooks/useCategories';
 import { ProductFilters } from './components/ProductFilters';
 import { ProductTable } from './components/ProductTable';
 import { ProductForm } from './components/ProductForm';
@@ -10,7 +10,7 @@ import { CategoryTable } from './components/CategoryTable';
 import { CategoryForm } from './components/CategoryForm';
 import { Button } from '../../components/ui/button';
 import { Plus, Package, FolderTree, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import type { ProductResponse } from './product.types';
+import type { ProductResponse, CategoryResponse, ProductStatus, CategoryStatus } from './product.types';
 
 export const ProductsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
@@ -18,16 +18,20 @@ export const ProductsPage: React.FC = () => {
   // Product filters & pagination
   const [productSearch, setProductSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined);
+  const [productStatus, setProductStatus] = useState<ProductStatus | undefined>(undefined);
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [productPage, setProductPage] = useState(0);
 
   // Category filters & pagination
   const [categorySearch, setCategorySearch] = useState('');
+  const [categoryStatus, setCategoryStatus] = useState<CategoryStatus | undefined>(undefined);
   const [categoryPage, setCategoryPage] = useState(0);
 
   // Modals state
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductResponse | null>(null);
+  const [editingCategory, setEditingCategory] = useState<CategoryResponse | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [stockProduct, setStockProduct] = useState<ProductResponse | null>(null);
@@ -36,6 +40,7 @@ export const ProductsPage: React.FC = () => {
   const productsQuery = useProducts({
     name: productSearch,
     categoryId: selectedCategoryId,
+    status: productStatus,
     lowStockOnly,
     page: productPage,
     size: 20,
@@ -43,13 +48,16 @@ export const ProductsPage: React.FC = () => {
 
   const categoriesQuery = useCategories({
     query: categorySearch,
+    status: categoryStatus,
     page: categoryPage,
     size: 20,
   });
 
   // Mutations
   const deactivateProductMutation = useDeactivateProduct();
+  const restoreProductMutation = useRestoreProduct();
   const deactivateCategoryMutation = useDeactivateCategory();
+  const restoreCategoryMutation = useRestoreCategory();
 
   const handleViewProduct = (id: number) => {
     setSelectedProductId(id);
@@ -72,7 +80,10 @@ export const ProductsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           {activeTab === 'products' ? (
             <Button
-              onClick={() => setIsAddProductOpen(true)}
+              onClick={() => {
+                setEditingProduct(null);
+                setIsAddProductOpen(true);
+              }}
               size="sm"
               className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
             >
@@ -81,7 +92,10 @@ export const ProductsPage: React.FC = () => {
             </Button>
           ) : (
             <Button
-              onClick={() => setIsAddCategoryOpen(true)}
+              onClick={() => {
+                setEditingCategory(null);
+                setIsAddCategoryOpen(true);
+              }}
               size="sm"
               className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
             >
@@ -133,6 +147,11 @@ export const ProductsPage: React.FC = () => {
               setSelectedCategoryId(catId);
               setProductPage(0);
             }}
+            selectedStatus={productStatus}
+            onStatusChange={(status) => {
+              setProductStatus(status);
+              setProductPage(0);
+            }}
             lowStockOnly={lowStockOnly}
             onLowStockToggle={(low) => {
               setLowStockOnly(low);
@@ -152,8 +171,16 @@ export const ProductsPage: React.FC = () => {
             }
             onRetry={() => productsQuery.refetch()}
             onViewProduct={handleViewProduct}
-            onAddProductClick={() => setIsAddProductOpen(true)}
+            onAddProductClick={() => {
+              setEditingProduct(null);
+              setIsAddProductOpen(true);
+            }}
+            onEditProduct={(product) => {
+              setEditingProduct(product);
+              setIsAddProductOpen(true);
+            }}
             onDeactivateProduct={(id) => deactivateProductMutation.mutate(id)}
+            onRestoreProduct={(id) => restoreProductMutation.mutate(id)}
             onUpdateStock={(product) => setStockProduct(product)}
           />
 
@@ -195,9 +222,9 @@ export const ProductsPage: React.FC = () => {
       {/* Categories Tab View */}
       {activeTab === 'categories' && (
         <div className="space-y-4">
-          {/* Category Search Toolbar */}
-          <div className="bg-white dark:bg-[#0F0F0F] p-3 rounded-xl border border-[#ECECEC] dark:border-[#232323] shadow-sm">
-            <div className="relative max-w-md">
+          {/* Category Search Toolbar & Status Filter */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-[#0F0F0F] p-3 rounded-xl border border-[#ECECEC] dark:border-[#232323] shadow-sm">
+            <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
               <input
                 type="text"
@@ -209,6 +236,52 @@ export const ProductsPage: React.FC = () => {
                 placeholder="Search categories..."
                 className="w-full pl-9 pr-4 py-2 text-xs bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] dark:placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
               />
+            </div>
+
+            {/* Category Status Segmented Filter */}
+            <div className="flex items-center p-0.5 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryStatus(undefined);
+                  setCategoryPage(0);
+                }}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  !categoryStatus
+                    ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] font-medium shadow-xs'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryStatus('ACTIVE');
+                  setCategoryPage(0);
+                }}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  categoryStatus === 'ACTIVE'
+                    ? 'bg-white dark:bg-[#232323] text-emerald-600 dark:text-emerald-400 font-medium shadow-xs'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCategoryStatus('INACTIVE');
+                  setCategoryPage(0);
+                }}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  categoryStatus === 'INACTIVE'
+                    ? 'bg-white dark:bg-[#232323] text-rose-600 dark:text-rose-400 font-medium shadow-xs'
+                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+                }`}
+              >
+                Inactive
+              </button>
             </div>
           </div>
 
@@ -223,8 +296,16 @@ export const ProductsPage: React.FC = () => {
                 : undefined
             }
             onRetry={() => categoriesQuery.refetch()}
-            onAddCategoryClick={() => setIsAddCategoryOpen(true)}
+            onAddCategoryClick={() => {
+              setEditingCategory(null);
+              setIsAddCategoryOpen(true);
+            }}
+            onEditCategory={(cat) => {
+              setEditingCategory(cat);
+              setIsAddCategoryOpen(true);
+            }}
             onDeactivateCategory={(id) => deactivateCategoryMutation.mutate(id)}
+            onRestoreCategory={(id) => restoreCategoryMutation.mutate(id)}
           />
 
           {/* Pagination Controls */}
@@ -263,8 +344,22 @@ export const ProductsPage: React.FC = () => {
       )}
 
       {/* Modals & Drawers */}
-      <ProductForm open={isAddProductOpen} onOpenChange={setIsAddProductOpen} />
-      <CategoryForm open={isAddCategoryOpen} onOpenChange={setIsAddCategoryOpen} />
+      <ProductForm
+        open={isAddProductOpen}
+        onOpenChange={(open) => {
+          setIsAddProductOpen(open);
+          if (!open) setEditingProduct(null);
+        }}
+        initialData={editingProduct}
+      />
+      <CategoryForm
+        open={isAddCategoryOpen}
+        onOpenChange={(open) => {
+          setIsAddCategoryOpen(open);
+          if (!open) setEditingCategory(null);
+        }}
+        initialData={editingCategory}
+      />
       <ProductDetails
         productId={selectedProductId}
         open={isDetailsOpen}

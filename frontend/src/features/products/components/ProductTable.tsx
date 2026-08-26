@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ProductResponse } from '../product.types';
 import { ProductStatusBadge } from './ProductStatusBadge';
-import { Eye, Plus, PackageX, RefreshCw, Boxes } from 'lucide-react';
+import { Eye, Plus, PackageX, RefreshCw, Boxes, MoreVertical, Edit, RotateCcw } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
 interface ProductTableProps {
@@ -12,7 +12,9 @@ interface ProductTableProps {
   onRetry: () => void;
   onViewProduct: (id: number) => void;
   onAddProductClick: () => void;
+  onEditProduct?: (product: ProductResponse) => void;
   onDeactivateProduct?: (id: number) => void;
+  onRestoreProduct?: (id: number) => void;
   onUpdateStock?: (product: ProductResponse) => void;
 }
 
@@ -24,9 +26,13 @@ export const ProductTable: React.FC<ProductTableProps> = ({
   onRetry,
   onViewProduct,
   onAddProductClick,
+  onEditProduct,
   onDeactivateProduct,
+  onRestoreProduct,
   onUpdateStock,
 }) => {
+  const [openActionId, setOpenActionId] = useState<number | null>(null);
+
   if (isLoading) {
     return (
       <div className="bg-white dark:bg-[#0F0F0F] rounded-xl border border-[#ECECEC] dark:border-[#232323] p-12 flex flex-col items-center justify-center space-y-3">
@@ -100,11 +106,14 @@ export const ProductTable: React.FC<ProductTableProps> = ({
           <tbody className="divide-y divide-[#ECECEC] dark:divide-[#232323] text-xs text-[#111111] dark:text-[#FAFAFA]">
             {products.map((product) => {
               const isLowStock = product.availableStock <= product.minimumStock;
+              const isInactive = product.status === 'INACTIVE';
 
               return (
                 <tr
                   key={product.id}
-                  className="hover:bg-neutral-50 dark:hover:bg-[#151515] transition-colors"
+                  className={`hover:bg-neutral-50 dark:hover:bg-[#151515] transition-colors ${
+                    isInactive ? 'opacity-60 bg-neutral-50/50 dark:bg-neutral-900/30' : ''
+                  }`}
                 >
                   <td className="py-3.5 px-4 font-mono font-medium text-[#71717A] dark:text-[#A1A1AA]">
                     {product.sku}
@@ -140,32 +149,84 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                       day: 'numeric',
                     })}
                   </td>
-                  <td className="py-3.5 px-4 text-right">
+                  <td className="py-3.5 px-4 text-right relative">
                     <div className="flex items-center justify-end gap-1">
-                      {onUpdateStock && (
-                        <button
-                          onClick={() => onUpdateStock(product)}
-                          className="p-1.5 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors"
-                          title="Quick Adjust Stock"
-                        >
-                          <Boxes className="w-4 h-4" />
-                        </button>
-                      )}
                       <button
-                        onClick={() => onViewProduct(product.id)}
+                        onClick={() => setOpenActionId(openActionId === product.id ? null : product.id)}
                         className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A] transition-colors"
-                        title="View Details"
+                        title="Actions"
                       >
-                        <Eye className="w-4 h-4" />
+                        <MoreVertical className="w-4 h-4" />
                       </button>
-                      {onDeactivateProduct && product.status === 'ACTIVE' && (
-                        <button
-                          onClick={() => onDeactivateProduct(product.id)}
-                          className="p-1.5 rounded-lg text-[#71717A] hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                          title="Deactivate Product"
+
+                      {openActionId === product.id && (
+                        <div
+                          className="absolute right-4 top-10 z-20 w-44 bg-white dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-xl shadow-lg py-1 text-xs text-left"
+                          onMouseLeave={() => setOpenActionId(null)}
                         >
-                          <PackageX className="w-4 h-4" />
-                        </button>
+                          <button
+                            onClick={() => {
+                              setOpenActionId(null);
+                              onViewProduct(product.id);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-[#71717A]" />
+                            View Details
+                          </button>
+
+                          {onEditProduct && (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onEditProduct(product);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-[#111111] dark:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#232323] transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-blue-500" />
+                              Edit Product
+                            </button>
+                          )}
+
+                          {onUpdateStock && (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onUpdateStock(product);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 transition-colors"
+                            >
+                              <Boxes className="w-3.5 h-3.5" />
+                              Adjust Stock
+                            </button>
+                          )}
+
+                          {onDeactivateProduct && product.status === 'ACTIVE' && (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onDeactivateProduct(product.id);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                            >
+                              <PackageX className="w-3.5 h-3.5" />
+                              Deactivate
+                            </button>
+                          )}
+
+                          {onRestoreProduct && product.status === 'INACTIVE' && (
+                            <button
+                              onClick={() => {
+                                setOpenActionId(null);
+                                onRestoreProduct(product.id);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              Restore Product
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </td>

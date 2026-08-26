@@ -63,6 +63,45 @@ export const useDeactivateProduct = () => {
   });
 };
 
+export const useUpdateProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ProductRequest }) =>
+      productService.updateProduct(id, data),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.all });
+      toast.success(`Product "${updated.name}" updated successfully!`);
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to update product.';
+      toast.error(message);
+    },
+  });
+};
+
+export const useRestoreProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => productService.restoreProduct(id),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.all });
+      toast.success(`Product "${updated.name}" restored to ACTIVE.`);
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to restore product.';
+      toast.error(message);
+    },
+  });
+};
+
 export const useUpdateStock = () => {
   const queryClient = useQueryClient();
 

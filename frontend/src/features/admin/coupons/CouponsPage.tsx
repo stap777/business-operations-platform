@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCoupons, useCreateCoupon, useToggleCouponStatus } from './hooks/useCoupons';
+import { useCoupons, useCreateCoupon, useUpdateCoupon, useToggleCouponStatus } from './hooks/useCoupons';
 import type { CouponRequest, CouponResponse } from './coupon.types';
 import { CouponFilters } from './components/CouponFilters';
 import { CouponTable } from './components/CouponTable';
@@ -16,7 +16,8 @@ export const CouponsPage: React.FC = () => {
   const [pageSize] = useState<number>(10);
 
   // Modal / Drawer state
-  const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
+  const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
+  const [editingCoupon, setEditingCoupon] = useState<CouponResponse | null>(null);
   const [selectedDetailsCoupon, setSelectedDetailsCoupon] = useState<CouponResponse | null>(null);
 
   // React Query hooks
@@ -28,6 +29,7 @@ export const CouponsPage: React.FC = () => {
   );
 
   const createCouponMutation = useCreateCoupon();
+  const updateCouponMutation = useUpdateCoupon();
   const toggleStatusMutation = useToggleCouponStatus();
 
   const handleSearchChange = (query: string) => {
@@ -40,12 +42,24 @@ export const CouponsPage: React.FC = () => {
     setCurrentPage(0);
   };
 
-  const handleCreateSubmit = (payload: CouponRequest) => {
-    createCouponMutation.mutate(payload, {
-      onSuccess: () => {
-        setIsCreateOpen(false);
-      },
-    });
+  const handleFormSubmit = (payload: CouponRequest) => {
+    if (editingCoupon) {
+      updateCouponMutation.mutate(
+        { id: editingCoupon.id, data: payload },
+        {
+          onSuccess: () => {
+            setIsFormOpen(false);
+            setEditingCoupon(null);
+          },
+        }
+      );
+    } else {
+      createCouponMutation.mutate(payload, {
+        onSuccess: () => {
+          setIsFormOpen(false);
+        },
+      });
+    }
   };
 
   const handleToggleStatus = (id: number) => {
@@ -76,8 +90,11 @@ export const CouponsPage: React.FC = () => {
 
         <Button
           size="sm"
-          onClick={() => setIsCreateOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm gap-1.5 self-start sm:self-auto"
+          onClick={() => {
+            setEditingCoupon(null);
+            setIsFormOpen(true);
+          }}
+          className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5 self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
           Create Coupon
@@ -107,9 +124,16 @@ export const CouponsPage: React.FC = () => {
         coupons={coupons}
         isLoading={isLoading}
         onViewDetails={(c) => setSelectedDetailsCoupon(c)}
+        onEditCoupon={(c) => {
+          setEditingCoupon(c);
+          setIsFormOpen(true);
+        }}
         onToggleStatus={handleToggleStatus}
         isTogglingId={toggleStatusMutation.isPending ? (toggleStatusMutation.variables as number) : null}
-        onCreateClick={() => setIsCreateOpen(true)}
+        onCreateClick={() => {
+          setEditingCoupon(null);
+          setIsFormOpen(true);
+        }}
       />
 
       {/* Pagination */}
@@ -123,12 +147,16 @@ export const CouponsPage: React.FC = () => {
         />
       )}
 
-      {/* Create Coupon Modal */}
+      {/* Coupon Form Modal */}
       <CouponForm
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onSubmit={handleCreateSubmit}
-        isSubmitting={createCouponMutation.isPending}
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setEditingCoupon(null);
+        }}
+        onSubmit={handleFormSubmit}
+        isSubmitting={createCouponMutation.isPending || updateCouponMutation.isPending}
+        initialData={editingCoupon}
       />
 
       {/* Coupon Details Modal */}

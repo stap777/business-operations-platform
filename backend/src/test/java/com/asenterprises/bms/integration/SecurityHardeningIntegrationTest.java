@@ -97,8 +97,8 @@ public class SecurityHardeningIntegrationTest {
                 .build();
 
         assertThatThrownBy(() -> authService.setupWorkspace(setupRequest))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Workspace setup has already been completed");
+                .isInstanceOf(org.springframework.web.server.ResponseStatusException.class)
+                .hasMessageContaining("Workspace has already been initialized");
     }
 
     @Test

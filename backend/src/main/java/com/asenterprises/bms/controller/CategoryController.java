@@ -3,6 +3,7 @@ package com.asenterprises.bms.controller;
 import com.asenterprises.bms.dto.CategoryDropdownResponse;
 import com.asenterprises.bms.dto.CategoryRequest;
 import com.asenterprises.bms.dto.CategoryResponse;
+import com.asenterprises.bms.entity.CategoryStatus;
 import com.asenterprises.bms.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -58,8 +59,9 @@ public class CategoryController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Page<CategoryResponse>> searchCategories(
             @RequestParam(required = false) String query,
+            @RequestParam(required = false) CategoryStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
-        return ResponseEntity.ok(categoryService.searchCategories(query, pageable));
+        return ResponseEntity.ok(categoryService.searchCategories(query, status, pageable));
     }
 
     @GetMapping("/dropdown")
@@ -72,5 +74,11 @@ public class CategoryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CategoryResponse> deactivateCategory(@PathVariable Long id) {
         return ResponseEntity.ok(categoryService.deactivateCategory(id));
+    }
+
+    @PatchMapping("/{id}/restore")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<CategoryResponse> restoreCategory(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.restoreCategory(id));
     }
 }

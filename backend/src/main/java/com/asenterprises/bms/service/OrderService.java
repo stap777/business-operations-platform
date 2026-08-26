@@ -235,6 +235,103 @@ public class OrderService {
         return mapToResponse(savedOrder);
     }
 
+    @Transactional
+    public OrderResponse updateOrder(Long id, OrderRequest request) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Cannot edit an order that is already " + currentStatus);
+        }
+
+        if (currentStatus == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot edit a cancelled order");
+        }
+
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + request.getCustomerId()));
+
+        if (customer.getStatus() != CustomerStatus.ACTIVE) {
+            throw new IllegalArgumentException("Cannot assign order to an inactive customer");
+        }
+
+        User manager = userRepository.findById(request.getManagerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Manager not found with id: " + request.getManagerId()));
+
+        if (manager.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalArgumentException("Cannot assign order to an inactive manager");
+        }
+
+        User deliveryPerson = null;
+        if (request.getDeliveryPersonId() != null) {
+            deliveryPerson = userRepository.findById(request.getDeliveryPersonId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Delivery person not found with id: " + request.getDeliveryPersonId()));
+
+            if (deliveryPerson.getStatus() != UserStatus.ACTIVE) {
+                throw new IllegalArgumentException("Cannot assign order to an inactive delivery person");
+            }
+        }
+
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Order must contain at least one item");
+        }
+
+        order.setCustomer(customer);
+        order.setManager(manager);
+        if (deliveryPerson != null) {
+            order.setDeliveryPerson(deliveryPerson);
+        }
+        order.setDeliveryInstructions(trim(request.getDeliveryInstructions()));
+        order.setNotes(trim(request.getNotes()));
+
+        order.getItems().clear();
+        BigDecimal subtotal = BigDecimal.ZERO;
+
+        for (OrderItemRequest itemReq : request.getItems()) {
+            Product product = productRepository.findById(itemReq.getProductId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + itemReq.getProductId()));
+
+            if (product.getStatus() != ProductStatus.ACTIVE) {
+                throw new IllegalArgumentException("Cannot add inactive product '" + product.getName() + "' to order");
+            }
+
+            if (itemReq.getQuantity() == null || itemReq.getQuantity() <= 0) {
+                throw new IllegalArgumentException("Quantity for product '" + product.getName() + "' must be greater than 0");
+            }
+
+            BigDecimal sellingPrice = product.getSellingPrice();
+            BigDecimal purchasePrice = product.getPurchasePrice();
+            BigDecimal lineTotal = sellingPrice.multiply(BigDecimal.valueOf(itemReq.getQuantity()));
+            subtotal = subtotal.add(lineTotal);
+
+            OrderItem orderItem = OrderItem.builder()
+                    .product(product)
+                    .quantity(itemReq.getQuantity())
+                    .purchasePrice(purchasePrice)
+                    .sellingPrice(sellingPrice)
+                    .lineTotal(lineTotal)
+                    .build();
+
+            order.addItem(orderItem);
+        }
+
+        BigDecimal discountAmount = request.getDiscountAmount() != null ? request.getDiscountAmount() : BigDecimal.ZERO;
+        if (discountAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Discount amount cannot be negative");
+        }
+        if (discountAmount.compareTo(subtotal) > 0) {
+            throw new IllegalArgumentException("Discount amount cannot exceed subtotal");
+        }
+
+        order.setSubtotal(subtotal);
+        order.setDiscountAmount(discountAmount);
+        order.setTotalAmount(subtotal.subtract(discountAmount));
+
+        Order updatedOrder = orderRepository.save(order);
+        return mapToResponse(updatedOrder);
+    }
+
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long id) {
         Order order = orderRepository.findById(id)

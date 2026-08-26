@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
-import { useCreateProduct } from '../hooks/useProducts';
+import React, { useState, useEffect } from 'react';
+import { useCreateProduct, useUpdateProduct } from '../hooks/useProducts';
 import { useCategoryDropdown } from '../hooks/useCategories';
-import type { ProductUnit } from '../product.types';
+import type { ProductResponse, ProductUnit } from '../product.types';
 import { Button } from '../../../components/ui/button';
 import { X, Package, Loader2 } from 'lucide-react';
 
 interface ProductFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: ProductResponse | null;
 }
 
-export const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange }) => {
+export const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, initialData }) => {
   const { data: categories = [] } = useCategoryDropdown();
   const createProductMutation = useCreateProduct();
+  const updateProductMutation = useUpdateProduct();
+
+  const isEditMode = !!initialData;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -26,6 +30,33 @@ export const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange }) 
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || '',
+        categoryId: initialData.categoryId || 0,
+        purchasePrice: String(initialData.purchasePrice ?? ''),
+        sellingPrice: String(initialData.sellingPrice ?? ''),
+        availableStock: String(initialData.availableStock ?? '0'),
+        minimumStock: String(initialData.minimumStock ?? '5'),
+        unit: initialData.unit || 'PCS',
+        trackInventory: initialData.trackInventory ?? true,
+      });
+    } else {
+      setFormData({
+        name: '',
+        categoryId: 0,
+        purchasePrice: '',
+        sellingPrice: '',
+        availableStock: '0',
+        minimumStock: '5',
+        unit: 'PCS',
+        trackInventory: true,
+      });
+    }
+    setErrors({});
+  }, [initialData, open]);
 
   if (!open) return null;
 
@@ -70,35 +101,36 @@ export const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange }) 
     e.preventDefault();
     if (!validate()) return;
 
-    createProductMutation.mutate(
-      {
-        name: formData.name.trim(),
-        categoryId: Number(formData.categoryId),
-        purchasePrice: Number(formData.purchasePrice),
-        sellingPrice: Number(formData.sellingPrice),
-        availableStock: Number(formData.availableStock),
-        minimumStock: Number(formData.minimumStock),
-        unit: formData.unit,
-        trackInventory: formData.trackInventory,
-      },
-      {
+    const payload = {
+      name: formData.name.trim(),
+      categoryId: Number(formData.categoryId),
+      purchasePrice: Number(formData.purchasePrice),
+      sellingPrice: Number(formData.sellingPrice),
+      availableStock: Number(formData.availableStock),
+      minimumStock: Number(formData.minimumStock),
+      unit: formData.unit,
+      trackInventory: formData.trackInventory,
+    };
+
+    if (isEditMode && initialData) {
+      updateProductMutation.mutate(
+        { id: initialData.id, data: payload },
+        {
+          onSuccess: () => {
+            onOpenChange(false);
+          },
+        }
+      );
+    } else {
+      createProductMutation.mutate(payload, {
         onSuccess: () => {
           onOpenChange(false);
-          setFormData({
-            name: '',
-            categoryId: 0,
-            purchasePrice: '',
-            sellingPrice: '',
-            availableStock: '0',
-            minimumStock: '5',
-            unit: 'PCS',
-            trackInventory: true,
-          });
-          setErrors({});
         },
-      }
-    );
+      });
+    }
   };
+
+  const isPending = createProductMutation.isPending || updateProductMutation.isPending;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -111,10 +143,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange }) 
             </div>
             <div>
               <h2 className="text-sm font-semibold text-[#111111] dark:text-[#FAFAFA]">
-                Add New Product
+                {isEditMode ? 'Edit Product' : 'Add New Product'}
               </h2>
               <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                Register a new inventory item in PostgreSQL database.
+                {isEditMode ? 'Update existing inventory record details.' : 'Register a new inventory item in PostgreSQL database.'}
               </p>
             </div>
           </div>
@@ -271,13 +303,11 @@ export const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange }) 
             <Button
               type="submit"
               size="sm"
-              disabled={createProductMutation.isPending}
+              disabled={isPending}
               className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
             >
-              {createProductMutation.isPending && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              )}
-              Create Product
+              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {isEditMode ? 'Save Changes' : 'Create Product'}
             </Button>
           </div>
         </form>

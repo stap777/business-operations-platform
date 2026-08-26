@@ -4,12 +4,13 @@ import { OrderStatusBadge, PaymentStatusBadge } from './OrderStatusBadge';
 import { ActionDropdownMenu } from '../../../components/common/ActionDropdownMenu';
 import type { ActionMenuItem } from '../../../components/common/ActionDropdownMenu';
 import { Button } from '../../../components/ui/button';
-import { Eye, Lock, Printer, ShieldCheck, XCircle } from 'lucide-react';
+import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit } from 'lucide-react';
 
 interface OrderTableProps {
   orders: OrderResponse[];
   isLoading: boolean;
   onViewOrder: (order: OrderResponse) => void;
+  onEditOrder?: (order: OrderResponse) => void;
   onPrintOrder?: (order: OrderResponse) => void;
   onCancelOrder?: (orderId: number) => void;
   onVerifyOrder?: (order: OrderResponse) => void;
@@ -20,6 +21,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   orders,
   isLoading,
   onViewOrder,
+  onEditOrder,
   onPrintOrder,
   onCancelOrder,
   onVerifyOrder,
@@ -80,6 +82,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                   order.orderStatus !== 'COMPLETED' &&
                   order.orderStatus !== 'DELIVERED' &&
                   order.orderStatus !== 'VERIFIED';
+                const canEdit =
+                  !order.isLocked &&
+                  order.orderStatus !== 'VERIFIED' &&
+                  order.orderStatus !== 'COMPLETED' &&
+                  order.orderStatus !== 'CANCELLED';
 
                 const dropdownItems: ActionMenuItem[] = [
                   {
@@ -87,12 +94,21 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                     icon: Eye,
                     onClick: () => onViewOrder(order),
                   },
-                  {
-                    label: 'Print Order',
-                    icon: Printer,
-                    onClick: () => onPrintOrder && onPrintOrder(order),
-                  },
                 ];
+
+                if (canEdit && onEditOrder) {
+                  dropdownItems.push({
+                    label: 'Edit Order',
+                    icon: Edit,
+                    onClick: () => onEditOrder(order),
+                  });
+                }
+
+                dropdownItems.push({
+                  label: 'Print Order',
+                  icon: Printer,
+                  onClick: () => onPrintOrder && onPrintOrder(order),
+                });
 
                 if (canVerify && onVerifyOrder) {
                   dropdownItems.push({
@@ -194,6 +210,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({
             order.orderStatus !== 'COMPLETED' &&
             order.orderStatus !== 'DELIVERED' &&
             order.orderStatus !== 'VERIFIED';
+          const canEdit =
+            !order.isLocked &&
+            order.orderStatus !== 'VERIFIED' &&
+            order.orderStatus !== 'COMPLETED' &&
+            order.orderStatus !== 'CANCELLED';
 
           const dropdownItems: ActionMenuItem[] = [
             {
@@ -201,12 +222,21 @@ export const OrderTable: React.FC<OrderTableProps> = ({
               icon: Eye,
               onClick: () => onViewOrder(order),
             },
-            {
-              label: 'Print Order',
-              icon: Printer,
-              onClick: () => onPrintOrder && onPrintOrder(order),
-            },
           ];
+
+          if (canEdit && onEditOrder) {
+            dropdownItems.push({
+              label: 'Edit Order',
+              icon: Edit,
+              onClick: () => onEditOrder(order),
+            });
+          }
+
+          dropdownItems.push({
+            label: 'Print Order',
+            icon: Printer,
+            onClick: () => onPrintOrder && onPrintOrder(order),
+          });
 
           if (canVerify && onVerifyOrder) {
             dropdownItems.push({

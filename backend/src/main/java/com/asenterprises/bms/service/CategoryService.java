@@ -74,10 +74,13 @@ public class CategoryService {
 
     @Transactional(readOnly = true)
     public Page<CategoryResponse> searchCategories(String query, Pageable pageable) {
-        if (query == null || query.trim().isEmpty()) {
-            return categoryRepository.findAll(pageable).map(this::mapToResponse);
-        }
-        return categoryRepository.findByNameContainingIgnoreCase(query.trim(), pageable)
+        return searchCategories(query, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<CategoryResponse> searchCategories(String query, CategoryStatus status, Pageable pageable) {
+        String searchQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
+        return categoryRepository.searchCategories(searchQuery, status, pageable)
                 .map(this::mapToResponse);
     }
 
@@ -101,6 +104,16 @@ public class CategoryService {
         category.setStatus(CategoryStatus.INACTIVE);
         Category deactivatedCategory = categoryRepository.save(category);
         return mapToResponse(deactivatedCategory);
+    }
+
+    @Transactional
+    public CategoryResponse restoreCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+
+        category.setStatus(CategoryStatus.ACTIVE);
+        Category restoredCategory = categoryRepository.save(category);
+        return mapToResponse(restoredCategory);
     }
 
     private String trim(String input) {

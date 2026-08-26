@@ -24,6 +24,16 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     List<Customer> findByStatusOrderByIdDesc(CustomerStatus status);
 
+    @Query(
+        "SELECT c FROM Customer c WHERE (:query IS NULL OR LOWER(c.fullName) LIKE CONCAT('%', LOWER(:query), '%') OR c.phoneNumber LIKE CONCAT('%', :query, '%')) " +
+        "AND (:status IS NULL OR c.status = :status)"
+    )
+    Page<Customer> searchCustomers(
+            @org.springframework.data.repository.query.Param("query") String query,
+            @org.springframework.data.repository.query.Param("status") CustomerStatus status,
+            Pageable pageable
+    );
+
     @Query("SELECT MAX(c.id) FROM Customer c")
     Optional<Long> findMaxId();
 }
