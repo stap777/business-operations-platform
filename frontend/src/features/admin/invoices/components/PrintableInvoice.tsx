@@ -31,7 +31,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
   const paidAmount = invoice.paidAmount ?? invoice.paymentReceivedAtGeneration ?? 0;
   const creditRemaining =
     invoice.creditRemaining ?? Math.max(0, (invoice.totalAmount ?? 0) - paidAmount);
-  const paymentMethod = invoice.paymentMethod || 'Cash';
+  const paymentMethod = invoice.paymentMethod || 'Unpaid';
 
   return (
     <div className="printable-invoice thermal-receipt bg-white text-black font-['Courier_New',Courier,monospace] text-[11px] leading-[1.25] w-[72mm] max-w-[72mm] mx-auto p-[4mm] space-y-2 border border-neutral-300 print:border-none print:p-[4mm] print:m-0">

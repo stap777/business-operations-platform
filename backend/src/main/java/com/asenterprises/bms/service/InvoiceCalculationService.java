@@ -55,7 +55,7 @@ public class InvoiceCalculationService {
      * Rules:
      * - Multiple distinct payment methods -> "Mixed"
      * - Exactly one payment method -> "Cash", "UPI", "Credit", etc.
-     * - No allocations -> order payment method or "Cash"
+     * - No allocations -> order payment method or "Unpaid"
      */
     public String resolvePaymentMethod(Order order, List<PaymentAllocation> allocations) {
         if (allocations != null && !allocations.isEmpty()) {
@@ -78,11 +78,11 @@ public class InvoiceCalculationService {
             return formatMethodName(order.getPaymentMethod().name());
         }
 
-        return "Cash";
+        return "Unpaid";
     }
 
     private String formatMethodName(String rawName) {
-        if (rawName == null) return "Cash";
+        if (rawName == null) return "Unpaid";
         return switch (rawName.toUpperCase()) {
             case "UPI" -> "UPI";
             case "CASH" -> "Cash";
