@@ -69,4 +69,8 @@ export const orderService = {
     });
     return response.data;
   },
+
+  deleteOrder: async (id: number): Promise<void> => {
+    await apiClient.delete(`/orders/${id}`);
+  },
 };

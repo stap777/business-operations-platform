@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus, OrderRequest } from './order.types';
-import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder } from './hooks/useOrders';
+import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder, useDeleteOrder } from './hooks/useOrders';
 import { useAuth } from '../../context/AuthContext';
 import { useBusinessSettings } from '../admin/settings/hooks/useBusinessSettings';
 import { OrderFilters } from './components/OrderFilters';
@@ -9,9 +9,11 @@ import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { EditOrderModal } from './components/EditOrderModal';
 import { PrintableOrder } from './components/PrintableOrder';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { Button } from '../../components/ui/button';
+import { PageHeader } from '../../components/common/PageHeader';
 import { DispatchSheetModal } from '../admin/dispatch/components/DispatchSheetModal';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw, ClipboardList, CheckCircle2, ClipboardCheck, Filter } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, RefreshCw, CheckCircle2, ClipboardCheck, Filter } from 'lucide-react';
 
 export type QuickFilter = 'ALL' | 'TODAY' | 'PENDING' | 'DELIVERED' | 'CASH' | 'UPI' | 'CREDIT';
 
@@ -34,6 +36,7 @@ export const OrdersPage: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
   const [printOrderData, setPrintOrderData] = useState<OrderResponse | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<OrderResponse | null>(null);
+  const [deletingOrder, setDeletingOrder] = useState<OrderResponse | null>(null);
 
   // React Query Hooks
   const {
@@ -57,6 +60,7 @@ export const OrdersPage: React.FC = () => {
   const cancelOrderMutation = useCancelOrder();
   const verifyOrderMutation = useVerifyOrder();
   const updateOrderMutation = useUpdateOrder();
+  const deleteOrderMutation = useDeleteOrder();
 
   const handleQuickFilterChange = (filter: QuickFilter) => {
     setQuickFilter(filter);
@@ -240,39 +244,33 @@ export const OrdersPage: React.FC = () => {
       />
 
       {/* Screen Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323] print:hidden">
-        <div>
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-[#111111] dark:text-[#FAFAFA]" />
-            <h1 className="text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
-              Orders Management
-            </h1>
-          </div>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-            Inspect customer sales orders, track payment & fulfillment status, and generate printable orders.
-          </p>
-        </div>
+      <div className="print:hidden">
+        <PageHeader
+          title="Sales Orders"
+          description="Inspect customer sales orders, track payment & fulfillment status, and print order slips."
+          action={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsDispatchModalOpen(true)}
+                className="border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-[#FAFAFA] text-xs font-semibold px-3.5 py-2 rounded-xl gap-1.5 cursor-pointer shadow-xs"
+              >
+                <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                Dispatch Sheet
+              </Button>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsDispatchModalOpen(true)}
-            className="border-[#ECECEC] dark:border-[#232323] text-[#111111] dark:text-[#FAFAFA] text-xs font-semibold px-3 py-2 rounded-lg gap-1.5 cursor-pointer"
-          >
-            <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            Print Dispatch Sheet
-          </Button>
-
-          <Button
-            size="sm"
-            onClick={() => navigate('/orders/create')}
-            className="bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111] hover:opacity-90 text-xs font-semibold px-4 py-2 rounded-lg shadow-2xs gap-1.5 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Create Order
-          </Button>
-        </div>
+              <Button
+                size="sm"
+                onClick={() => navigate('/orders/create')}
+                className="bg-[#09090B] text-white dark:bg-[#FAFAFA] dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold px-4 py-2 rounded-xl shadow-xs gap-1.5 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                Create Order
+              </Button>
+            </div>
+          }
+        />
       </div>
 
       {/* Sticky Quick Filter Chips with Result Counts */}
@@ -380,6 +378,7 @@ export const OrdersPage: React.FC = () => {
               onPrintOrder={handlePrintOrder}
               onCancelOrder={handleCancelOrder}
               onVerifyOrder={handleVerifyOrder}
+              onDeleteOrder={(order) => setDeletingOrder(order)}
               userRole={user?.role}
             />
 
@@ -445,6 +444,7 @@ export const OrdersPage: React.FC = () => {
               onPrintOrder={handlePrintOrder}
               onCancelOrder={handleCancelOrder}
               onVerifyOrder={handleVerifyOrder}
+              onDeleteOrder={(order) => setDeletingOrder(order)}
               userRole={user?.role}
             />
           </div>
@@ -476,6 +476,23 @@ export const OrdersPage: React.FC = () => {
         isOpen={isDispatchModalOpen}
         onClose={() => setIsDispatchModalOpen(false)}
       />
+
+      {/* Delete Order Confirmation Modal */}
+      {deletingOrder && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingOrder}
+          onClose={() => setDeletingOrder(null)}
+          entityType="Order"
+          entityName={deletingOrder.orderNumber}
+          isDeleting={deleteOrderMutation.isPending}
+          warningText="Verified or locked orders cannot be deleted."
+          onConfirm={() => {
+            deleteOrderMutation.mutate(deletingOrder.id, {
+              onSuccess: () => setDeletingOrder(null),
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

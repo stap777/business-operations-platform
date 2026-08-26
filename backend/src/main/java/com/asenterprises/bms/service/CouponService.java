@@ -106,6 +106,15 @@ public class CouponService {
         return mapToResponse(coupon);
     }
 
+    @Transactional
+    public void deleteCoupon(Long id) {
+        Coupon coupon = couponRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Coupon not found with id: " + id));
+
+        coupon.setActive(false);
+        couponRepository.save(coupon);
+    }
+
     @Transactional(readOnly = true)
     public CouponResponse getCouponByCode(String code) {
         String trimmedCode = trim(code);

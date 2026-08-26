@@ -119,6 +119,7 @@ public class PaymentService {
                 .paymentDate(paymentDate)
                 .totalAmount(request.getTotalAmount())
                 .paymentMethod(request.getPaymentMethod())
+                .chequeDate(request.getPaymentMethod() == PaymentMethod.CHEQUE ? request.getChequeDate() : null)
                 .remarks(trim(request.getRemarks()))
                 .build();
 
@@ -341,8 +342,19 @@ public class PaymentService {
             newStatus = PaymentStatus.PARTIAL;
         }
 
-        // Update Order amountReceived and paymentStatus
+        // Update Order amountReceived, paymentMethod, and paymentStatus
         order.setAmountReceived(totalAllocated);
+        List<PaymentAllocation> orderAllocations = paymentAllocationRepository.findByOrderId(order.getId());
+        if (!orderAllocations.isEmpty()) {
+            java.util.Set<PaymentMethod> methods = orderAllocations.stream()
+                    .map(alloc -> alloc.getPayment().getPaymentMethod())
+                    .collect(java.util.stream.Collectors.toSet());
+            if (methods.size() == 1) {
+                order.setPaymentMethod(methods.iterator().next());
+            } else if (methods.size() > 1) {
+                order.setPaymentMethod(PaymentMethod.MIXED);
+            }
+        }
         if (order.getPaymentStatus() != newStatus) {
             order.setPaymentStatus(newStatus);
             log.info("Updated Order {} payment status to {}", order.getOrderNumber(), newStatus);
@@ -395,6 +407,7 @@ public class PaymentService {
                 .paymentDate(payment.getPaymentDate())
                 .totalAmount(payment.getTotalAmount())
                 .paymentMethod(payment.getPaymentMethod())
+                .chequeDate(payment.getChequeDate())
                 .remarks(payment.getRemarks())
                 .allocations(allocationResponses)
                 .createdAt(payment.getCreatedAt())

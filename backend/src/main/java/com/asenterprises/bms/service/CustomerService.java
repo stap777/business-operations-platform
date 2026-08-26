@@ -20,11 +20,16 @@ import java.util.List;
  * Service providing business operations for managing customer records, string trimming,
  * duplicate validation, dropdown data retrieval, and customer code formatting.
  */
+import com.asenterprises.bms.repository.InvoiceRepository;
+import com.asenterprises.bms.repository.OrderRepository;
+
 @Service
 @RequiredArgsConstructor
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final OrderRepository orderRepository;
+    private final InvoiceRepository invoiceRepository;
 
     @Transactional
     public CustomerResponse createCustomer(CustomerRequest request) {
@@ -114,6 +119,22 @@ public class CustomerService {
         customer.setStatus(CustomerStatus.ACTIVE);
         Customer restoredCustomer = customerRepository.save(customer);
         return mapToResponse(restoredCustomer);
+    }
+
+    @Transactional
+    public void deleteCustomer(Long id) {
+        Customer customer = customerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + id));
+
+        long orderCount = orderRepository.countByCustomerId(id);
+        long invoiceCount = invoiceRepository.countByOrderCustomerId(id);
+
+        if (orderCount > 0 || invoiceCount > 0) {
+            throw new IllegalStateException("This customer has transaction history and cannot be deleted.");
+        }
+
+        customer.setStatus(CustomerStatus.INACTIVE);
+        customerRepository.save(customer);
     }
 
     /**

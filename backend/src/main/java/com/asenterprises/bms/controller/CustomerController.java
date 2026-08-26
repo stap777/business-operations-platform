@@ -81,6 +81,13 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.restoreCustomer(id));
     }
 
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
+        customerService.deleteCustomer(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}/pending-orders")
     public ResponseEntity<List<PendingOrderResponse>> getPendingOrdersForCustomer(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.getPendingOrdersForCustomer(id));

@@ -92,4 +92,11 @@ public class ProductController {
             @Valid @RequestBody StockUpdateRequest request) {
         return ResponseEntity.ok(productService.updateStock(id, request));
     }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.noContent().build();
+    }
 }

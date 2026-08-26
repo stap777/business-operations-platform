@@ -26,7 +26,6 @@ export const CreateOrderPage: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<SelectedOrderItem[]>([]);
   const [appliedCoupon, setAppliedCoupon] = useState<CouponResponse | null>(null);
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
-  const [paymentType, setPaymentType] = useState<string>('Cash');
   const [deliveryPersonId, setDeliveryPersonId] = useState<number | null>(null);
   const [notes, setNotes] = useState<string>('');
   const [deliveryInstructions, setDeliveryInstructions] = useState<string>('');
@@ -95,7 +94,7 @@ export const CreateOrderPage: React.FC = () => {
       discountAmount: couponDiscount,
       couponCode: appliedCoupon?.code || undefined,
       deliveryInstructions: deliveryInstructions.trim() || undefined,
-      notes: notes.trim() ? `[Payment: ${paymentType}] ${notes.trim()}` : `Payment: ${paymentType}`,
+      notes: notes.trim() || undefined,
     };
 
     createOrderMutation.mutate(payload, {
@@ -144,7 +143,7 @@ export const CreateOrderPage: React.FC = () => {
             />
           </div>
 
-          {/* Order Date & Payment Type Column (span 5) */}
+          {/* Order Date Column (span 5) */}
           <div className="md:col-span-5 space-y-4">
             {/* Order Date */}
             <div className="space-y-1.5">
@@ -159,26 +158,6 @@ export const CreateOrderPage: React.FC = () => {
                   className="w-full p-2.5 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] text-xs text-[#111111] dark:text-[#FAFAFA] font-mono cursor-not-allowed opacity-90"
                 />
                 <Calendar className="w-4 h-4 text-[#71717A] absolute right-3 top-3 pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Payment Type */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-[#111111] dark:text-[#FAFAFA] block">
-                Payment Type
-              </label>
-              <div className="relative">
-                <select
-                  value={paymentType}
-                  onChange={(e) => setPaymentType(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] text-xs text-[#111111] dark:text-[#FAFAFA] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="UPI">UPI / QR Code</option>
-                  <option value="Card">Credit / Debit Card</option>
-                  <option value="Net Banking">Net Banking / Direct Transfer</option>
-                  <option value="Credit">Customer Credit / Postpaid</option>
-                </select>
               </div>
             </div>
           </div>

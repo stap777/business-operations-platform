@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { useCoupons, useCreateCoupon, useUpdateCoupon, useToggleCouponStatus } from './hooks/useCoupons';
+import { useCoupons, useCreateCoupon, useUpdateCoupon, useToggleCouponStatus, useDeleteCoupon } from './hooks/useCoupons';
 import type { CouponRequest, CouponResponse } from './coupon.types';
 import { CouponFilters } from './components/CouponFilters';
 import { CouponTable } from './components/CouponTable';
 import { CouponForm } from './components/CouponForm';
 import { CouponDetails } from './components/CouponDetails';
+import { ConfirmDeleteModal } from '../../../components/common/ConfirmDeleteModal';
 import { Pagination } from '../../../components/common/Pagination';
 import { Button } from '../../../components/ui/button';
-import { Plus, Tag } from 'lucide-react';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { Plus } from 'lucide-react';
 
 export const CouponsPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -18,6 +20,7 @@ export const CouponsPage: React.FC = () => {
   // Modal / Drawer state
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
   const [editingCoupon, setEditingCoupon] = useState<CouponResponse | null>(null);
+  const [deletingCoupon, setDeletingCoupon] = useState<CouponResponse | null>(null);
   const [selectedDetailsCoupon, setSelectedDetailsCoupon] = useState<CouponResponse | null>(null);
 
   // React Query hooks
@@ -31,6 +34,7 @@ export const CouponsPage: React.FC = () => {
   const createCouponMutation = useCreateCoupon();
   const updateCouponMutation = useUpdateCoupon();
   const toggleStatusMutation = useToggleCouponStatus();
+  const deleteCouponMutation = useDeleteCoupon();
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -73,33 +77,23 @@ export const CouponsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <Tag className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
-              Coupons
-            </h1>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-              Manage promotional discounts, discount rules, and coupon limits.
-            </p>
-          </div>
-        </div>
-
-        <Button
-          size="sm"
-          onClick={() => {
-            setEditingCoupon(null);
-            setIsFormOpen(true);
-          }}
-          className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Create Coupon
-        </Button>
-      </div>
+      <PageHeader
+        title="Promotional Coupons"
+        description="Manage promotional discounts, discount rules, validity dates, and usage caps."
+        action={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingCoupon(null);
+              setIsFormOpen(true);
+            }}
+            className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold gap-1.5 rounded-xl shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            Create Coupon
+          </Button>
+        }
+      />
 
       {/* Filters Bar */}
       <CouponFilters
@@ -128,6 +122,7 @@ export const CouponsPage: React.FC = () => {
           setEditingCoupon(c);
           setIsFormOpen(true);
         }}
+        onDeleteCoupon={(c) => setDeletingCoupon(c)}
         onToggleStatus={handleToggleStatus}
         isTogglingId={toggleStatusMutation.isPending ? (toggleStatusMutation.variables as number) : null}
         onCreateClick={() => {
@@ -165,6 +160,22 @@ export const CouponsPage: React.FC = () => {
         isOpen={!!selectedDetailsCoupon}
         onClose={() => setSelectedDetailsCoupon(null)}
       />
+
+      {/* Delete Coupon Confirmation Modal */}
+      {deletingCoupon && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingCoupon}
+          onClose={() => setDeletingCoupon(null)}
+          entityType="Coupon"
+          entityName={deletingCoupon.code}
+          isDeleting={deleteCouponMutation.isPending}
+          onConfirm={() => {
+            deleteCouponMutation.mutate(deletingCoupon.id, {
+              onSuccess: () => setDeletingCoupon(null),
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

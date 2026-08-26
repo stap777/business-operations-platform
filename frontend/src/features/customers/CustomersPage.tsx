@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useCustomers, useDeactivateCustomer, useRestoreCustomer } from './hooks/useCustomers';
+import { useCustomers, useDeactivateCustomer, useRestoreCustomer, useDeleteCustomer } from './hooks/useCustomers';
 import { CustomerFilters } from './components/CustomerFilters';
 import { CustomerTable } from './components/CustomerTable';
 import { CustomerForm } from './components/CustomerForm';
 import { CustomerDetails } from './components/CustomerDetails';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { Button } from '../../components/ui/button';
+import { PageHeader } from '../../components/common/PageHeader';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { CustomerResponse, CustomerStatus } from './customer.types';
 
@@ -16,6 +18,7 @@ export const CustomersPage: React.FC = () => {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<CustomerResponse | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<CustomerResponse | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -28,6 +31,7 @@ export const CustomersPage: React.FC = () => {
 
   const deactivateMutation = useDeactivateCustomer();
   const restoreMutation = useRestoreCustomer();
+  const deleteMutation = useDeleteCustomer();
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -47,28 +51,23 @@ export const CustomersPage: React.FC = () => {
   return (
     <>
       {/* Page Title & Main Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#111111] dark:text-[#FAFAFA]">
-            Customers
-          </h1>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
-            Manage your customer relationships.
-          </p>
-        </div>
-
-        <Button
-          onClick={() => {
-            setEditingCustomer(null);
-            setIsAddModalOpen(true);
-          }}
-          size="sm"
-          className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Add Customer
-        </Button>
-      </div>
+      <PageHeader
+        title="Customers"
+        description="Manage customer records, contact information, credit ledgers, and account status."
+        action={
+          <Button
+            onClick={() => {
+              setEditingCustomer(null);
+              setIsAddModalOpen(true);
+            }}
+            size="sm"
+            className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold gap-1.5 rounded-xl shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            Add Customer
+          </Button>
+        }
+      />
 
       {/* Search & Filter Bar */}
       <CustomerFilters
@@ -100,6 +99,7 @@ export const CustomersPage: React.FC = () => {
         }}
         onDeactivateCustomer={(id) => deactivateMutation.mutate(id)}
         onRestoreCustomer={(id) => restoreMutation.mutate(id)}
+        onDeleteCustomer={(customer) => setDeletingCustomer(customer)}
       />
 
       {/* Pagination Controls */}
@@ -150,6 +150,23 @@ export const CustomersPage: React.FC = () => {
         open={isDetailsModalOpen}
         onOpenChange={setIsDetailsModalOpen}
       />
+
+      {/* Delete Customer Confirmation Modal */}
+      {deletingCustomer && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingCustomer}
+          onClose={() => setDeletingCustomer(null)}
+          entityType="Customer"
+          entityName={deletingCustomer.fullName}
+          isDeleting={deleteMutation.isPending}
+          warningText="Customers with transaction history (orders or invoices) cannot be deleted."
+          onConfirm={() => {
+            deleteMutation.mutate(deletingCustomer.id, {
+              onSuccess: () => setDeletingCustomer(null),
+            });
+          }}
+        />
+      )}
     </>
   );
 };

@@ -79,4 +79,11 @@ public class CouponController {
             @PageableDefault(size = 20) Pageable pageable) {
         return ResponseEntity.ok(couponService.searchCoupons(query, active, pageable));
     }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCoupon(@PathVariable Long id) {
+        couponService.deleteCoupon(id);
+        return ResponseEntity.noContent().build();
+    }
 }

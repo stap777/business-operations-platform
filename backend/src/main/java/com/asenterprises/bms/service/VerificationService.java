@@ -78,9 +78,11 @@ public class VerificationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         // Step 1 & 2: Validate Order Status
-        if (order.getOrderStatus() != OrderStatus.DELIVERED) {
-            throw new IllegalStateException("Cannot verify order with status '" + order.getOrderStatus() +
-                    "'. Only orders with status DELIVERED can be verified.");
+        if (order.getOrderStatus() == OrderStatus.VERIFIED || order.getOrderStatus() == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Order #" + order.getOrderNumber() + " is already verified.");
+        }
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot verify a CANCELLED order.");
         }
 
         // Step 3: Validate Customer status

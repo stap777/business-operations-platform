@@ -100,3 +100,23 @@ export const useRestoreCategory = () => {
     },
   });
 };
+
+export const useDeleteCategory = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => productService.deleteCategory(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CATEGORY_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: CATEGORY_KEYS.dropdown() });
+      toast.success('Category deleted successfully');
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to delete category.';
+      toast.error(message);
+    },
+  });
+};

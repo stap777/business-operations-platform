@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useCreateCategory, useUpdateCategory } from '../hooks/useCategories';
 import type { CategoryResponse } from '../product.types';
 import { Button } from '../../../components/ui/button';
-import { X, FolderPlus, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Modal } from '../../../components/common/Modal';
 
 interface CategoryFormProps {
   open: boolean;
@@ -34,8 +35,6 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange, 
     }
     setErrors({});
   }, [initialData, open]);
-
-  if (!open) return null;
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -82,88 +81,71 @@ export const CategoryForm: React.FC<CategoryFormProps> = ({ open, onOpenChange, 
   const isPending = createCategoryMutation.isPending || updateCategoryMutation.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        {/* Modal Header */}
-        <div className="p-5 border-b border-[#ECECEC] dark:border-[#232323] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-[#1A1A1A] border border-[#ECECEC] dark:border-[#232323] flex items-center justify-center text-[#111111] dark:text-[#FAFAFA]">
-              <FolderPlus className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-[#111111] dark:text-[#FAFAFA]">
-                {isEditMode ? 'Edit Category' : 'Add Category'}
-              </h2>
-              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                {isEditMode ? 'Update product category details.' : 'Create a new product category.'}
-              </p>
-            </div>
-          </div>
-          <button
+    <Modal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title={isEditMode ? 'Edit Category' : 'Add Category'}
+      subtitle={
+        isEditMode
+          ? 'Update product category details and description.'
+          : 'Create a new category to group related inventory items.'
+      }
+      maxWidth="md"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => onOpenChange(false)}
-            className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A]"
+            className="text-xs rounded-xl border-[#E4E4E7] dark:border-[#27272A]"
           >
-            <X className="w-4 h-4" />
-          </button>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            size="sm"
+            disabled={isPending}
+            className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold gap-1.5 rounded-xl shadow-xs"
+          >
+            {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {isEditMode ? 'Save Changes' : 'Create Category'}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        <div>
+          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            Category Name *
+          </label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            placeholder="e.g. Beverages, Industrial Packaging..."
+            className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+          />
+          {errors.name && <p className="text-[11px] text-red-500 mt-1">{errors.name}</p>}
         </div>
 
-        {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-          {/* Category Name */}
-          <div>
-            <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
-              Category Name *
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter category name..."
-              className="w-full px-3 py-2 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
-            />
-            {errors.name && <p className="text-[10px] text-red-500 mt-1">{errors.name}</p>}
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
-              Description (optional)
-            </label>
-            <textarea
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Enter category description..."
-              className="w-full px-3 py-2 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA] resize-none"
-            />
-            {errors.description && (
-              <p className="text-[10px] text-red-500 mt-1">{errors.description}</p>
-            )}
-          </div>
-
-          {/* Form Actions */}
-          <div className="pt-3 border-t border-[#ECECEC] dark:border-[#232323] flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="text-xs border-[#ECECEC] dark:border-[#232323]"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isPending}
-              className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
-            >
-              {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {isEditMode ? 'Save Changes' : 'Create Category'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div>
+          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            Description
+          </label>
+          <textarea
+            rows={3}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            placeholder="Add optional notes or descriptions for this category..."
+            className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 resize-none"
+          />
+          {errors.description && (
+            <p className="text-[11px] text-red-500 mt-1">{errors.description}</p>
+          )}
+        </div>
+      </form>
+    </Modal>
   );
 };

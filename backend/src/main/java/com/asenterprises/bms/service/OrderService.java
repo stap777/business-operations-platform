@@ -4,6 +4,7 @@ import com.asenterprises.bms.dto.OrderItemRequest;
 import com.asenterprises.bms.dto.OrderItemResponse;
 import com.asenterprises.bms.dto.OrderRequest;
 import com.asenterprises.bms.dto.OrderResponse;
+import com.asenterprises.bms.entity.Coupon;
 import com.asenterprises.bms.entity.Customer;
 import com.asenterprises.bms.entity.CustomerStatus;
 import com.asenterprises.bms.entity.DeliveryStatus;
@@ -18,6 +19,7 @@ import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.entity.UserStatus;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
 import com.asenterprises.bms.repository.CustomerRepository;
+import com.asenterprises.bms.repository.InvoiceRepository;
 import com.asenterprises.bms.repository.OrderRepository;
 import com.asenterprises.bms.repository.ProductRepository;
 import com.asenterprises.bms.repository.UserRepository;
@@ -51,6 +53,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final com.asenterprises.bms.repository.CouponRepository couponRepository;
     private final com.asenterprises.bms.repository.PaymentAllocationRepository paymentAllocationRepository;
+    private final InvoiceRepository invoiceRepository;
     private final InvoiceService invoiceService;
     private final AuditLogService auditLogService;
 
@@ -279,11 +282,17 @@ public class OrderService {
 
         order.setCustomer(customer);
         order.setManager(manager);
-        if (deliveryPerson != null) {
-            order.setDeliveryPerson(deliveryPerson);
-        }
+        order.setDeliveryPerson(deliveryPerson);
         order.setDeliveryInstructions(trim(request.getDeliveryInstructions()));
         order.setNotes(trim(request.getNotes()));
+
+        if (org.springframework.util.StringUtils.hasText(request.getCouponCode())) {
+            String uppercaseCode = request.getCouponCode().trim().toUpperCase();
+            Coupon coupon = couponRepository.findByCode(uppercaseCode).orElse(null);
+            order.setCoupon(coupon);
+        } else {
+            order.setCoupon(null);
+        }
 
         order.getItems().clear();
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -383,6 +392,20 @@ public class OrderService {
 
         Order updatedOrder = orderRepository.save(order);
         return mapToResponse(updatedOrder);
+    }
+
+    @Transactional
+    public void deleteOrder(Long id) {
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED) {
+            throw new IllegalStateException("Verified orders cannot be deleted.");
+        }
+
+        invoiceRepository.findByOrderId(id).ifPresent(invoiceRepository::delete);
+        orderRepository.delete(order);
     }
 
     private synchronized String generateOrderNumber() {

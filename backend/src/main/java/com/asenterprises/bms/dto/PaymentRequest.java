@@ -36,6 +36,8 @@ public class PaymentRequest {
     @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 
+    private java.time.LocalDate chequeDate;
+
     @Size(max = 500, message = "Remarks cannot exceed 500 characters")
     private String remarks;
 

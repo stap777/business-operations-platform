@@ -4,7 +4,9 @@ import { OrderStatusBadge, PaymentStatusBadge } from './OrderStatusBadge';
 import { ActionDropdownMenu } from '../../../components/common/ActionDropdownMenu';
 import type { ActionMenuItem } from '../../../components/common/ActionDropdownMenu';
 import { Button } from '../../../components/ui/button';
-import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit } from 'lucide-react';
+import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit, Trash2 } from 'lucide-react';
+import { EmptyState } from '../../../components/common/EmptyState';
+import { TableSkeleton } from '../../../components/common/TableSkeleton';
 
 interface OrderTableProps {
   orders: OrderResponse[];
@@ -14,6 +16,7 @@ interface OrderTableProps {
   onPrintOrder?: (order: OrderResponse) => void;
   onCancelOrder?: (orderId: number) => void;
   onVerifyOrder?: (order: OrderResponse) => void;
+  onDeleteOrder?: (order: OrderResponse) => void;
   userRole?: string;
 }
 
@@ -25,52 +28,43 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   onPrintOrder,
   onCancelOrder,
   onVerifyOrder,
+  onDeleteOrder,
   userRole,
 }) => {
   if (isLoading) {
-    return (
-      <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl overflow-hidden shadow-xs">
-        <div className="p-4 space-y-3">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-12 bg-[#FAFAFA] dark:bg-[#151515] animate-pulse rounded-lg" />
-          ))}
-        </div>
-      </div>
-    );
+    return <TableSkeleton columns={10} rows={8} />;
   }
 
   if (orders.length === 0) {
     return (
-      <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl p-12 text-center shadow-xs">
-        <h3 className="text-sm font-semibold text-[#111111] dark:text-[#FAFAFA]">No orders found</h3>
-        <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1 max-w-sm mx-auto">
-          Customer sales orders will appear here once created. Try adjusting search or filters.
-        </p>
-      </div>
+      <EmptyState
+        title="No sales orders found"
+        description="Customer sales orders will appear here once created. Try adjusting search or filters."
+      />
     );
   }
 
   return (
     <div className="space-y-3">
       {/* Desktop Table View (hidden on small viewports < 640px) */}
-      <div className="hidden sm:block bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-xl overflow-hidden shadow-xs">
+      <div className="hidden sm:block bg-white dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#27272A] rounded-2xl overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#ECECEC] dark:border-[#232323] bg-[#FAFAFA]/50 dark:bg-[#151515]/50 text-[#71717A] dark:text-[#A1A1AA] font-semibold text-[10px] uppercase tracking-wider">
-                <th className="py-3 px-3.5">Order #</th>
-                <th className="py-3 px-3.5">Customer</th>
-                <th className="py-3 px-3.5">Date</th>
-                <th className="py-3 px-3.5">Sales Rep</th>
-                <th className="py-3 px-3.5 text-right">Total</th>
-                <th className="py-3 px-3.5 text-right">Paid</th>
-                <th className="py-3 px-3.5 text-right">Balance</th>
-                <th className="py-3 px-3.5">Payment</th>
-                <th className="py-3 px-3.5">Order Status</th>
-                <th className="py-3 px-3.5 text-right">Actions</th>
+              <tr className="border-b border-[#E4E4E7] dark:border-[#27272A] bg-[#FAFAFA] dark:bg-[#121214] text-[11px] font-semibold text-[#71717A] dark:text-[#A1A1AA] uppercase tracking-wider">
+                <th className="py-3 px-4">Order #</th>
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">Sales Rep</th>
+                <th className="py-3 px-4 text-right">Total</th>
+                <th className="py-3 px-4 text-right">Paid</th>
+                <th className="py-3 px-4 text-right">Balance</th>
+                <th className="py-3 px-4">Payment</th>
+                <th className="py-3 px-4">Order Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#ECECEC] dark:divide-[#232323]">
+            <tbody className="divide-y divide-[#E4E4E7]/60 dark:divide-[#27272A]/60 text-xs text-[#09090B] dark:text-[#FAFAFA]">
               {orders.map((order) => {
                 const total = order.totalAmount || 0;
                 const paid = order.amountReceived || 0;
@@ -127,45 +121,54 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                   });
                 }
 
+                if (onDeleteOrder && !order.isLocked && order.orderStatus !== 'VERIFIED') {
+                  dropdownItems.push({
+                    label: 'Delete Order',
+                    icon: Trash2,
+                    variant: 'danger',
+                    onClick: () => onDeleteOrder(order),
+                  });
+                }
+
                 return (
                   <tr
                     key={order.id}
-                    className="hover:bg-[#FAFAFA] dark:hover:bg-[#151515] transition-colors"
+                    className="h-14 hover:bg-[#F4F4F5]/60 dark:hover:bg-[#27272A]/40 transition-colors"
                   >
-                    <td className="py-3 px-3.5 font-mono font-bold text-[#111111] dark:text-[#FAFAFA]">
+                    <td className="py-3.5 px-4 font-mono font-bold text-[#09090B] dark:text-[#FAFAFA]">
                       {order.orderNumber}
                     </td>
-                    <td className="py-3 px-3.5 font-medium text-[#111111] dark:text-[#FAFAFA]">
+                    <td className="py-3.5 px-4 font-semibold text-[#09090B] dark:text-[#FAFAFA]">
                       {order.customerName}
                       {order.customerCode && (
-                        <span className="block text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono">
+                        <span className="block text-[10px] text-[#71717A] dark:text-[#A1A1AA] font-mono font-normal">
                           {order.customerCode}
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-3.5 font-mono text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
+                    <td className="py-3.5 px-4 text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
                       {new Date(order.createdAt).toLocaleDateString('en-IN', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
                       })}
                     </td>
-                    <td className="py-3 px-3.5 text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
+                    <td className="py-3.5 px-4 text-[#71717A] dark:text-[#A1A1AA]">
                       {order.managerName || 'Unassigned'}
                     </td>
-                    <td className="py-3 px-3.5 text-right font-mono font-bold text-[#111111] dark:text-[#FAFAFA]">
+                    <td className="py-3.5 px-4 text-right font-mono font-semibold text-[#09090B] dark:text-[#FAFAFA]">
                       ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-3.5 text-right font-mono text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3.5 px-4 text-right font-mono font-medium text-emerald-600 dark:text-emerald-400">
                       ₹{paid.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-3.5 text-right font-mono text-amber-600 dark:text-amber-400">
+                    <td className="py-3.5 px-4 text-right font-mono font-medium text-amber-600 dark:text-amber-400">
                       ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3 px-3.5">
+                    <td className="py-3.5 px-4">
                       <PaymentStatusBadge status={order.paymentStatus} />
                     </td>
-                    <td className="py-3 px-3.5">
+                    <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1.5">
                         <OrderStatusBadge status={order.orderStatus} />
                         {(order.isLocked || order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') && (
@@ -176,18 +179,8 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3 px-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onViewOrder(order)}
-                          className="h-7 text-xs font-medium px-2.5 border-[#ECECEC] dark:border-[#232323] hover:bg-[#FAFAFA] dark:hover:bg-[#151515]"
-                        >
-                          View
-                        </Button>
-                        <ActionDropdownMenu items={dropdownItems} />
-                      </div>
+                    <td className="py-3.5 px-4 text-right">
+                      <ActionDropdownMenu items={dropdownItems} />
                     </td>
                   </tr>
                 );
@@ -258,11 +251,11 @@ export const OrderTable: React.FC<OrderTableProps> = ({
           return (
             <div
               key={order.id}
-              className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] p-4 rounded-xl space-y-3 shadow-xs"
+              className="bg-white dark:bg-[#18181B] border border-[#E4E4E7] dark:border-[#27272A] p-4 rounded-2xl space-y-3 shadow-xs"
             >
               {/* Header */}
               <div className="flex items-center justify-between">
-                <span className="font-mono font-bold text-sm text-[#111111] dark:text-[#FAFAFA]">
+                <span className="font-mono font-bold text-sm text-[#09090B] dark:text-[#FAFAFA]">
                   {order.orderNumber}
                 </span>
                 <div className="flex items-center gap-1.5">
@@ -278,7 +271,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
 
               {/* Customer & Date */}
               <div className="space-y-1 text-xs">
-                <p className="font-semibold text-[#111111] dark:text-[#FAFAFA]">
+                <p className="font-semibold text-[#09090B] dark:text-[#FAFAFA]">
                   {order.customerName}
                 </p>
                 <div className="flex items-center justify-between text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
@@ -293,18 +286,18 @@ export const OrderTable: React.FC<OrderTableProps> = ({
               </div>
 
               {/* Totals & Payment */}
-              <div className="p-2.5 rounded-lg bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] flex items-center justify-between text-xs">
+              <div className="p-3 rounded-xl bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase font-medium">Payment Status</span>
+                  <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase font-medium mb-0.5">Payment</span>
                   <PaymentStatusBadge status={order.paymentStatus} />
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase font-medium">Total Amount</span>
-                  <span className="font-mono font-bold text-sm text-[#111111] dark:text-[#FAFAFA]">
+                  <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] block uppercase font-medium mb-0.5">Total Amount</span>
+                  <span className="font-mono font-bold text-sm text-[#09090B] dark:text-[#FAFAFA]">
                     ₹{total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                   {balance > 0 && (
-                    <span className="block text-[10px] font-mono text-amber-600 dark:text-amber-400">
+                    <span className="block text-[10px] font-mono text-amber-600 dark:text-amber-400 font-medium">
                       Bal: ₹{balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                   )}
@@ -312,12 +305,12 @@ export const OrderTable: React.FC<OrderTableProps> = ({
               </div>
 
               {/* Actions Footer */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#ECECEC] dark:border-[#232323]">
+              <div className="flex items-center justify-between pt-2.5 border-t border-[#E4E4E7] dark:border-[#27272A]">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onViewOrder(order)}
-                  className="h-8 text-xs font-medium px-4 border-[#ECECEC] dark:border-[#232323] flex-1 mr-2"
+                  className="h-8 text-xs font-medium px-4 border-[#E4E4E7] dark:border-[#27272A] flex-1 mr-2 rounded-xl"
                 >
                   View Details
                 </Button>

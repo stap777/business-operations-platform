@@ -28,6 +28,7 @@ public class PaymentResponse {
     private LocalDateTime paymentDate;
     private BigDecimal totalAmount;
     private PaymentMethod paymentMethod;
+    private java.time.LocalDate chequeDate;
     private String remarks;
     private List<PaymentAllocationResponse> allocations;
     private LocalDateTime createdAt;

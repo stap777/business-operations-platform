@@ -13,7 +13,8 @@ import { ResetPasswordModal } from './components/ResetPasswordModal';
 import { DeleteUserModal } from './components/DeleteUserModal';
 import { Pagination } from '../../../components/common/Pagination';
 import { Button } from '../../../components/ui/button';
-import { Plus, Users, ShieldAlert } from 'lucide-react';
+import { PageHeader } from '../../../components/common/PageHeader';
+import { Plus, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 
 export const UsersPage: React.FC = () => {
@@ -89,31 +90,23 @@ export const UsersPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#ECECEC] dark:border-[#232323]">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] flex items-center justify-center">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-[#111111] dark:text-[#FAFAFA]">Employees</h1>
-            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-              Manage Sales Representatives and Delivery personnel accounts.
-            </p>
-          </div>
-        </div>
-
-        <Button
-          onClick={() => {
-            setEditingUser(null);
-            setIsFormOpen(true);
-          }}
-          size="sm"
-          className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5 shadow-sm self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Add Employee
-        </Button>
-      </div>
+      <PageHeader
+        title="Employee Management"
+        description="Manage system access, roles, contact info, and account status for all staff."
+        action={
+          <Button
+            size="sm"
+            onClick={() => {
+              setEditingUser(null);
+              setIsFormOpen(true);
+            }}
+            className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold gap-1.5 rounded-xl shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            Add Employee
+          </Button>
+        }
+      />
 
       {/* Filters Bar */}
       <UserFilters

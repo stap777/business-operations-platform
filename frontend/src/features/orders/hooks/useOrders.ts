@@ -102,3 +102,20 @@ export const useVerifyOrder = () => {
     },
   });
 };
+
+export const useDeleteOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => orderService.deleteOrder(id),
+    onSuccess: () => {
+      toast.success('Order deleted.');
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || 'Failed to delete order.';
+      toast.error(msg);
+    },
+  });
+};

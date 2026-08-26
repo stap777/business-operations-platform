@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
-import { Input } from '../../../components/ui/input';
 import type { CustomerStatus } from '../customer.types';
+import { SegmentedControl } from '../../../components/common/SegmentedControl';
 
 interface CustomerFiltersProps {
   searchQuery: string;
@@ -33,15 +33,15 @@ export const CustomerFilters: React.FC<CustomerFiltersProps> = ({
   }, [term, searchQuery, onSearchChange]);
 
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-[#18181B] p-3 rounded-2xl border border-[#E4E4E7] dark:border-[#27272A] shadow-xs">
       <div className="relative flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
-        <Input
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
+        <input
           type="text"
           value={term}
           onChange={(e) => setTerm(e.target.value)}
-          placeholder="Search by name or phone..."
-          className="pl-9 pr-9 text-xs h-9 bg-white dark:bg-[#0F0F0F] border-[#ECECEC] dark:border-[#232323]"
+          placeholder="Search customer by name or phone..."
+          className="w-full pl-10 pr-9 py-2 text-xs bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
         />
         {term && (
           <button
@@ -50,50 +50,24 @@ export const CustomerFilters: React.FC<CustomerFiltersProps> = ({
               setTerm('');
               onSearchChange('');
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#71717A] dark:text-[#A1A1AA] hover:text-[#09090B] dark:hover:text-[#FAFAFA]"
           >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
 
-      {/* Segmented Status Control */}
       {onStatusChange && (
-        <div className="flex items-center p-0.5 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-xs self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => onStatusChange(undefined)}
-            className={`px-2.5 py-1 rounded-md transition-colors ${
-              !selectedStatus
-                ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] font-medium shadow-xs'
-                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-            }`}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={() => onStatusChange('ACTIVE')}
-            className={`px-2.5 py-1 rounded-md transition-colors ${
-              selectedStatus === 'ACTIVE'
-                ? 'bg-white dark:bg-[#232323] text-emerald-600 dark:text-emerald-400 font-medium shadow-xs'
-                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-            }`}
-          >
-            Active
-          </button>
-          <button
-            type="button"
-            onClick={() => onStatusChange('INACTIVE')}
-            className={`px-2.5 py-1 rounded-md transition-colors ${
-              selectedStatus === 'INACTIVE'
-                ? 'bg-white dark:bg-[#232323] text-rose-600 dark:text-rose-400 font-medium shadow-xs'
-                : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-            }`}
-          >
-            Inactive
-          </button>
-        </div>
+        <SegmentedControl
+          value={selectedStatus || 'ALL'}
+          onChange={(val) => onStatusChange(val === 'ALL' ? undefined : (val as CustomerStatus))}
+          options={[
+            { label: 'All', value: 'ALL' },
+            { label: 'Active', value: 'ACTIVE' },
+            { label: 'Inactive', value: 'INACTIVE' },
+          ]}
+          size="sm"
+        />
       )}
     </div>
   );

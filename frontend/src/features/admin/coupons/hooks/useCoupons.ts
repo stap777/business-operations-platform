@@ -81,3 +81,19 @@ export const useToggleCouponStatus = () => {
     },
   });
 };
+
+export const useDeleteCoupon = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => couponService.deleteCoupon(id),
+    onSuccess: () => {
+      toast.success('Coupon deleted.');
+      queryClient.invalidateQueries({ queryKey: couponKeys.all });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || 'Failed to delete coupon.';
+      toast.error(msg);
+    },
+  });
+};

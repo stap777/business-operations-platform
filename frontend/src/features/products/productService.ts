@@ -103,6 +103,14 @@ export const productService = {
     return response.data;
   },
 
+  deleteProduct: async (id: number): Promise<void> => {
+    await apiClient.delete(`/products/${id}`);
+  },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    await apiClient.delete(`/categories/${id}`);
+  },
+
   getCategoryDropdown: async (): Promise<CategoryDropdownResponse[]> => {
     const response = await apiClient.get<CategoryDropdownResponse[]>('/categories/dropdown');
     return response.data;

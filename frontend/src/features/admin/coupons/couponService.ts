@@ -53,4 +53,8 @@ export const couponService = {
     const response = await apiClient.patch<CouponResponse>(`/coupons/${id}/toggle-status`);
     return response.data;
   },
+
+  deleteCoupon: async (id: number): Promise<void> => {
+    await apiClient.delete(`/coupons/${id}`);
+  },
 };

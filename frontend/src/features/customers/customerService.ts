@@ -55,4 +55,8 @@ export const customerService = {
     const response = await apiClient.get<CustomerLedgerResponse>(`/reports/customer-ledger/${customerId}`);
     return response.data;
   },
+
+  deleteCustomer: async (id: number): Promise<void> => {
+    await apiClient.delete(`/customers/${id}`);
+  },
 };

@@ -130,3 +130,25 @@ export const useRestoreCustomer = () => {
     },
   });
 };
+
+export const useDeleteCustomer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => customerService.deleteCustomer(id),
+    onSuccess: () => {
+      toast.success('Customer Deleted');
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers-dropdown'] });
+    },
+    onError: (error: unknown) => {
+      let message = 'Failed to delete customer.';
+      if (error instanceof AxiosError && error.response?.data?.message) {
+        message = error.response.data.message;
+      }
+      toast.error('Customer Deletion Failed', {
+        description: message,
+      });
+    },
+  });
+};

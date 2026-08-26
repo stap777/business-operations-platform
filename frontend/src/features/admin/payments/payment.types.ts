@@ -12,6 +12,7 @@ export interface PaymentRequest {
   paymentDate?: string;
   totalAmount: number;
   paymentMethod: PaymentMethod;
+  chequeDate?: string;
   remarks?: string;
   allocations: PaymentAllocationRequest[];
 }
@@ -35,6 +36,7 @@ export interface PaymentResponse {
   paymentDate: string;
   totalAmount: number;
   paymentMethod: PaymentMethod;
+  chequeDate?: string;
   remarks?: string;
   allocations: PaymentAllocationResponse[];
   createdAt: string;

@@ -86,6 +86,9 @@ public class Payment extends BaseEntity {
     @Column(name = "payment_method", nullable = false, length = 20)
     private PaymentMethod paymentMethod;
 
+    @Column(name = "cheque_date")
+    private java.time.LocalDate chequeDate;
+
     @Size(max = 500, message = "Remarks cannot exceed 500 characters")
     @Column(name = "remarks", length = 500)
     private String remarks;

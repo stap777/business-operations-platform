@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import type { CouponRequest, CouponResponse, DiscountType } from '../coupon.types';
 import { Button } from '../../../../components/ui/button';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Modal } from '../../../../components/common/Modal';
 
 interface CouponFormProps {
   isOpen: boolean;
@@ -30,7 +31,6 @@ export const CouponForm: React.FC<CouponFormProps> = ({
   const [active, setActive] = useState(true);
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Helper to format ISO to datetime-local string
   const toDatetimeLocal = (isoString?: string) => {
     if (!isoString) return '';
     try {
@@ -62,7 +62,7 @@ export const CouponForm: React.FC<CouponFormProps> = ({
       setDiscountValue('100');
       setMinimumOrderAmount('500');
       setMaximumDiscount('');
-      
+
       const now = new Date();
       const nextMonth = new Date();
       nextMonth.setMonth(nextMonth.getMonth() + 1);
@@ -74,8 +74,6 @@ export const CouponForm: React.FC<CouponFormProps> = ({
     }
     setValidationError(null);
   }, [initialData, isOpen]);
-
-  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,41 +96,16 @@ export const CouponForm: React.FC<CouponFormProps> = ({
       return;
     }
 
-    const minOrderNum = parseFloat(minimumOrderAmount);
-    if (isNaN(minOrderNum) || minOrderNum < 0) {
-      setValidationError('Minimum order amount cannot be negative.');
-      return;
-    }
-
-    const usageLimitNum = parseInt(usageLimit, 10);
-    if (isNaN(usageLimitNum) || usageLimitNum < 1) {
-      setValidationError('Usage limit must be at least 1.');
-      return;
-    }
-
-    if (!startDate || !endDate) {
-      setValidationError('Start date and end date are required.');
-      return;
-    }
-
-    const startISO = new Date(startDate).toISOString();
-    const endISO = new Date(endDate).toISOString();
-
-    if (new Date(startDate) >= new Date(endDate)) {
-      setValidationError('Start date must be before end date.');
-      return;
-    }
-
     const payload: CouponRequest = {
       code: trimmedCode,
       description: description.trim() || undefined,
       discountType,
       discountValue: valNum,
-      minimumOrderAmount: minOrderNum,
+      minimumOrderAmount: minimumOrderAmount ? parseFloat(minimumOrderAmount) : 0,
       maximumDiscount: maximumDiscount ? parseFloat(maximumDiscount) : undefined,
-      startDate: startISO,
-      endDate: endISO,
-      usageLimit: usageLimitNum,
+      startDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+      endDate: endDate ? new Date(endDate).toISOString() : new Date().toISOString(),
+      usageLimit: usageLimit ? parseInt(usageLimit, 10) : 0,
       active,
     };
 
@@ -140,218 +113,178 @@ export const CouponForm: React.FC<CouponFormProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between pb-3 border-b border-[#ECECEC] dark:border-[#232323]">
-          <h2 className="text-base font-bold text-[#111111] dark:text-[#FAFAFA]">
-            {initialData ? 'Edit Coupon' : 'Create New Coupon'}
-          </h2>
-          <button
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={initialData ? 'Edit Coupon' : 'Create New Coupon'}
+      subtitle={
+        initialData
+          ? 'Update promotional discount parameters.'
+          : 'Configure a new promotional code for orders.'
+      }
+      maxWidth="xl"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={onClose}
-            className="p-1 rounded-lg text-[#71717A] hover:text-[#111111] dark:hover:text-[#FAFAFA]"
+            className="text-xs rounded-xl border-[#E4E4E7] dark:border-[#27272A]"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            size="sm"
+            disabled={isSubmitting}
+            className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold gap-1.5 rounded-xl shadow-xs"
+          >
+            {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {initialData ? 'Save Changes' : 'Create Coupon'}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {validationError && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-xs text-red-600 dark:text-red-400 font-medium">
+          <div className="p-3 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 rounded-xl text-xs font-medium border border-red-200 dark:border-red-800/40">
             {validationError}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Code & Discount Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Coupon Code *
-              </label>
-              <input
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                placeholder="e.g. SAVE200"
-                maxLength={30}
-                required
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA] font-mono font-bold uppercase"
-              />
-            </div>
-
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Discount Type *
-              </label>
-              <select
-                value={discountType}
-                onChange={(e) => setDiscountType(e.target.value as DiscountType)}
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA] font-medium"
-              >
-                <option value="FLAT">FLAT (Fixed Amount ₹)</option>
-                <option value="PERCENTAGE">PERCENTAGE (%)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Discount Value & Max Discount */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Discount Value * {discountType === 'FLAT' ? '(₹)' : '(%)'}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={discountType === 'PERCENTAGE' ? 100 : undefined}
-                value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
-                placeholder={discountType === 'FLAT' ? '100' : '20'}
-                required
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA]"
-              />
-            </div>
-
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Max Discount (₹) {discountType === 'PERCENTAGE' ? '(Optional Cap)' : '(N/A for FLAT)'}
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                value={maximumDiscount}
-                onChange={(e) => setMaximumDiscount(e.target.value)}
-                placeholder="e.g. 500"
-                disabled={discountType === 'FLAT'}
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA] disabled:opacity-50"
-              />
-            </div>
-          </div>
-
-          {/* Minimum Order & Usage Limit */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Min Order Amount (₹) *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={minimumOrderAmount}
-                onChange={(e) => setMinimumOrderAmount(e.target.value)}
-                placeholder="500"
-                required
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA]"
-              />
-            </div>
-
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Usage Limit (Count Cap) *
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={usageLimit}
-                onChange={(e) => setUsageLimit(e.target.value)}
-                placeholder="100"
-                required
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA]"
-              />
-            </div>
-          </div>
-
-          {/* Start Date & End Date */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                Start Date *
-              </label>
-              <input
-                type="datetime-local"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                required
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA]"
-              />
-            </div>
-
-            <div>
-              <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-                End Date *
-              </label>
-              <input
-                type="datetime-local"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                required
-                className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA]"
-              />
-            </div>
-          </div>
-
-          {/* Description */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
-            <label className="font-semibold text-[#111111] dark:text-[#FAFAFA] block mb-1">
-              Description (Optional)
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Coupon Code *
             </label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Festival promotional discount for order amounts above ₹500"
-              maxLength={500}
-              className="w-full p-2.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#1A1A1A] text-[#111111] dark:text-[#FAFAFA]"
-            />
-          </div>
-
-          {/* Active Checkbox */}
-          <div className="flex items-center gap-2 pt-1">
             <input
-              type="checkbox"
-              id="activeCheckbox"
-              checked={active}
-              onChange={(e) => setActive(e.target.checked)}
-              className="w-4 h-4 rounded border-[#ECECEC] text-blue-600 focus:ring-blue-500"
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              placeholder="e.g. SUMMER50"
+              className="w-full px-3.5 py-2.5 font-mono font-bold bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
             />
-            <label htmlFor="activeCheckbox" className="font-semibold text-[#111111] dark:text-[#FAFAFA] cursor-pointer">
-              Set coupon active immediately upon creation
-            </label>
           </div>
 
-          {/* Submit Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#ECECEC] dark:border-[#232323]">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              className="text-xs"
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Discount Type *
+            </label>
+            <select
+              value={discountType}
+              onChange={(e) => setDiscountType(e.target.value as DiscountType)}
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 cursor-pointer"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </span>
-              ) : initialData ? (
-                'Update Coupon'
-              ) : (
-                'Create Coupon'
-              )}
-            </Button>
+              <option value="FLAT">FLAT (Fixed Amount ₹)</option>
+              <option value="PERCENTAGE">PERCENTAGE (%)</option>
+            </select>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Discount Value *
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={discountValue}
+              onChange={(e) => setDiscountValue(e.target.value)}
+              placeholder={discountType === 'FLAT' ? '100' : '10'}
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Minimum Order Amount (₹)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={minimumOrderAmount}
+              onChange={(e) => setMinimumOrderAmount(e.target.value)}
+              placeholder="500"
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+            />
+          </div>
+        </div>
+
+        {discountType === 'PERCENTAGE' && (
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Maximum Discount Cap (₹)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={maximumDiscount}
+              onChange={(e) => setMaximumDiscount(e.target.value)}
+              placeholder="e.g. 200"
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Valid From
+            </label>
+            <input
+              type="datetime-local"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Valid Until
+            </label>
+            <input
+              type="datetime-local"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            Usage Cap Limit
+          </label>
+          <input
+            type="number"
+            min="1"
+            value={usageLimit}
+            onChange={(e) => setUsageLimit(e.target.value)}
+            placeholder="100"
+            className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            Description
+          </label>
+          <textarea
+            rows={2}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="e.g. Festive discount for summer orders..."
+            className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 resize-none"
+          />
+        </div>
+      </form>
+    </Modal>
   );
 };

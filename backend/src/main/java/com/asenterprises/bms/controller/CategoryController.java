@@ -81,4 +81,11 @@ public class CategoryController {
     public ResponseEntity<CategoryResponse> restoreCategory(@PathVariable Long id) {
         return ResponseEntity.ok(categoryService.restoreCategory(id));
     }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
+        return ResponseEntity.noContent().build();
+    }
 }

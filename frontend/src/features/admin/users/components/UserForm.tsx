@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useCreateEmployee, useUpdateEmployee } from '../hooks/useUsers';
 import { Button } from '../../../../components/ui/button';
-import { X, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import type { UserResponse } from '../user.types';
+import { Modal } from '../../../../components/common/Modal';
 
 interface UserFormProps {
   open: boolean;
@@ -39,8 +40,6 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
     }
     setErrors({});
   }, [initialData, open]);
-
-  if (!open) return null;
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -103,7 +102,7 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
         {
           data: {
             fullName: formData.fullName.trim(),
-            username: formData.username.trim().toLowerCase(),
+            username: formData.username.trim(),
             password: formData.password,
             phoneNumber: formData.phoneNumber.trim(),
           },
@@ -112,182 +111,141 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
         {
           onSuccess: () => {
             onOpenChange(false);
-            setFormData({ fullName: '', username: '', password: '', phoneNumber: '' });
-            setRole('MANAGER');
-            setErrors({});
           },
         }
       );
     }
   };
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in duration-200">
-        {/* Modal Header */}
-        <div className="p-5 border-b border-[#ECECEC] dark:border-[#232323] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-[#1A1A1A] border border-[#ECECEC] dark:border-[#232323] flex items-center justify-center text-[#111111] dark:text-[#FAFAFA]">
-              {initialData ? <UserCheck className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-[#111111] dark:text-[#FAFAFA]">
-                {initialData ? 'Edit Employee Profile' : 'Add New Employee'}
-              </h2>
-              <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA]">
-                {initialData
-                  ? `Update employee profile details for @${initialData.username}`
-                  : 'Create an administrator, sales representative, or delivery staff account.'}
-              </p>
-            </div>
-          </div>
-          <button
+    <Modal
+      isOpen={open}
+      onClose={() => onOpenChange(false)}
+      title={initialData ? 'Edit Employee Profile' : 'Register New Employee'}
+      subtitle={
+        initialData
+          ? 'Update contact details for staff account.'
+          : 'Provision a new staff account with system credentials.'
+      }
+      maxWidth="lg"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
             onClick={() => onOpenChange(false)}
-            className="p-1.5 rounded-lg text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA] hover:bg-neutral-100 dark:hover:bg-[#1A1A1A]"
+            className="text-xs rounded-xl border-[#E4E4E7] dark:border-[#27272A]"
           >
-            <X className="w-4 h-4" />
-          </button>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            size="sm"
+            disabled={isPending}
+            className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold gap-1.5 rounded-xl shadow-xs"
+          >
+            {isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {initialData ? 'Save Changes' : role === 'ADMIN' ? 'Create Administrator' : role === 'MANAGER' ? 'Create Sales Representative' : 'Create Delivery Personnel'}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+        {!initialData && (
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Account Role *
+            </label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'DELIVERY')}
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 cursor-pointer font-medium"
+            >
+              <option value="ADMIN">Administrator (Full Access)</option>
+              <option value="MANAGER">Sales Representative (Orders & Payments)</option>
+              <option value="DELIVERY">Delivery Personnel (Dispatch & Fulfillment)</option>
+            </select>
+          </div>
+        )}
+
+        <div>
+          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            Full Name *
+          </label>
+          <input
+            type="text"
+            value={formData.fullName}
+            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            placeholder="e.g. Rahul Sharma"
+            className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+          />
+          {errors.fullName && <p className="text-[11px] text-red-500 mt-1">{errors.fullName}</p>}
         </div>
 
-        {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 text-xs">
-          {/* Role Selector Tabs (ADMIN, MANAGER & DELIVERY) - Readonly in Edit Mode */}
-          {!initialData && (
+        {!initialData ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1.5">
-                Employee Role *
-              </label>
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setRole('ADMIN')}
-                  className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    role === 'ADMIN'
-                      ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] shadow-sm'
-                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                  }`}
-                >
-                  Admin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('MANAGER')}
-                  className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    role === 'MANAGER'
-                      ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] shadow-sm'
-                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                  }`}
-                >
-                  Sales Rep
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('DELIVERY')}
-                  className={`py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    role === 'DELIVERY'
-                      ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] shadow-sm'
-                      : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                  }`}
-                >
-                  Delivery
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Full Name */}
-          <div>
-            <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              value={formData.fullName}
-              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              placeholder="e.g. Rahul Sharma"
-              className="w-full px-3 py-2 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
-            />
-            {errors.fullName && <p className="text-[10px] text-red-500 mt-1">{errors.fullName}</p>}
-          </div>
-
-          {/* Username & Phone Number */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
-                Username {initialData ? '(Read-only)' : '*'}
+              <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+                Username *
               </label>
               <input
                 type="text"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="rahul.sharma"
-                disabled={!!initialData}
-                className="w-full px-3 py-2 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA] disabled:opacity-60"
+                placeholder="rahul_sales"
+                className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
               />
-              {errors.username && <p className="text-[10px] text-red-500 mt-1">{errors.username}</p>}
+              {errors.username && <p className="text-[11px] text-red-500 mt-1">{errors.username}</p>}
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
-                Phone Number *
-              </label>
-              <input
-                type="text"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                placeholder="9876543210"
-                className="w-full px-3 py-2 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
-              />
-              {errors.phoneNumber && (
-                <p className="text-[10px] text-red-500 mt-1">{errors.phoneNumber}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Password (Creation Only) */}
-          {!initialData && (
-            <div>
-              <label className="block text-[11px] font-medium text-[#111111] dark:text-[#FAFAFA] mb-1">
+              <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
                 Initial Password *
               </label>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="Minimum 8 characters"
-                className="w-full px-3 py-2 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
+                placeholder="Minimum 8 characters..."
+                className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
               />
-              {errors.password && <p className="text-[10px] text-red-500 mt-1">{errors.password}</p>}
+              {errors.password && <p className="text-[11px] text-red-500 mt-1">{errors.password}</p>}
             </div>
-          )}
-
-          {/* Form Actions */}
-          <div className="pt-3 border-t border-[#ECECEC] dark:border-[#232323] flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="text-xs border-[#ECECEC] dark:border-[#232323]"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={isSubmitting}
-              className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
-            >
-              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              {initialData
-                ? 'Save Changes'
-                : `Create ${role === 'ADMIN' ? 'Administrator' : role === 'MANAGER' ? 'Sales Representative' : 'Delivery Account'}`}
-            </Button>
           </div>
-        </form>
-      </div>
-    </div>
+        ) : (
+          <div>
+            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              Username
+            </label>
+            <input
+              type="text"
+              disabled
+              value={formData.username}
+              className="w-full px-3.5 py-2.5 bg-[#F4F4F5]/50 dark:bg-[#121214]/50 border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#71717A] dark:text-[#A1A1AA] cursor-not-allowed font-mono"
+            />
+          </div>
+        )}
+
+        <div>
+          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            Phone Number *
+          </label>
+          <input
+            type="text"
+            value={formData.phoneNumber}
+            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            placeholder="10-digit mobile number..."
+            className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
+          />
+          {errors.phoneNumber && (
+            <p className="text-[11px] text-red-500 mt-1">{errors.phoneNumber}</p>
+          )}
+        </div>
+      </form>
+    </Modal>
   );
 };

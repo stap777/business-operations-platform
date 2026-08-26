@@ -123,3 +123,23 @@ export const useUpdateStock = () => {
     },
   });
 };
+
+export const useDeleteProduct = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => productService.deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRODUCT_KEYS.all });
+      queryClient.invalidateQueries({ queryKey: ['products', 'dropdown'] });
+      toast.success('Product deleted.');
+    },
+    onError: (error: any) => {
+      const message =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to delete product.';
+      toast.error(message);
+    },
+  });
+};

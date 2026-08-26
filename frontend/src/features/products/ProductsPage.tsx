@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useProducts, useDeactivateProduct, useRestoreProduct } from './hooks/useProducts';
-import { useCategories, useDeactivateCategory, useRestoreCategory } from './hooks/useCategories';
+import { useProducts, useDeactivateProduct, useRestoreProduct, useDeleteProduct } from './hooks/useProducts';
+import { useCategories, useDeleteCategory } from './hooks/useCategories';
 import { ProductFilters } from './components/ProductFilters';
 import { ProductTable } from './components/ProductTable';
 import { ProductForm } from './components/ProductForm';
@@ -8,9 +8,11 @@ import { ProductDetails } from './components/ProductDetails';
 import { StockUpdateModal } from './components/StockUpdateModal';
 import { CategoryTable } from './components/CategoryTable';
 import { CategoryForm } from './components/CategoryForm';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { Button } from '../../components/ui/button';
+import { PageHeader } from '../../components/common/PageHeader';
 import { Plus, Package, FolderTree, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import type { ProductResponse, CategoryResponse, ProductStatus, CategoryStatus } from './product.types';
+import type { ProductResponse, CategoryResponse, ProductStatus } from './product.types';
 
 export const ProductsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
@@ -24,7 +26,6 @@ export const ProductsPage: React.FC = () => {
 
   // Category filters & pagination
   const [categorySearch, setCategorySearch] = useState('');
-  const [categoryStatus, setCategoryStatus] = useState<CategoryStatus | undefined>(undefined);
   const [categoryPage, setCategoryPage] = useState(0);
 
   // Modals state
@@ -32,6 +33,8 @@ export const ProductsPage: React.FC = () => {
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductResponse | null>(null);
   const [editingCategory, setEditingCategory] = useState<CategoryResponse | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<ProductResponse | null>(null);
+  const [deletingCategory, setDeletingCategory] = useState<CategoryResponse | null>(null);
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [stockProduct, setStockProduct] = useState<ProductResponse | null>(null);
@@ -48,7 +51,6 @@ export const ProductsPage: React.FC = () => {
 
   const categoriesQuery = useCategories({
     query: categorySearch,
-    status: categoryStatus,
     page: categoryPage,
     size: 20,
   });
@@ -56,8 +58,8 @@ export const ProductsPage: React.FC = () => {
   // Mutations
   const deactivateProductMutation = useDeactivateProduct();
   const restoreProductMutation = useRestoreProduct();
-  const deactivateCategoryMutation = useDeactivateCategory();
-  const restoreCategoryMutation = useRestoreCategory();
+  const deleteProductMutation = useDeleteProduct();
+  const deleteCategoryMutation = useDeleteCategory();
 
   const handleViewProduct = (id: number) => {
     setSelectedProductId(id);
@@ -67,25 +69,18 @@ export const ProductsPage: React.FC = () => {
   return (
     <>
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[#111111] dark:text-[#FAFAFA]">
-            Products
-          </h1>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-1">
-            Manage your products and inventory.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {activeTab === 'products' ? (
+      <PageHeader
+        title="Products & Inventory"
+        description="Manage inventory, catalog items, categories, and stock availability."
+        action={
+          activeTab === 'products' ? (
             <Button
               onClick={() => {
                 setEditingProduct(null);
                 setIsAddProductOpen(true);
               }}
               size="sm"
-              className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
+              className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-medium gap-1.5 rounded-xl shadow-xs"
             >
               <Plus className="w-4 h-4" />
               Add Product
@@ -97,14 +92,14 @@ export const ProductsPage: React.FC = () => {
                 setIsAddCategoryOpen(true);
               }}
               size="sm"
-              className="bg-[#111111] dark:bg-[#FAFAFA] text-white dark:text-[#111111] hover:opacity-90 text-xs font-medium gap-1.5"
+              className="bg-[#09090B] dark:bg-[#FAFAFA] text-white dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-medium gap-1.5 rounded-xl shadow-xs"
             >
               <Plus className="w-4 h-4" />
               Add Category
             </Button>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* Tabs Navigation */}
       <div className="flex items-center gap-2 border-b border-[#ECECEC] dark:border-[#232323] pt-1">
@@ -181,6 +176,7 @@ export const ProductsPage: React.FC = () => {
             }}
             onDeactivateProduct={(id) => deactivateProductMutation.mutate(id)}
             onRestoreProduct={(id) => restoreProductMutation.mutate(id)}
+            onDeleteProduct={(product) => setDeletingProduct(product)}
             onUpdateStock={(product) => setStockProduct(product)}
           />
 
@@ -222,7 +218,7 @@ export const ProductsPage: React.FC = () => {
       {/* Categories Tab View */}
       {activeTab === 'categories' && (
         <div className="space-y-4">
-          {/* Category Search Toolbar & Status Filter */}
+          {/* Category Search Toolbar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-[#0F0F0F] p-3 rounded-xl border border-[#ECECEC] dark:border-[#232323] shadow-sm">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717A] dark:text-[#A1A1AA]" />
@@ -236,52 +232,6 @@ export const ProductsPage: React.FC = () => {
                 placeholder="Search categories..."
                 className="w-full pl-9 pr-4 py-2 text-xs bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] placeholder-[#71717A] dark:placeholder-[#A1A1AA] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
               />
-            </div>
-
-            {/* Category Status Segmented Filter */}
-            <div className="flex items-center p-0.5 bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setCategoryStatus(undefined);
-                  setCategoryPage(0);
-                }}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  !categoryStatus
-                    ? 'bg-white dark:bg-[#232323] text-[#111111] dark:text-[#FAFAFA] font-medium shadow-xs'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                }`}
-              >
-                All
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCategoryStatus('ACTIVE');
-                  setCategoryPage(0);
-                }}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  categoryStatus === 'ACTIVE'
-                    ? 'bg-white dark:bg-[#232323] text-emerald-600 dark:text-emerald-400 font-medium shadow-xs'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                }`}
-              >
-                Active
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCategoryStatus('INACTIVE');
-                  setCategoryPage(0);
-                }}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  categoryStatus === 'INACTIVE'
-                    ? 'bg-white dark:bg-[#232323] text-rose-600 dark:text-rose-400 font-medium shadow-xs'
-                    : 'text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                }`}
-              >
-                Inactive
-              </button>
             </div>
           </div>
 
@@ -304,8 +254,7 @@ export const ProductsPage: React.FC = () => {
               setEditingCategory(cat);
               setIsAddCategoryOpen(true);
             }}
-            onDeactivateCategory={(id) => deactivateCategoryMutation.mutate(id)}
-            onRestoreCategory={(id) => restoreCategoryMutation.mutate(id)}
+            onDeleteCategory={(cat) => setDeletingCategory(cat)}
           />
 
           {/* Pagination Controls */}
@@ -370,6 +319,39 @@ export const ProductsPage: React.FC = () => {
         isOpen={!!stockProduct}
         onClose={() => setStockProduct(null)}
       />
+
+      {/* Delete Product Confirmation Modal */}
+      {deletingProduct && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingProduct}
+          onClose={() => setDeletingProduct(null)}
+          entityType="Product"
+          entityName={deletingProduct.name}
+          isDeleting={deleteProductMutation.isPending}
+          onConfirm={() => {
+            deleteProductMutation.mutate(deletingProduct.id, {
+              onSuccess: () => setDeletingProduct(null),
+            });
+          }}
+        />
+      )}
+
+      {/* Delete Category Confirmation Modal */}
+      {deletingCategory && (
+        <ConfirmDeleteModal
+          isOpen={!!deletingCategory}
+          onClose={() => setDeletingCategory(null)}
+          entityType="Category"
+          entityName={deletingCategory.name}
+          isDeleting={deleteCategoryMutation.isPending}
+          warningText="Categories containing active products cannot be deleted."
+          onConfirm={() => {
+            deleteCategoryMutation.mutate(deletingCategory.id, {
+              onSuccess: () => setDeletingCategory(null),
+            });
+          }}
+        />
+      )}
     </>
   );
 };

@@ -152,6 +152,15 @@ public class ProductService {
     }
 
     @Transactional
+    public void deleteProduct(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        product.setStatus(ProductStatus.INACTIVE);
+        productRepository.save(product);
+    }
+
+    @Transactional
     public ProductResponse updateStock(Long id, StockUpdateRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));

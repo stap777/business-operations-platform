@@ -117,7 +117,7 @@ export const App: React.FC = () => {
             </Suspense>
           </BrowserRouter>
         </ErrorBoundary>
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" richColors closeButton toastOptions={{ style: { borderRadius: '12px', fontSize: '13px' } }} />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

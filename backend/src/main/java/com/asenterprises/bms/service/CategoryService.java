@@ -116,6 +116,18 @@ public class CategoryService {
         return mapToResponse(restoredCategory);
     }
 
+    @Transactional
+    public void deleteCategory(Long id) {
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+
+        if (productRepository.existsByCategoryIdAndStatus(id, ProductStatus.ACTIVE)) {
+            throw new IllegalArgumentException("This category still contains products.");
+        }
+
+        categoryRepository.delete(category);
+    }
+
     private String trim(String input) {
         return input != null ? input.trim() : null;
     }
