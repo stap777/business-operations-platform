@@ -319,7 +319,7 @@ public class ExportService {
         sb.append("Order Number,Customer,Products,Total Amount,Payment Method,Date,Status\n");
         orderRepository.findAll().forEach(order -> {
             String productSummary = order.getItems().stream()
-                    .map(item -> item.getProduct().getName() + " (x" + item.getQuantity() + ")")
+                    .map(item -> (item.getProduct() != null ? item.getProduct().getName() : "Item") + " (x" + item.getQuantity() + ")")
                     .reduce((a, b) -> a + "; " + b).orElse("-");
             productSummary = "\"" + productSummary.replace("\"", "\"\"") + "\"";
             String custName = "\"" + (order.getCustomer() != null ? order.getCustomer().getFullName().replace("\"", "\"\"") : "") + "\"";

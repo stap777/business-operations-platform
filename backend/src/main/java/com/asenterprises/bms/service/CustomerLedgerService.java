@@ -71,7 +71,7 @@ public class CustomerLedgerService {
         }
 
         // Sort chronologically by date
-        rawEntries.sort(Comparator.comparing(LedgerEntryResponse::getDate));
+        rawEntries.sort(Comparator.comparing(LedgerEntryResponse::getDate, Comparator.nullsLast(Comparator.naturalOrder())));
 
         // Compute running balance
         BigDecimal runningBalance = BigDecimal.ZERO;
