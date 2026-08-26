@@ -25,8 +25,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByStatusOrderByIdDesc(CustomerStatus status);
 
     @Query(
-        "SELECT c FROM Customer c WHERE (:query IS NULL OR LOWER(c.fullName) LIKE CONCAT('%', LOWER(:query), '%') OR c.phoneNumber LIKE CONCAT('%', :query, '%')) " +
-        "AND (:status IS NULL OR c.status = :status)"
+        value = "SELECT c FROM Customer c WHERE (CAST(:query AS String) IS NULL OR LOWER(c.fullName) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') OR c.phoneNumber LIKE CONCAT('%', CAST(:query AS String), '%')) " +
+                "AND (:status IS NULL OR c.status = :status)",
+        countQuery = "SELECT COUNT(c) FROM Customer c WHERE (CAST(:query AS String) IS NULL OR LOWER(c.fullName) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') OR c.phoneNumber LIKE CONCAT('%', CAST(:query AS String), '%')) " +
+                     "AND (:status IS NULL OR c.status = :status)"
     )
     Page<Customer> searchCustomers(
             @org.springframework.data.repository.query.Param("query") String query,

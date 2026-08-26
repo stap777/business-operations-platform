@@ -24,8 +24,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findByStatusOrderByNameAsc(CategoryStatus status);
 
     @org.springframework.data.jpa.repository.Query(
-        "SELECT c FROM Category c WHERE (:query IS NULL OR LOWER(c.name) LIKE CONCAT('%', LOWER(:query), '%')) " +
-        "AND (:status IS NULL OR c.status = :status)"
+        value = "SELECT c FROM Category c WHERE (CAST(:query AS String) IS NULL OR LOWER(c.name) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
+                "AND (:status IS NULL OR c.status = :status)",
+        countQuery = "SELECT COUNT(c) FROM Category c WHERE (CAST(:query AS String) IS NULL OR LOWER(c.name) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
+                     "AND (:status IS NULL OR c.status = :status)"
     )
     Page<Category> searchCategories(
             @org.springframework.data.repository.query.Param("query") String query,

@@ -20,9 +20,14 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 
     boolean existsByCode(String code);
 
-    @Query("SELECT c FROM Coupon c WHERE " +
-           "(CAST(:query AS String) IS NULL OR LOWER(c.code) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') OR LOWER(c.description) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) AND " +
-           "(CAST(:active AS Boolean) IS NULL OR c.active = :active)")
+    @Query(
+        value = "SELECT c FROM Coupon c WHERE " +
+                "(CAST(:query AS String) IS NULL OR LOWER(c.code) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') OR LOWER(c.description) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) AND " +
+                "(CAST(:active AS Boolean) IS NULL OR c.active = :active)",
+        countQuery = "SELECT COUNT(c) FROM Coupon c WHERE " +
+                     "(CAST(:query AS String) IS NULL OR LOWER(c.code) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') OR LOWER(c.description) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) AND " +
+                     "(CAST(:active AS Boolean) IS NULL OR c.active = :active)"
+    )
     Page<Coupon> searchCoupons(@Param("query") String query, @Param("active") Boolean active, Pageable pageable);
 
     long countByActiveTrue();

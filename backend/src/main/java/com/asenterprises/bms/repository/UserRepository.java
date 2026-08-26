@@ -37,12 +37,20 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByRole(Role role);
 
-    @Query("SELECT u FROM User u WHERE " +
-           "(CAST(:query AS String) IS NULL OR LOWER(u.fullName) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
-           "OR LOWER(u.username) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
-           "OR LOWER(u.phoneNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
-           "AND (:role IS NULL OR u.role = :role) " +
-           "AND (:status IS NULL OR u.status = :status)")
+    @Query(
+        value = "SELECT u FROM User u WHERE " +
+                "(CAST(:query AS String) IS NULL OR LOWER(u.fullName) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                "OR LOWER(u.username) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                "OR LOWER(u.phoneNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
+                "AND (:role IS NULL OR u.role = :role) " +
+                "AND (:status IS NULL OR u.status = :status)",
+        countQuery = "SELECT COUNT(u) FROM User u WHERE " +
+                     "(CAST(:query AS String) IS NULL OR LOWER(u.fullName) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                     "OR LOWER(u.username) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
+                     "OR LOWER(u.phoneNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
+                     "AND (:role IS NULL OR u.role = :role) " +
+                     "AND (:status IS NULL OR u.status = :status)"
+    )
     Page<User> searchUsers(
             @Param("query") String query,
             @Param("role") Role role,
