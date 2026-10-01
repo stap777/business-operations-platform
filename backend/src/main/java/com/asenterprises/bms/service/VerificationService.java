@@ -59,8 +59,7 @@ public class VerificationService {
     private final CouponRepository couponRepository;
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final AuditLogService auditLogService;
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private final InvoiceService invoiceService;
 
     /**
      * Executes the complete admin order verification workflow within a single atomic transaction.
@@ -96,37 +95,7 @@ public class VerificationService {
         // Step 4: Get existing invoice or auto-create if absent
         Invoice invoice = invoiceRepository.findByOrderId(orderId).orElse(null);
         if (invoice == null) {
-            BigDecimal paymentReceived = paymentAllocationRepository.sumAllocatedAmountByOrderId(orderId);
-            if (paymentReceived == null) {
-                paymentReceived = BigDecimal.ZERO;
-            }
-
-            String invoiceNumber = generateInvoiceNumber();
-            invoice = Invoice.builder()
-                    .invoiceNumber(invoiceNumber)
-                    .order(order)
-                    .invoiceDate(LocalDateTime.now())
-                    .customerNameSnapshot(order.getCustomer().getFullName())
-                    .customerPhoneSnapshot(order.getCustomer().getPhone())
-                    .customerAddressSnapshot(order.getCustomer().getAddress())
-                    .subtotal(order.getSubtotal())
-                    .discountAmount(order.getDiscountAmount())
-                    .totalAmount(order.getTotalAmount())
-                    .paymentStatus(order.getPaymentStatus())
-                    .paymentReceivedAtGeneration(paymentReceived)
-                    .generatedBy(adminUser)
-                    .build();
-
-            for (OrderItem item : order.getItems()) {
-                InvoiceItem invoiceItem = InvoiceItem.builder()
-                        .productNameSnapshot(item.getProduct().getName())
-                        .quantity(item.getQuantity())
-                        .sellingPriceSnapshot(item.getSellingPrice())
-                        .lineTotal(item.getLineTotal())
-                        .build();
-                invoice.addItem(invoiceItem);
-            }
-            invoice = invoiceRepository.save(invoice);
+            invoice = invoiceService.createInvoiceForOrder(order, adminUser);
         }
 
         // Step 5: Validate & Deduct Product Stock atomically for tracked products
@@ -235,14 +204,8 @@ public class VerificationService {
                 .map(this::mapToResponse);
     }
 
-    private synchronized String generateInvoiceNumber() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = now.toLocalDate().atTime(LocalTime.MAX);
-
-        long countToday = invoiceRepository.countInvoicesForDate(startOfDay, endOfDay) + 1;
-        String datePart = now.format(DATE_FORMATTER);
-        return String.format("INV-%s-%04d", datePart, countToday);
+    public synchronized String generateInvoiceNumber() {
+        return invoiceService.generateInvoiceNumber();
     }
 
     public InvoiceResponse mapToResponse(Invoice invoice) {

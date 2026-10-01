@@ -29,6 +29,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :startOfDay AND o.createdAt <= :endOfDay")
     long countOrdersForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
+    @Query("SELECT o.orderNumber FROM Order o WHERE o.orderNumber LIKE :prefixPattern ORDER BY LENGTH(o.orderNumber) DESC, o.orderNumber DESC")
+    java.util.List<String> findLatestOrderNumberByPrefixPattern(@Param("prefixPattern") String prefixPattern, Pageable pageable);
+
     Page<Order> findByDeliveryPersonUsernameAndOrderStatusInOrderByCreatedAtAsc(
             String username,
             Collection<OrderStatus> orderStatuses,

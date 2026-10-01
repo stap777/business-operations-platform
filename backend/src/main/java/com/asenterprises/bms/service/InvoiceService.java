@@ -14,17 +14,23 @@ import com.asenterprises.bms.repository.InvoiceRepository;
 import com.asenterprises.bms.repository.PaymentAllocationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 /**
@@ -36,18 +42,47 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InvoiceService {
 
+    public static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int MAX_CREATION_RETRIES = 5;
+
     private final InvoiceRepository invoiceRepository;
     private final PaymentAllocationRepository paymentAllocationRepository;
     private final BusinessSettingsService businessSettingsService;
     private final InvoiceCalculationService invoiceCalculationService;
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private final TransactionTemplate transactionTemplate;
 
     /**
      * Automatically creates and persists a retail/business invoice immediately when an order is created.
      */
-    @Transactional
     public Invoice createInvoiceForOrder(Order order, User creator) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            return executeCreateInvoiceInternal(order, creator);
+        }
+
+        for (int attempt = 1; attempt <= MAX_CREATION_RETRIES; attempt++) {
+            try {
+                return transactionTemplate.execute(status -> executeCreateInvoiceInternal(order, creator));
+            } catch (DataIntegrityViolationException ex) {
+                if (isUniqueConstraintViolation(ex) && attempt < MAX_CREATION_RETRIES) {
+                    log.warn("Unique constraint collision during invoice creation on attempt {}/{}. Regenerating reference and retrying...",
+                            attempt, MAX_CREATION_RETRIES);
+                    try {
+                        Thread.sleep(10L * attempt + ThreadLocalRandom.current().nextInt(20));
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw ex;
+                    }
+                    continue;
+                }
+                throw ex;
+            }
+        }
+        throw new IllegalStateException("Failed to create invoice after " + MAX_CREATION_RETRIES + " attempts due to reference collisions.");
+    }
+
+    @Transactional
+    public Invoice executeCreateInvoiceInternal(Order order, User creator) {
         if (order == null) {
             throw new IllegalArgumentException("Order reference cannot be null for invoice generation");
         }
@@ -72,7 +107,9 @@ public class InvoiceService {
                 .invoiceDate(LocalDateTime.now())
                 .customerNameSnapshot(order.getCustomer().getFullName())
                 .customerPhoneSnapshot(order.getCustomer().getPhone())
-                .customerAddressSnapshot(order.getCustomer().getAddress())
+                .customerAddressSnapshot(order.getCustomer().getAddress() != null && !order.getCustomer().getAddress().trim().isEmpty() 
+                        ? order.getCustomer().getAddress().trim() 
+                        : "N/A")
                 .subtotal(order.getSubtotal())
                 .discountAmount(order.getDiscountAmount())
                 .totalAmount(order.getTotalAmount())
@@ -91,7 +128,7 @@ public class InvoiceService {
             invoice.addItem(invoiceItem);
         }
 
-        Invoice savedInvoice = invoiceRepository.save(invoice);
+        Invoice savedInvoice = invoiceRepository.saveAndFlush(invoice);
         log.info("Invoice #{} automatically created for Order #{}", savedInvoice.getInvoiceNumber(), order.getOrderNumber());
         return savedInvoice;
     }
@@ -120,14 +157,55 @@ public class InvoiceService {
                 .map(this::mapToResponse);
     }
 
-    private synchronized String generateInvoiceNumber() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = now.toLocalDate().atTime(LocalTime.MAX);
+    public synchronized String generateInvoiceNumber() {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        String datePart = today.format(DATE_FORMATTER);
+        String prefix = "INV-" + datePart + "-";
 
-        long countToday = invoiceRepository.countInvoicesForDate(startOfDay, endOfDay) + 1;
-        String datePart = now.format(DATE_FORMATTER);
-        return String.format("INV-%s-%04d", datePart, countToday);
+        List<String> latest = invoiceRepository.findLatestInvoiceNumberByPrefixPattern(prefix + "%", PageRequest.of(0, 1));
+        long nextSequence = 1;
+        if (latest != null && !latest.isEmpty()) {
+            String latestNumber = latest.get(0);
+            if (latestNumber != null && latestNumber.startsWith(prefix)) {
+                String suffix = latestNumber.substring(prefix.length());
+                try {
+                    nextSequence = Long.parseLong(suffix) + 1;
+                } catch (NumberFormatException e) {
+                    log.warn("Failed to parse invoice sequence suffix from '{}': {}", latestNumber, e.getMessage());
+                }
+            }
+        }
+
+        String candidate = String.format("INV-%s-%04d", datePart, nextSequence);
+        while (invoiceRepository.existsByInvoiceNumber(candidate)) {
+            nextSequence++;
+            candidate = String.format("INV-%s-%04d", datePart, nextSequence);
+        }
+        return candidate;
+    }
+
+    private boolean isUniqueConstraintViolation(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof java.sql.SQLException sqlEx) {
+                if ("23505".equals(sqlEx.getSQLState())) {
+                    return true;
+                }
+            }
+            String msg = current.getMessage();
+            if (msg != null) {
+                String lower = msg.toLowerCase();
+                if (lower.contains("23505") ||
+                    lower.contains("duplicate key") ||
+                    lower.contains("unique constraint") ||
+                    lower.contains("invoices_invoice_number") ||
+                    lower.contains("invoice_number")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     public InvoiceResponse mapToResponse(Invoice invoice) {

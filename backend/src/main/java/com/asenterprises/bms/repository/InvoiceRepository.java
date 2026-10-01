@@ -30,6 +30,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT COUNT(i) FROM Invoice i WHERE i.createdAt >= :startOfDay AND i.createdAt <= :endOfDay")
     long countInvoicesForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
+    @Query("SELECT i.invoiceNumber FROM Invoice i WHERE i.invoiceNumber LIKE :prefixPattern ORDER BY LENGTH(i.invoiceNumber) DESC, i.invoiceNumber DESC")
+    java.util.List<String> findLatestInvoiceNumberByPrefixPattern(@Param("prefixPattern") String prefixPattern, Pageable pageable);
+
     @Query(
         value = "SELECT i FROM Invoice i JOIN FETCH i.order JOIN FETCH i.generatedBy " +
                 "WHERE (CAST(:query AS String) IS NULL OR LOWER(i.invoiceNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +

@@ -24,17 +24,24 @@ import com.asenterprises.bms.repository.OrderRepository;
 import com.asenterprises.bms.repository.ProductRepository;
 import com.asenterprises.bms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Service managing Order lifecycle operations: creation, lookup, searching, and cancellation.
@@ -43,9 +50,14 @@ import java.util.List;
  *
  * TODO (V2 Improvement): Future versions should snapshot delivery address instead of referencing Customer address directly.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+
+    public static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Kolkata");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final int MAX_CREATION_RETRIES = 5;
 
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
@@ -56,16 +68,40 @@ public class OrderService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceService invoiceService;
     private final AuditLogService auditLogService;
+    private final TransactionTemplate transactionTemplate;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
-
-    @Transactional
     public OrderResponse createOrder(OrderRequest request) {
         return createOrder(request, null);
     }
 
-    @Transactional
     public OrderResponse createOrder(OrderRequest request, String authenticatedUsername) {
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            return executeCreateOrderInternal(request, authenticatedUsername);
+        }
+
+        for (int attempt = 1; attempt <= MAX_CREATION_RETRIES; attempt++) {
+            try {
+                return transactionTemplate.execute(status -> executeCreateOrderInternal(request, authenticatedUsername));
+            } catch (DataIntegrityViolationException ex) {
+                if (isUniqueConstraintViolation(ex) && attempt < MAX_CREATION_RETRIES) {
+                    log.warn("Unique constraint collision during order creation on attempt {}/{}. Regenerating reference and retrying...",
+                            attempt, MAX_CREATION_RETRIES);
+                    try {
+                        Thread.sleep(10L * attempt + ThreadLocalRandom.current().nextInt(20));
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw ex;
+                    }
+                    continue;
+                }
+                throw ex;
+            }
+        }
+        throw new IllegalStateException("Failed to create order after " + MAX_CREATION_RETRIES + " attempts due to reference collisions.");
+    }
+
+    @Transactional
+    public OrderResponse executeCreateOrderInternal(OrderRequest request, String authenticatedUsername) {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + request.getCustomerId()));
 
@@ -225,7 +261,7 @@ public class OrderService {
         order.setDiscountAmount(discountAmount);
         order.setTotalAmount(totalAmount);
 
-        Order savedOrder = orderRepository.save(order);
+        Order savedOrder = orderRepository.saveAndFlush(order);
         
         // Audit log event
         if (manager != null) {
@@ -408,16 +444,58 @@ public class OrderService {
         orderRepository.delete(order);
     }
 
-    private synchronized String generateOrderNumber() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = now.toLocalDate().atStartOfDay();
-        LocalDateTime endOfDay = now.toLocalDate().atTime(LocalTime.MAX);
+    public synchronized String generateOrderNumber() {
+        LocalDate today = LocalDate.now(BUSINESS_ZONE);
+        String dateStr = today.format(DATE_FORMATTER);
+        String prefix = "ORD-" + dateStr + "-";
 
-        long countToday = orderRepository.countOrdersForDate(startOfDay, endOfDay);
-        String dateStr = now.format(DATE_FORMATTER);
-        long nextSequence = countToday + 1;
+        List<String> latest = orderRepository.findLatestOrderNumberByPrefixPattern(prefix + "%", PageRequest.of(0, 1));
+        long nextSequence = 1;
+        if (latest != null && !latest.isEmpty()) {
+            String latestNumber = latest.get(0);
+            if (latestNumber != null && latestNumber.startsWith(prefix)) {
+                String suffix = latestNumber.substring(prefix.length());
+                try {
+                    nextSequence = Long.parseLong(suffix) + 1;
+                } catch (NumberFormatException e) {
+                    log.warn("Failed to parse order sequence suffix from '{}': {}", latestNumber, e.getMessage());
+                }
+            }
+        }
 
-        return String.format("ORD-%s-%04d", dateStr, nextSequence);
+        String candidate = String.format("ORD-%s-%04d", dateStr, nextSequence);
+        while (orderRepository.existsByOrderNumber(candidate)) {
+            nextSequence++;
+            candidate = String.format("ORD-%s-%04d", dateStr, nextSequence);
+        }
+
+        return candidate;
+    }
+
+    private boolean isUniqueConstraintViolation(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof java.sql.SQLException sqlEx) {
+                if ("23505".equals(sqlEx.getSQLState())) {
+                    return true;
+                }
+            }
+            String msg = current.getMessage();
+            if (msg != null) {
+                String lower = msg.toLowerCase();
+                if (lower.contains("23505") ||
+                    lower.contains("duplicate key") ||
+                    lower.contains("unique constraint") ||
+                    lower.contains("orders_order_number") ||
+                    lower.contains("order_number") ||
+                    lower.contains("invoices_invoice_number") ||
+                    lower.contains("invoice_number")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String trim(String input) {
