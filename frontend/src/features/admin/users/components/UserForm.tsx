@@ -119,10 +119,14 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
+  const handleClose = React.useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
   return (
     <Modal
       isOpen={open}
-      onClose={() => onOpenChange(false)}
+      onClose={handleClose}
       title={initialData ? 'Edit Employee Profile' : 'Register New Employee'}
       subtitle={
         initialData
@@ -136,7 +140,7 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => onOpenChange(false)}
+            onClick={handleClose}
             className="text-xs rounded-xl border-[#E4E4E7] dark:border-[#27272A]"
           >
             Cancel
@@ -157,10 +161,12 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
       <form onSubmit={handleSubmit} className="space-y-4 text-xs">
         {!initialData && (
           <div>
-            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            <label htmlFor="employee-role" className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
               Account Role *
             </label>
             <select
+              id="employee-role"
+              name="role"
               value={role}
               onChange={(e) => setRole(e.target.value as 'ADMIN' | 'MANAGER' | 'DELIVERY')}
               className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 cursor-pointer font-medium"
@@ -173,13 +179,16 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
         )}
 
         <div>
-          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+          <label htmlFor="employee-fullName" className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
             Full Name *
           </label>
           <input
+            id="employee-fullName"
+            name="fullName"
             type="text"
+            autoFocus
             value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, fullName: e.target.value }))}
             placeholder="e.g. Rahul Sharma"
             className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
           />
@@ -189,13 +198,15 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
         {!initialData ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              <label htmlFor="employee-username" className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
                 Username *
               </label>
               <input
+                id="employee-username"
+                name="username"
                 type="text"
                 value={formData.username}
-                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
                 placeholder="rahul_sales"
                 className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
               />
@@ -203,13 +214,15 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+              <label htmlFor="employee-password" className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
                 Initial Password *
               </label>
               <input
+                id="employee-password"
+                name="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                 placeholder="Minimum 8 characters..."
                 className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
               />
@@ -218,10 +231,12 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
           </div>
         ) : (
           <div>
-            <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+            <label htmlFor="employee-username-disabled" className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
               Username
             </label>
             <input
+              id="employee-username-disabled"
+              name="username"
               type="text"
               disabled
               value={formData.username}
@@ -231,13 +246,15 @@ export const UserForm: React.FC<UserFormProps> = ({ open, onOpenChange, initialD
         )}
 
         <div>
-          <label className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
+          <label htmlFor="employee-phoneNumber" className="block text-xs font-medium text-[#09090B] dark:text-[#FAFAFA] mb-1.5">
             Phone Number *
           </label>
           <input
+            id="employee-phoneNumber"
+            name="phoneNumber"
             type="text"
             value={formData.phoneNumber}
-            onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, phoneNumber: e.target.value }))}
             placeholder="10-digit mobile number..."
             className="w-full px-3.5 py-2.5 bg-[#F4F4F5] dark:bg-[#121214] border border-[#E4E4E7]/60 dark:border-[#27272A]/60 rounded-xl text-[#09090B] dark:text-[#FAFAFA] placeholder-[#71717A] focus:outline-none focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10"
           />

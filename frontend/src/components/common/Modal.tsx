@@ -20,31 +20,52 @@ export const Modal: React.FC<ModalProps> = ({
   footer,
   maxWidth = 'xl',
 }) => {
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  const wasOpenRef = React.useRef(false);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Keyboard shortcut & body scroll lock
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
+
     if (isOpen) {
       document.body.style.overflow = 'hidden';
       window.addEventListener('keydown', handleKeyDown);
-
-      // Auto-focus first input field
-      const timer = setTimeout(() => {
-        const focusable = document.querySelector<HTMLElement>(
-          '.fixed.inset-0 input:not([disabled]):not([type="hidden"]), .fixed.inset-0 select:not([disabled]), .fixed.inset-0 textarea:not([disabled])'
-        );
-        if (focusable) {
-          focusable.focus();
-        }
-      }, 50);
-
-      return () => clearTimeout(timer);
+    } else {
+      document.body.style.overflow = 'unset';
     }
+
     return () => {
       document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
+
+  // Initial auto-focus only once when modal transitions from closed to open
+  useEffect(() => {
+    if (isOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+
+      const timer = setTimeout(() => {
+        // Do not steal focus if an element inside the modal is already focused
+        if (modalRef.current && !modalRef.current.contains(document.activeElement)) {
+          const focusable = modalRef.current.querySelector<HTMLElement>(
+            '[autofocus], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
+          );
+          if (focusable) {
+            focusable.focus();
+          }
+        }
+      }, 50);
+
+      return () => clearTimeout(timer);
+    } else if (!isOpen) {
+      wasOpenRef.current = false;
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -63,6 +84,7 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className={`w-full ${maxWidthClasses[maxWidth]} bg-white dark:bg-[#0F0F0F] border-t sm:border border-[#ECECEC] dark:border-[#232323] rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[88vh] animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200`}
         onClick={(e) => e.stopPropagation()}
       >
