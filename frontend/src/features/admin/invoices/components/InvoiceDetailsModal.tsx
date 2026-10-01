@@ -66,7 +66,7 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
                   }`}
                 >
                   <Receipt className="w-3.5 h-3.5" />
-                  Thermal Preview
+                  A5 Invoice Preview
                 </button>
                 <button
                   type="button"
@@ -95,7 +95,7 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
           {viewMode === 'preview' ? (
             <div className="py-4 bg-[#F4F4F5] dark:bg-[#18181B] rounded-xl flex flex-col items-center justify-center p-4 border border-[#ECECEC] dark:border-[#27272A]">
               <p className="text-[11px] text-[#71717A] dark:text-[#A1A1AA] mb-3 font-mono text-center">
-                80mm Thermal Receipt Print Output Preview
+                A5 Invoice Print Output Preview (148 × 210 mm)
               </p>
               <div className="shadow-2xl rounded-sm overflow-hidden border border-neutral-200">
                 <PrintableInvoice invoice={invoice} businessSettings={businessSettings} />
@@ -216,7 +216,7 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
                 className="bg-[#111111] text-white dark:bg-[#FAFAFA] dark:text-[#111111] hover:opacity-90 text-xs font-semibold px-4 h-8 gap-1.5 shadow-2xs"
               >
                 <Printer className="w-3.5 h-3.5" />
-                Print 80mm Receipt
+                Print A5 Invoice
               </Button>
 
               <Button

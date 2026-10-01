@@ -134,6 +134,11 @@ public class PaymentService {
                 throw new IllegalArgumentException("Order '" + order.getOrderNumber() + "' does not belong to customer '" + customer.getFullName() + "'");
             }
 
+            // Validation: Reject allocation if order is VERIFIED
+            if (order.getOrderStatus() == OrderStatus.VERIFIED) {
+                throw new IllegalStateException("This order has already been verified and cannot accept additional payments: " + order.getOrderNumber());
+            }
+
             // Validation: Reject allocation if order is CANCELLED
             if (order.getOrderStatus() == OrderStatus.CANCELLED) {
                 throw new IllegalStateException("Cannot allocate payment to CANCELLED order: " + order.getOrderNumber());
@@ -202,7 +207,7 @@ public class PaymentService {
         // Query oldest outstanding candidate orders for customer (FIFO by createdAt ASC)
         List<Order> candidateOrders = orderRepository.findAll().stream()
                 .filter(o -> o.getCustomer().getId().equals(customerId))
-                .filter(o -> o.getOrderStatus() != OrderStatus.CANCELLED && o.getOrderStatus() != OrderStatus.COMPLETED)
+                .filter(o -> o.getOrderStatus() != OrderStatus.CANCELLED && o.getOrderStatus() != OrderStatus.VERIFIED && o.getOrderStatus() != OrderStatus.COMPLETED)
                 .filter(o -> o.getPaymentStatus() != PaymentStatus.PAID)
                 .sorted(Comparator.comparing(Order::getCreatedAt))
                 .toList();
@@ -285,7 +290,7 @@ public class PaymentService {
 
         List<Order> candidateOrders = orderRepository.findAll().stream()
                 .filter(o -> o.getCustomer().getId().equals(customer.getId()))
-                .filter(o -> o.getOrderStatus() != OrderStatus.CANCELLED && o.getOrderStatus() != OrderStatus.COMPLETED)
+                .filter(o -> o.getOrderStatus() != OrderStatus.CANCELLED && o.getOrderStatus() != OrderStatus.VERIFIED && o.getOrderStatus() != OrderStatus.COMPLETED)
                 .sorted(Comparator.comparing(Order::getCreatedAt))
                 .toList();
 

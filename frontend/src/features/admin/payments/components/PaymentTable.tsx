@@ -109,7 +109,7 @@ export const PaymentTable: React.FC<PaymentTableProps> = ({
                       View
                     </Button>
 
-                    {outstanding > 0 && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'COMPLETED' && (
+                    {outstanding > 0 && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'VERIFIED' && order.orderStatus !== 'COMPLETED' && (
                       <Button
                         variant="outline"
                         size="sm"

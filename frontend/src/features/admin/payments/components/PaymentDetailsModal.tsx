@@ -175,7 +175,7 @@ export const PaymentDetailsModal: React.FC<PaymentDetailsModalProps> = ({
             </Button>
           </div>
 
-          {currentOutstanding > 0 && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'COMPLETED' && (
+          {currentOutstanding > 0 && order.orderStatus !== 'CANCELLED' && order.orderStatus !== 'VERIFIED' && order.orderStatus !== 'COMPLETED' && (
             <Button
               size="sm"
               onClick={() => {

@@ -35,6 +35,7 @@ import com.asenterprises.bms.repository.UserRepository;
 import com.asenterprises.bms.repository.UserSessionRepository;
 import com.asenterprises.bms.service.BusinessSettingsService;
 import com.asenterprises.bms.service.DeliveryService;
+import com.asenterprises.bms.service.PaymentService;
 import com.asenterprises.bms.service.VerificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -84,6 +85,9 @@ public class VerificationWorkflowIntegrationTest {
 
     @Autowired
     private VerificationService verificationService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Autowired
     private BusinessSettingsService businessSettingsService;
@@ -270,5 +274,72 @@ public class VerificationWorkflowIntegrationTest {
         assertThat(adjustments.get(0).getAdjustmentType()).isEqualTo(StockAdjustmentType.OUT);
         assertThat(adjustments.get(0).getQuantity()).isEqualTo(2);
         assertThat(adjustments.get(0).getReason()).isEqualTo("ORDER_FULFILLMENT");
+    }
+
+    @Test
+    @DisplayName("Verification Gate: Unpaid and Partially paid orders cannot be verified")
+    void testVerificationBlockedForUnpaidAndPartialOrders() {
+        // Scenario 1: Unpaid Order
+        Order unpaidOrder = orderRepository.save(Order.builder()
+                .orderNumber("ORD-UNPAID-01")
+                .customer(customer)
+                .manager(managerUser)
+                .orderStatus(OrderStatus.CREATED)
+                .paymentStatus(PaymentStatus.PENDING)
+                .deliveryStatus(DeliveryStatus.PENDING)
+                .subtotal(new BigDecimal("100.00"))
+                .totalAmount(new BigDecimal("100.00"))
+                .build());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> verificationService.verifyOrder(unpaidOrder.getId(), adminUser.getUsername()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cannot be verified until it is fully paid");
+
+        // Scenario 2: Partially Paid Order
+        Order partialOrder = orderRepository.save(Order.builder()
+                .orderNumber("ORD-PARTIAL-01")
+                .customer(customer)
+                .manager(managerUser)
+                .orderStatus(OrderStatus.DELIVERED)
+                .paymentStatus(PaymentStatus.PARTIAL)
+                .deliveryStatus(DeliveryStatus.DELIVERED)
+                .subtotal(new BigDecimal("100.00"))
+                .totalAmount(new BigDecimal("100.00"))
+                .amountReceived(new BigDecimal("50.00"))
+                .build());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> verificationService.verifyOrder(partialOrder.getId(), adminUser.getUsername()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cannot be verified until it is fully paid");
+    }
+
+    @Test
+    @DisplayName("Payment Gate: Payments cannot be allocated to VERIFIED orders")
+    void testPaymentRejectedForVerifiedOrder() {
+        Order verifiedOrder = orderRepository.save(Order.builder()
+                .orderNumber("ORD-VERIFIED-PAY-01")
+                .customer(customer)
+                .manager(managerUser)
+                .orderStatus(OrderStatus.VERIFIED)
+                .paymentStatus(PaymentStatus.PAID)
+                .deliveryStatus(DeliveryStatus.DELIVERED)
+                .subtotal(new BigDecimal("100.00"))
+                .totalAmount(new BigDecimal("100.00"))
+                .amountReceived(new BigDecimal("100.00"))
+                .build());
+
+        com.asenterprises.bms.dto.PaymentRequest pReq = com.asenterprises.bms.dto.PaymentRequest.builder()
+                .customerId(customer.getId())
+                .totalAmount(new BigDecimal("50.00"))
+                .paymentMethod(com.asenterprises.bms.entity.PaymentMethod.CASH)
+                .allocations(List.of(com.asenterprises.bms.dto.PaymentAllocationRequest.builder()
+                        .orderId(verifiedOrder.getId())
+                        .allocatedAmount(new BigDecimal("50.00"))
+                        .build()))
+                .build();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> paymentService.createPayment(pReq, adminUser.getUsername()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("This order has already been verified and cannot accept additional payments");
     }
 }

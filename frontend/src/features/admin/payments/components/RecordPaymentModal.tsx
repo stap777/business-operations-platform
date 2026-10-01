@@ -20,6 +20,7 @@ export const RecordPaymentModal: React.FC<RecordPaymentModalProps> = ({
   onSuccess,
 }) => {
   if (!isOpen || !order) return null;
+  if (order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') return null;
 
   const totalAmount = order.totalAmount || 0;
   const alreadyPaid = order.amountReceived || 0;

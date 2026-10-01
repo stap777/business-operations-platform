@@ -89,17 +89,30 @@ body {
   background: rgba(156, 163, 175, 0.4);
 }
 
+.printable-invoice {
+  width: 148mm;
+  max-width: 100%;
+  min-height: 206mm;
+  max-height: 206mm;
+  box-sizing: border-box;
+  padding: 3mm;
+  margin: 0 auto;
+  background-color: #ffffff;
+}
+
 @media print {
   @page {
-    size: 80mm auto;
-    margin: 0mm;
+    size: 148mm 210mm;
+    margin: 3mm;
   }
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     background-color: #ffffff !important;
     color: #000000 !important;
-    width: 72mm !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   .page-break-container {
     page-break-after: always !important;
@@ -109,15 +122,29 @@ body {
     page-break-after: auto !important;
     break-after: auto !important;
   }
-  .printable-invoice, .thermal-receipt {
-    width: 72mm !important;
-    max-width: 72mm !important;
-    padding: 4mm !important;
+  .printable-invoice {
+    width: 142mm !important;
+    max-width: 142mm !important;
+    height: 204mm !important;
+    max-height: 204mm !important;
+    padding: 0 !important;
     margin: 0 auto !important;
     box-shadow: none !important;
     border: none !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+    font-family: inherit !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+  }
+
+  .thermal-receipt {
+    width: 72mm !important;
+    max-width: 72mm !important;
+    padding: 4mm !important;
+    margin: 0 auto !important;
     font-family: "Courier New", Courier, monospace !important;
     font-size: 11px !important;
     line-height: 1.25 !important;
@@ -150,3 +177,4 @@ body {
     background: #ffffff !important;
   }
 }
+

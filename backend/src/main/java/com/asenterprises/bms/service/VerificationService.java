@@ -77,12 +77,15 @@ public class VerificationService {
         Order order = orderRepository.findWithLockById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        // Step 1 & 2: Validate Order Status
+        // Step 1 & 2: Validate Order Status and Payment Status
         if (order.getOrderStatus() == OrderStatus.VERIFIED || order.getOrderStatus() == OrderStatus.COMPLETED) {
             throw new IllegalStateException("Order #" + order.getOrderNumber() + " is already verified.");
         }
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
             throw new IllegalStateException("Cannot verify a CANCELLED order.");
+        }
+        if (order.getPaymentStatus() != com.asenterprises.bms.entity.PaymentStatus.PAID) {
+            throw new IllegalStateException("Order #" + order.getOrderNumber() + " cannot be verified until it is fully paid. Current payment status: " + order.getPaymentStatus());
         }
 
         // Step 3: Validate Customer status

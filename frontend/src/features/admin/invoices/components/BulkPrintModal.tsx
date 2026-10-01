@@ -103,7 +103,7 @@ export const BulkPrintModal: React.FC<BulkPrintModalProps> = ({
             </div>
 
             <p className="text-[11px] italic">
-              Note: Invoices are formatted in a 2-Up side-by-side grid per A4 page to maximize paper space utilization.
+              Note: Invoices are formatted for single-page A5 portrait (148 × 210 mm) printing.
             </p>
           </div>
         )}
