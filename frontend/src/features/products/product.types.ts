@@ -57,6 +57,15 @@ export interface ProductDropdownResponse {
   unit: ProductUnit;
 }
 
+export interface ProductDeletionCheckResponse {
+  productId: number;
+  productName: string;
+  canDelete: boolean;
+  orderItemCount: number;
+  stockAdjustmentCount: number;
+  message: string;
+}
+
 export interface CategoryResponse {
   id: number;
   name: string;

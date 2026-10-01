@@ -61,7 +61,12 @@ export const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 className="hover:bg-[#FAFAFA] dark:hover:bg-[#151515] transition-colors"
               >
                 <td className="py-3.5 px-4 font-mono font-semibold text-[#111111] dark:text-[#FAFAFA]">
-                  {invoice.invoiceNumber}
+                  <div>{invoice.invoiceNumber}</div>
+                  {invoice.orderStatus === 'VOIDED' && (
+                    <span className="inline-block px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 mt-0.5">
+                      VOIDED
+                    </span>
+                  )}
                 </td>
                 <td className="py-3.5 px-4 font-medium text-[#111111] dark:text-[#FAFAFA]">
                   {invoice.customerNameSnapshot}

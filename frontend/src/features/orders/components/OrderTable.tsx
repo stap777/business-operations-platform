@@ -4,7 +4,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from './OrderStatusBadge';
 import { ActionDropdownMenu } from '../../../components/common/ActionDropdownMenu';
 import type { ActionMenuItem } from '../../../components/common/ActionDropdownMenu';
 import { Button } from '../../../components/ui/button';
-import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit, Trash2 } from 'lucide-react';
+import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit, Trash2, Ban } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { TableSkeleton } from '../../../components/common/TableSkeleton';
 
@@ -17,6 +17,7 @@ interface OrderTableProps {
   onCancelOrder?: (orderId: number) => void;
   onVerifyOrder?: (order: OrderResponse) => void;
   onDeleteOrder?: (order: OrderResponse) => void;
+  onVoidOrder?: (order: OrderResponse) => void;
   userRole?: string;
 }
 
@@ -29,6 +30,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   onCancelOrder,
   onVerifyOrder,
   onDeleteOrder,
+  onVoidOrder,
   userRole,
 }) => {
   if (isLoading) {
@@ -118,6 +120,20 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                     icon: XCircle,
                     variant: 'danger',
                     onClick: () => onCancelOrder(order.id),
+                  });
+                }
+
+                const canVoid =
+                  (userRole === 'ADMIN' || userRole === 'MANAGER') &&
+                  order.orderStatus !== 'CANCELLED' &&
+                  order.orderStatus !== 'VOIDED';
+
+                if (canVoid && onVoidOrder) {
+                  dropdownItems.push({
+                    label: 'Void Order',
+                    icon: Ban,
+                    variant: 'danger',
+                    onClick: () => onVoidOrder(order),
                   });
                 }
 
@@ -245,6 +261,20 @@ export const OrderTable: React.FC<OrderTableProps> = ({
               icon: XCircle,
               variant: 'danger',
               onClick: () => onCancelOrder(order.id),
+            });
+          }
+
+          const canVoidMobile =
+            (userRole === 'ADMIN' || userRole === 'MANAGER') &&
+            order.orderStatus !== 'CANCELLED' &&
+            order.orderStatus !== 'VOIDED';
+
+          if (canVoidMobile && onVoidOrder) {
+            dropdownItems.push({
+              label: 'Void Order',
+              icon: Ban,
+              variant: 'danger',
+              onClick: () => onVoidOrder(order),
             });
           }
 

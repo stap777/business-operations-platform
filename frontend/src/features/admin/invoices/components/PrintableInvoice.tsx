@@ -42,15 +42,28 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
   const emptyRows = Array.from({ length: emptyRowsCount });
 
   return (
-    <div className="printable-invoice bg-white text-black font-sans leading-normal box-border">
+    <div className="printable-invoice bg-white text-black font-sans leading-normal box-border relative">
       {/* Outer Border wrapping the entire invoice */}
-      <div className="invoice-frame border-2 border-black bg-white flex flex-col justify-between h-full">
+      <div className="invoice-frame border-2 border-black bg-white flex flex-col justify-between h-full relative overflow-hidden">
+        {/* If voided, render subtle VOIDED watermark */}
+        {invoice.orderStatus === 'VOIDED' && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 select-none">
+            <span className="text-red-500/20 text-6xl sm:text-7xl font-black tracking-widest uppercase border-4 border-red-500/20 px-8 py-2 rotate-[-25deg]">
+              VOIDED
+            </span>
+          </div>
+        )}
         {/* Top Header & Meta */}
         <div>
           <div className="relative pt-1.5 pb-1 px-3 text-center">
             {/* Top Memo Title */}
-            <div className="text-[10px] sm:text-[11px] font-bold text-black uppercase tracking-wider">
-              Cash / Credit Memo
+            <div className="text-[10px] sm:text-[11px] font-bold text-black uppercase tracking-wider flex items-center justify-center gap-1.5">
+              <span>Cash / Credit Memo</span>
+              {invoice.orderStatus === 'VOIDED' && (
+                <span className="text-red-600 font-black text-[9px] px-1 py-0.2 rounded border border-red-600">
+                  [VOIDED]
+                </span>
+              )}
             </div>
 
             {/* Dominant Centered Business Name */}

@@ -98,13 +98,14 @@ public class OrderReferenceCollisionAndIntegrityTest {
     @BeforeEach
     void setUp() {
         transactionTemplate.execute(status -> {
-            long seed = System.nanoTime() % 1000000;
+            long seed = System.nanoTime();
+            long uniqueSuffix = Math.abs((System.currentTimeMillis() * 1000 + (seed % 1000)) % 100000000L);
 
             manager = userRepository.save(User.builder()
                     .fullName("Ref Test Manager")
                     .username("ref_mgr_" + seed)
                     .password("encoded_pass")
-                    .phoneNumber("97777" + String.format("%05d", seed % 100000))
+                    .phoneNumber(String.format("97%08d", uniqueSuffix))
                     .role(Role.MANAGER)
                     .status(UserStatus.ACTIVE)
                     .firstLogin(false)
@@ -113,7 +114,7 @@ public class OrderReferenceCollisionAndIntegrityTest {
             customer = customerRepository.save(Customer.builder()
                     .customerCode("GOKUL-" + seed)
                     .fullName("GOKUL SWEETS")
-                    .phoneNumber("98888" + String.format("%05d", seed % 100000))
+                    .phoneNumber(String.format("98%08d", uniqueSuffix))
                     .address("Main Bazaar, Shop 42")
                     .status(CustomerStatus.ACTIVE)
                     .build());

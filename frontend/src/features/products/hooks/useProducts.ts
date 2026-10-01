@@ -143,3 +143,12 @@ export const useDeleteProduct = () => {
     },
   });
 };
+
+export const useProductDeletionCheck = (id: number | null) => {
+  return useQuery({
+    queryKey: ['products', 'deletion-check', id],
+    queryFn: () => (id ? productService.checkProductDeletion(id) : Promise.reject('No ID provided')),
+    enabled: !!id,
+    staleTime: 0,
+  });
+};

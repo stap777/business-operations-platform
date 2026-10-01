@@ -4,6 +4,7 @@ import com.asenterprises.bms.dto.OrderItemRequest;
 import com.asenterprises.bms.dto.OrderItemResponse;
 import com.asenterprises.bms.dto.OrderRequest;
 import com.asenterprises.bms.dto.OrderResponse;
+import com.asenterprises.bms.dto.VoidOrderRequest;
 import com.asenterprises.bms.entity.Coupon;
 import com.asenterprises.bms.entity.Customer;
 import com.asenterprises.bms.entity.CustomerStatus;
@@ -15,6 +16,8 @@ import com.asenterprises.bms.entity.PaymentStatus;
 import com.asenterprises.bms.entity.Product;
 import com.asenterprises.bms.entity.ProductStatus;
 import com.asenterprises.bms.entity.Role;
+import com.asenterprises.bms.entity.StockAdjustment;
+import com.asenterprises.bms.entity.StockAdjustmentType;
 import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.entity.UserStatus;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
@@ -22,6 +25,7 @@ import com.asenterprises.bms.repository.CustomerRepository;
 import com.asenterprises.bms.repository.InvoiceRepository;
 import com.asenterprises.bms.repository.OrderRepository;
 import com.asenterprises.bms.repository.ProductRepository;
+import com.asenterprises.bms.repository.StockAdjustmentRepository;
 import com.asenterprises.bms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,6 +69,7 @@ public class OrderService {
     private final ProductRepository productRepository;
     private final com.asenterprises.bms.repository.CouponRepository couponRepository;
     private final com.asenterprises.bms.repository.PaymentAllocationRepository paymentAllocationRepository;
+    private final StockAdjustmentRepository stockAdjustmentRepository;
     private final InvoiceRepository invoiceRepository;
     private final InvoiceService invoiceService;
     private final AuditLogService auditLogService;
@@ -284,8 +289,8 @@ public class OrderService {
             throw new IllegalStateException("Cannot edit an order that is already " + currentStatus);
         }
 
-        if (currentStatus == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot edit a cancelled order");
+        if (currentStatus == OrderStatus.CANCELLED || currentStatus == OrderStatus.VOIDED) {
+            throw new IllegalStateException("Cannot edit a " + currentStatus.name().toLowerCase() + " order");
         }
 
         Customer customer = customerRepository.findById(request.getCustomerId())
@@ -431,13 +436,98 @@ public class OrderService {
     }
 
     @Transactional
+    public OrderResponse voidOrder(Long id, VoidOrderRequest request, String username) {
+        if (request == null || request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw new IllegalArgumentException("Void reason is required");
+        }
+
+        Order order = orderRepository.findWithLockById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
+
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus == OrderStatus.VOIDED) {
+            throw new IllegalStateException("Order is already voided");
+        }
+        if (currentStatus == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Cannot void an already cancelled order");
+        }
+
+        User user = null;
+        if (username != null) {
+            user = userRepository.findByUsername(username).orElse(null);
+        }
+
+        // 1. If order was verified or completed, inventory was deducted; restore it atomically
+        if (currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED) {
+            for (OrderItem item : order.getItems()) {
+                Product product = item.getProduct();
+                if (Boolean.TRUE.equals(product.getTrackInventory())) {
+                    productRepository.addStock(product.getId(), item.getQuantity());
+
+                    StockAdjustment adjustment = StockAdjustment.builder()
+                            .product(product)
+                            .adjustmentType(StockAdjustmentType.IN)
+                            .quantity(item.getQuantity())
+                            .reason("ORDER_VOIDED")
+                            .referenceNumber(order.getOrderNumber())
+                            .adjustedBy(user)
+                            .adjustmentDate(LocalDateTime.now(BUSINESS_ZONE))
+                            .build();
+                    stockAdjustmentRepository.save(adjustment);
+                    log.info("Restored {} units of stock for product '{}' due to voiding of Order #{}",
+                            item.getQuantity(), product.getName(), order.getOrderNumber());
+                }
+            }
+        }
+
+        // 2. If coupon was applied, restore coupon used count
+        if (order.getCoupon() != null) {
+            couponRepository.decrementUsedCount(order.getCoupon().getId());
+            if (user != null) {
+                auditLogService.recordAuditLog(
+                        "COUPON",
+                        order.getCoupon().getId(),
+                        "COUPON_RESTORED",
+                        user,
+                        "Coupon '" + order.getCoupon().getCode() + "' usage restored due to voiding of Order #" + order.getOrderNumber()
+                );
+            }
+        }
+
+        // 3. Mark the order as VOIDED with audit fields
+        order.setOrderStatus(OrderStatus.VOIDED);
+        order.setVoidedAt(LocalDateTime.now(BUSINESS_ZONE));
+        order.setVoidedBy(user);
+        order.setVoidReason(request.getReason().trim());
+        order.setVoidNotes(request.getNotes() != null && !request.getNotes().trim().isEmpty() ? request.getNotes().trim() : null);
+
+        Order savedOrder = orderRepository.save(order);
+
+        // 4. Centralized audit logging
+        if (user != null) {
+            auditLogService.recordAuditLog(
+                    "ORDER",
+                    savedOrder.getId(),
+                    "ORDER_VOIDED",
+                    user,
+                    "Order #" + savedOrder.getOrderNumber() + " voided. Reason: " + request.getReason().trim() +
+                            (savedOrder.getVoidNotes() != null ? " | Notes: " + savedOrder.getVoidNotes() : "")
+            );
+        }
+
+        log.info("Order #{} successfully voided by user {}", savedOrder.getOrderNumber(), username != null ? username : "system");
+
+        return mapToResponse(savedOrder);
+    }
+
+    @Transactional
     public void deleteOrder(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
 
         OrderStatus currentStatus = order.getOrderStatus();
-        if (currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED) {
-            throw new IllegalStateException("Verified orders cannot be deleted.");
+        if (currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED || currentStatus == OrderStatus.VOIDED) {
+            throw new IllegalStateException("Verified or voided orders cannot be deleted.");
         }
 
         invoiceRepository.findByOrderId(id).ifPresent(invoiceRepository::delete);
@@ -507,7 +597,9 @@ public class OrderService {
                 .map(this::mapToItemResponse)
                 .toList();
 
-        boolean isLocked = order.getOrderStatus() == OrderStatus.VERIFIED || order.getOrderStatus() == OrderStatus.COMPLETED;
+        boolean isLocked = order.getOrderStatus() == OrderStatus.VERIFIED ||
+                           order.getOrderStatus() == OrderStatus.COMPLETED ||
+                           order.getOrderStatus() == OrderStatus.VOIDED;
 
         return OrderResponse.builder()
                 .id(order.getId())
@@ -532,6 +624,10 @@ public class OrderService {
                 .notes(order.getNotes())
                 .items(itemResponses)
                 .isLocked(isLocked)
+                .voidedAt(order.getVoidedAt())
+                .voidedByName(order.getVoidedBy() != null ? order.getVoidedBy().getFullName() : null)
+                .voidReason(order.getVoidReason())
+                .voidNotes(order.getVoidNotes())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())
                 .build();

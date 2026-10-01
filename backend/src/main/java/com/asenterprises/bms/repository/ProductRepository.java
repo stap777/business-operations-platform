@@ -57,4 +57,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Product p SET p.availableStock = p.availableStock - :qty WHERE p.id = :id AND p.trackInventory = true AND p.availableStock >= :qty")
     int deductStock(@Param("id") Long id, @Param("qty") Integer qty);
+
+    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Product p SET p.availableStock = p.availableStock + :qty WHERE p.id = :id AND p.trackInventory = true")
+    int addStock(@Param("id") Long id, @Param("qty") Integer qty);
 }

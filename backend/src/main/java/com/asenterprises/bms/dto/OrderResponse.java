@@ -46,6 +46,10 @@ public class OrderResponse {
     private String notes;
     private List<OrderItemResponse> items;
     private boolean isLocked;
+    private LocalDateTime voidedAt;
+    private String voidedByName;
+    private String voidReason;
+    private String voidNotes;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

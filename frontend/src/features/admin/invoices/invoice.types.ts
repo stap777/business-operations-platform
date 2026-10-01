@@ -1,4 +1,4 @@
-import type { PaymentStatus } from '../../orders/order.types';
+import type { PaymentStatus, OrderStatus } from '../../orders/order.types';
 
 export interface InvoiceItemResponse {
   id: number;
@@ -13,6 +13,7 @@ export interface InvoiceResponse {
   invoiceNumber: string;
   orderId: number;
   orderNumber: string;
+  orderStatus?: OrderStatus;
   invoiceDate: string;
   customerNameSnapshot: string;
   customerPhoneSnapshot?: string;

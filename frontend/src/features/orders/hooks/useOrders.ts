@@ -119,3 +119,26 @@ export const useDeleteOrder = () => {
     },
   });
 };
+
+export const useVoidOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: import('../order.types').VoidOrderRequest }) =>
+      orderService.voidOrder(id, data),
+    onSuccess: (data) => {
+      toast.success(`Order ${data.orderNumber} has been voided.`);
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders', 'pending-verification'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      queryClient.invalidateQueries({ queryKey: ['customer-ledger'] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || 'Failed to void order.';
+      toast.error(msg);
+    },
+  });
+};

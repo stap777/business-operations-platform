@@ -236,6 +236,7 @@ public class InvoiceService {
                 .invoiceNumber(invoice.getInvoiceNumber())
                 .orderId(invoice.getOrder().getId())
                 .orderNumber(invoice.getOrder().getOrderNumber())
+                .orderStatus(invoice.getOrder().getOrderStatus())
                 .invoiceDate(invoice.getInvoiceDate())
                 .customerNameSnapshot(invoice.getCustomerNameSnapshot())
                 .customerPhoneSnapshot(invoice.getCustomerPhoneSnapshot())

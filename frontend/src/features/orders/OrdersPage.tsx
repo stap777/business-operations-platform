@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { OrderResponse, OrderStatus, OrderRequest } from './order.types';
-import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder, useDeleteOrder } from './hooks/useOrders';
+import type { OrderResponse, OrderStatus, OrderRequest, VoidOrderRequest } from './order.types';
+import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder, useDeleteOrder, useVoidOrder } from './hooks/useOrders';
 import { useAuth } from '../../context/AuthContext';
 import { useBusinessSettings } from '../admin/settings/hooks/useBusinessSettings';
 import { OrderFilters } from './components/OrderFilters';
@@ -9,6 +9,7 @@ import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { EditOrderModal } from './components/EditOrderModal';
 import { PrintableOrder } from './components/PrintableOrder';
+import { VoidOrderModal } from './components/VoidOrderModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { Button } from '../../components/ui/button';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -37,6 +38,7 @@ export const OrdersPage: React.FC = () => {
   const [printOrderData, setPrintOrderData] = useState<OrderResponse | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<OrderResponse | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderResponse | null>(null);
+  const [voidingOrder, setVoidingOrder] = useState<OrderResponse | null>(null);
 
   // React Query Hooks
   const {
@@ -61,6 +63,7 @@ export const OrdersPage: React.FC = () => {
   const verifyOrderMutation = useVerifyOrder();
   const updateOrderMutation = useUpdateOrder();
   const deleteOrderMutation = useDeleteOrder();
+  const voidOrderMutation = useVoidOrder();
 
   const handleQuickFilterChange = (filter: QuickFilter) => {
     setQuickFilter(filter);
@@ -167,6 +170,24 @@ export const OrdersPage: React.FC = () => {
     });
   };
 
+  const handleOpenVoidOrder = (order: OrderResponse) => {
+    setVoidingOrder(order);
+  };
+
+  const handleConfirmVoidOrder = (orderId: number, data: VoidOrderRequest) => {
+    voidOrderMutation.mutate(
+      { id: orderId, data },
+      {
+        onSuccess: () => {
+          setVoidingOrder(null);
+          if (selectedOrder?.id === orderId) {
+            handleCloseDetails();
+          }
+        },
+      }
+    );
+  };
+
   const rawOrders = ordersData?.content || [];
 
   // Filter payment methods & pending states on client side
@@ -176,7 +197,8 @@ export const OrdersPage: React.FC = () => {
         (o) =>
           o.orderStatus !== 'DELIVERED' &&
           o.orderStatus !== 'COMPLETED' &&
-          o.orderStatus !== 'CANCELLED'
+          o.orderStatus !== 'CANCELLED' &&
+          o.orderStatus !== 'VOIDED'
       );
     }
     if (quickFilter === 'CASH') {
@@ -208,7 +230,8 @@ export const OrdersPage: React.FC = () => {
       if (
         o.orderStatus !== 'DELIVERED' &&
         o.orderStatus !== 'COMPLETED' &&
-        o.orderStatus !== 'CANCELLED'
+        o.orderStatus !== 'CANCELLED' &&
+        o.orderStatus !== 'VOIDED'
       ) {
         pendingCount++;
       }
@@ -379,6 +402,7 @@ export const OrdersPage: React.FC = () => {
               onCancelOrder={handleCancelOrder}
               onVerifyOrder={handleVerifyOrder}
               onDeleteOrder={(order) => setDeletingOrder(order)}
+              onVoidOrder={handleOpenVoidOrder}
               userRole={user?.role}
             />
 
@@ -445,6 +469,7 @@ export const OrdersPage: React.FC = () => {
               onCancelOrder={handleCancelOrder}
               onVerifyOrder={handleVerifyOrder}
               onDeleteOrder={(order) => setDeletingOrder(order)}
+              onVoidOrder={handleOpenVoidOrder}
               userRole={user?.role}
             />
           </div>
@@ -458,6 +483,7 @@ export const OrdersPage: React.FC = () => {
         onClose={handleCloseDetails}
         onCancelOrder={handleCancelOrder}
         onVerifyOrder={handleVerifyOrder}
+        onVoidOrder={handleOpenVoidOrder}
         onPrintOrder={handlePrintOrder}
         isCancelling={cancelOrderMutation.isPending}
         isVerifying={verifyOrderMutation.isPending}
@@ -493,6 +519,15 @@ export const OrdersPage: React.FC = () => {
           }}
         />
       )}
+
+      {/* Void Order Confirmation Modal */}
+      <VoidOrderModal
+        order={voidingOrder}
+        isOpen={voidingOrder !== null}
+        onClose={() => setVoidingOrder(null)}
+        onConfirm={handleConfirmVoidOrder}
+        isVoiding={voidOrderMutation.isPending}
+      />
     </div>
   );
 };

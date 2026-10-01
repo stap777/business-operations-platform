@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { OrderResponse } from '../order.types';
 import { OrderStatusBadge, PaymentStatusBadge, DeliveryStatusBadge } from './OrderStatusBadge';
 import { Button } from '../../../components/ui/button';
-import { X, User, Truck, FileText, AlertTriangle, CheckCircle2, ShieldCheck, Loader2 } from 'lucide-react';
+import { X, User, Truck, FileText, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, AlertOctagon, Ban } from 'lucide-react';
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
@@ -11,6 +11,7 @@ interface OrderDetailsModalProps {
   onPrintOrder?: (order: OrderResponse) => void;
   onCancelOrder?: (id: number) => void;
   onVerifyOrder?: (id: number) => void;
+  onVoidOrder?: (order: OrderResponse) => void;
   isCancelling?: boolean;
   isVerifying?: boolean;
   userRole?: string;
@@ -23,6 +24,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onPrintOrder,
   onCancelOrder,
   onVerifyOrder,
+  onVoidOrder,
   isCancelling = false,
   isVerifying = false,
   userRole,
@@ -81,6 +83,38 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Voided Order Audit Banner */}
+        {order.orderStatus === 'VOIDED' && (
+          <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40 text-xs space-y-1.5">
+            <div className="flex items-center gap-2 text-rose-800 dark:text-rose-200 font-semibold">
+              <AlertOctagon className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+              <span>This order has been VOIDED</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px] text-rose-700 dark:text-rose-300">
+              <div>
+                <span className="font-semibold text-rose-900 dark:text-rose-100">Reason:</span> {order.voidReason || 'Not specified'}
+              </div>
+              <div>
+                <span className="font-semibold text-rose-900 dark:text-rose-100">Voided By:</span> {order.voidedByName || 'System'}
+              </div>
+              {order.voidedAt && (
+                <div>
+                  <span className="font-semibold text-rose-900 dark:text-rose-100">Voided At:</span>{' '}
+                  {new Date(order.voidedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                </div>
+              )}
+              {order.voidNotes && (
+                <div className="sm:col-span-2">
+                  <span className="font-semibold text-rose-900 dark:text-rose-100">Notes:</span> {order.voidNotes}
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-rose-600 dark:text-rose-400 pt-1 border-t border-rose-200/60 dark:border-rose-900/40">
+              Retained for accounting and audit history. Excluded from sales revenue, active ledger balances, and dashboard totals.
+            </p>
+          </div>
+        )}
 
         {/* Customer & Personnel Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs p-3.5 rounded-lg border border-[#ECECEC] dark:border-[#232323] bg-[#FAFAFA] dark:bg-[#151515]">
@@ -336,6 +370,24 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                   Cancel Order
                 </Button>
               )}
+
+              {onVoidOrder &&
+                order.orderStatus !== 'CANCELLED' &&
+                order.orderStatus !== 'VOIDED' &&
+                (userRole === 'ADMIN' || userRole === 'MANAGER') && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      onClose();
+                      onVoidOrder(order);
+                    }}
+                    className="text-xs text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 h-8 gap-1.5"
+                  >
+                    <Ban className="w-3.5 h-3.5" />
+                    Void Order
+                  </Button>
+                )}
             </div>
 
             <Button

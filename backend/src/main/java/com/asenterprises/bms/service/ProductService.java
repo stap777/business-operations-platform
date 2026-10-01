@@ -1,5 +1,6 @@
 package com.asenterprises.bms.service;
 
+import com.asenterprises.bms.dto.ProductDeletionCheckResponse;
 import com.asenterprises.bms.dto.ProductDropdownResponse;
 import com.asenterprises.bms.dto.ProductRequest;
 import com.asenterprises.bms.dto.ProductResponse;
@@ -8,10 +9,14 @@ import com.asenterprises.bms.entity.Category;
 import com.asenterprises.bms.entity.CategoryStatus;
 import com.asenterprises.bms.entity.Product;
 import com.asenterprises.bms.entity.ProductStatus;
+import com.asenterprises.bms.entity.User;
 import com.asenterprises.bms.exception.ResourceAlreadyExistsException;
 import com.asenterprises.bms.exception.ResourceNotFoundException;
 import com.asenterprises.bms.repository.CategoryRepository;
+import com.asenterprises.bms.repository.OrderItemRepository;
 import com.asenterprises.bms.repository.ProductRepository;
+import com.asenterprises.bms.repository.StockAdjustmentRepository;
+import com.asenterprises.bms.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +42,10 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final StockAdjustmentRepository stockAdjustmentRepository;
+    private final AuditLogService auditLogService;
+    private final UserRepository userRepository;
 
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
@@ -151,13 +160,68 @@ public class ProductService {
         return mapToResponse(restoredProduct);
     }
 
-    @Transactional
-    public void deleteProduct(Long id) {
+    @Transactional(readOnly = true)
+    public ProductDeletionCheckResponse checkProductDeletion(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
-        product.setStatus(ProductStatus.INACTIVE);
-        productRepository.save(product);
+        long orderItemCount = orderItemRepository.countByProductId(id);
+        long stockAdjustmentCount = stockAdjustmentRepository.countByProductId(id);
+        boolean hasReferences = orderItemCount > 0 || stockAdjustmentCount > 0;
+
+        String message;
+        if (hasReferences) {
+            message = "This product cannot be permanently deleted because it is used in " +
+                    (orderItemCount > 0 ? orderItemCount + " existing order(s)" : "") +
+                    (orderItemCount > 0 && stockAdjustmentCount > 0 ? " and " : "") +
+                    (stockAdjustmentCount > 0 ? stockAdjustmentCount + " inventory adjustment record(s)" : "") +
+                    ". You can deactivate it instead.";
+        } else {
+            message = "This action cannot be undone. The product has no historical transactions and will be permanently removed.";
+        }
+
+        return ProductDeletionCheckResponse.builder()
+                .productId(product.getId())
+                .productName(product.getName())
+                .canDelete(!hasReferences)
+                .orderItemCount(orderItemCount)
+                .stockAdjustmentCount(stockAdjustmentCount)
+                .message(message)
+                .build();
+    }
+
+    public void deleteProduct(Long id) {
+        deleteProduct(id, null);
+    }
+
+    @Transactional
+    public void deleteProduct(Long id, String adminUsername) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        long orderItemCount = orderItemRepository.countByProductId(id);
+        long stockAdjustmentCount = stockAdjustmentRepository.countByProductId(id);
+
+        if (orderItemCount > 0 || stockAdjustmentCount > 0) {
+            throw new IllegalStateException("This product cannot be permanently deleted because it is used in existing orders. You can deactivate it instead.");
+        }
+
+        User adminUser = null;
+        if (adminUsername != null) {
+            adminUser = userRepository.findByUsername(adminUsername).orElse(null);
+        }
+
+        productRepository.delete(product);
+
+        if (adminUser != null) {
+            auditLogService.recordAuditLog(
+                    "PRODUCT",
+                    id,
+                    "PRODUCT_DELETED",
+                    adminUser,
+                    "Permanently deleted unused product '" + product.getName() + "'"
+            );
+        }
     }
 
     @Transactional

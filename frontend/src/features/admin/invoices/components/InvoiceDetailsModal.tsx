@@ -4,7 +4,7 @@ import type { BusinessSettingsResponse } from '../../settings/businessSettings.t
 import { PrintableInvoice } from './PrintableInvoice';
 import { PaymentStatusBadge } from '../../../orders/components/OrderStatusBadge';
 import { Button } from '../../../../components/ui/button';
-import { X, Printer, User, FileText, ExternalLink, Receipt, Eye } from 'lucide-react';
+import { X, Printer, User, FileText, ExternalLink, Receipt, Eye, AlertOctagon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface InvoiceDetailsModalProps {
@@ -43,6 +43,11 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
                   {invoice.invoiceNumber}
                 </h2>
                 <PaymentStatusBadge status={invoice.paymentStatus} />
+                {invoice.orderStatus === 'VOIDED' && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                    ORDER VOIDED
+                  </span>
+                )}
               </div>
               <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5 font-mono">
                 Order #{invoice.orderNumber} · Generated on{' '}
@@ -90,6 +95,16 @@ export const InvoiceDetailsModal: React.FC<InvoiceDetailsModalProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Voided Notice Banner */}
+          {invoice.orderStatus === 'VOIDED' && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/30 rounded-xl border border-rose-200 dark:border-rose-900/40 text-xs text-rose-800 dark:text-rose-200 flex items-center gap-2.5">
+              <AlertOctagon className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
+              <span>
+                <strong>Associated Order Voided:</strong> This invoice was generated for sales order #{invoice.orderNumber}, which has since been voided. This invoice record is preserved solely for audit, accounting, and tax compliance.
+              </span>
+            </div>
+          )}
 
           {/* Body Content based on View Mode */}
           {viewMode === 'preview' ? (

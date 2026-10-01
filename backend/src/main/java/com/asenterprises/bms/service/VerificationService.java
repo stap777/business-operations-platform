@@ -83,6 +83,9 @@ public class VerificationService {
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
             throw new IllegalStateException("Cannot verify a CANCELLED order.");
         }
+        if (order.getOrderStatus() == OrderStatus.VOIDED) {
+            throw new IllegalStateException("Cannot verify a VOIDED order.");
+        }
         if (order.getPaymentStatus() != com.asenterprises.bms.entity.PaymentStatus.PAID) {
             throw new IllegalStateException("Order #" + order.getOrderNumber() + " cannot be verified until it is fully paid. Current payment status: " + order.getPaymentStatus());
         }

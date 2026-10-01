@@ -23,6 +23,7 @@ public class InvoiceResponse {
     private String invoiceNumber;
     private Long orderId;
     private String orderNumber;
+    private com.asenterprises.bms.entity.OrderStatus orderStatus;
     private LocalDateTime invoiceDate;
     private String customerNameSnapshot;
     private String customerPhoneSnapshot;

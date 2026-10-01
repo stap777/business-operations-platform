@@ -5,6 +5,7 @@ import type {
   OrderRequest,
   OrderQueryParams,
   InvoiceResponse,
+  VoidOrderRequest,
 } from './order.types';
 
 export const orderService = {
@@ -43,6 +44,11 @@ export const orderService = {
 
   cancelOrder: async (id: number): Promise<OrderResponse> => {
     const response = await apiClient.patch<OrderResponse>(`/orders/${id}/cancel`);
+    return response.data;
+  },
+
+  voidOrder: async (id: number, data: VoidOrderRequest): Promise<OrderResponse> => {
+    const response = await apiClient.patch<OrderResponse>(`/orders/${id}/void`, data);
     return response.data;
   },
 

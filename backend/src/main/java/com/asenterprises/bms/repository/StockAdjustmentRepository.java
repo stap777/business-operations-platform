@@ -36,4 +36,8 @@ public interface StockAdjustmentRepository extends JpaRepository<StockAdjustment
     );
 
     java.util.List<StockAdjustment> findByProductId(Long productId);
+
+    boolean existsByProductId(Long productId);
+
+    long countByProductId(Long productId);
 }

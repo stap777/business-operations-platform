@@ -197,8 +197,7 @@ public class Sprint9ReportingIntegrationTest {
 
         byte[] pdfBytes = exportService.exportReport("sales", "pdf", LocalDate.now().minusDays(7), LocalDate.now(), null);
         assertThat(pdfBytes).isNotEmpty();
-        String pdfString = new String(pdfBytes);
-        assertThat(pdfString).contains("PDF PLACEHOLDER");
+        assertThat(new String(pdfBytes)).startsWith("%PDF");
 
         BatchInvoicePrintResponse batchPrint = printService.prepareBatchPrintQueue(LocalDate.now(), LocalDate.now(), null);
         assertThat(batchPrint).isNotNull();

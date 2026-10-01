@@ -1,5 +1,6 @@
 package com.asenterprises.bms.controller;
 
+import com.asenterprises.bms.dto.ProductDeletionCheckResponse;
 import com.asenterprises.bms.dto.ProductDropdownResponse;
 import com.asenterprises.bms.dto.ProductRequest;
 import com.asenterprises.bms.dto.ProductResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.util.List;
 
 /**
@@ -93,10 +95,16 @@ public class ProductController {
         return ResponseEntity.ok(productService.updateStock(id, request));
     }
 
+    @GetMapping("/{id}/deletion-check")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductDeletionCheckResponse> checkProductDeletion(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.checkProductDeletion(id));
+    }
+
     @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id, Principal principal) {
+        productService.deleteProduct(id, principal != null ? principal.getName() : null);
         return ResponseEntity.noContent().build();
     }
 }

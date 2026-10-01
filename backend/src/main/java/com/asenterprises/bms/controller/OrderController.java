@@ -2,6 +2,7 @@ package com.asenterprises.bms.controller;
 
 import com.asenterprises.bms.dto.OrderRequest;
 import com.asenterprises.bms.dto.OrderResponse;
+import com.asenterprises.bms.dto.VoidOrderRequest;
 import com.asenterprises.bms.entity.OrderStatus;
 import com.asenterprises.bms.service.OrderService;
 import jakarta.validation.Valid;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.security.Principal;
 import java.time.LocalDate;
 
 /**
@@ -72,6 +74,15 @@ public class OrderController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<OrderResponse> cancelOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.cancelOrder(id));
+    }
+
+    @PatchMapping("/{id}/void")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<OrderResponse> voidOrder(
+            @PathVariable Long id,
+            @Valid @RequestBody VoidOrderRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(orderService.voidOrder(id, request, principal.getName()));
     }
 
     @org.springframework.web.bind.annotation.DeleteMapping("/{id}")

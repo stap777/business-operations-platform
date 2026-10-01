@@ -8,6 +8,7 @@ import { ProductDetails } from './components/ProductDetails';
 import { StockUpdateModal } from './components/StockUpdateModal';
 import { CategoryTable } from './components/CategoryTable';
 import { CategoryForm } from './components/CategoryForm';
+import { DeleteProductModal } from './components/DeleteProductModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { Button } from '../../components/ui/button';
 import { PageHeader } from '../../components/common/PageHeader';
@@ -320,16 +321,21 @@ export const ProductsPage: React.FC = () => {
         onClose={() => setStockProduct(null)}
       />
 
-      {/* Delete Product Confirmation Modal */}
+      {/* Delete Product Pre-flight Check & Modal */}
       {deletingProduct && (
-        <ConfirmDeleteModal
+        <DeleteProductModal
           isOpen={!!deletingProduct}
           onClose={() => setDeletingProduct(null)}
-          entityType="Product"
-          entityName={deletingProduct.name}
+          product={deletingProduct}
           isDeleting={deleteProductMutation.isPending}
-          onConfirm={() => {
-            deleteProductMutation.mutate(deletingProduct.id, {
+          isDeactivating={deactivateProductMutation.isPending}
+          onConfirmDelete={(id) => {
+            deleteProductMutation.mutate(id, {
+              onSuccess: () => setDeletingProduct(null),
+            });
+          }}
+          onDeactivate={(id) => {
+            deactivateProductMutation.mutate(id, {
               onSuccess: () => setDeletingProduct(null),
             });
           }}

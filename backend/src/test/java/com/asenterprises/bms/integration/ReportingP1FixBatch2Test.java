@@ -240,9 +240,9 @@ public class ReportingP1FixBatch2Test {
         LocalDateTime date = LocalDateTime.of(2026, 8, 10, 10, 0);
 
         // Order A: ₹3,000
-        Order orderA = createOrder("ORD-CREDIT-A", customer, new BigDecimal("3000.00"), OrderStatus.VERIFIED, date);
+        Order orderA = createOrder("ORD-CREDIT-A", customer, new BigDecimal("3000.00"), OrderStatus.DELIVERED, date);
         // Order B: ₹2,000
-        Order orderB = createOrder("ORD-CREDIT-B", customer, new BigDecimal("2000.00"), OrderStatus.VERIFIED, date);
+        Order orderB = createOrder("ORD-CREDIT-B", customer, new BigDecimal("2000.00"), OrderStatus.DELIVERED, date);
 
         // Pay Order A fully (₹3,000) and Order B partially (₹500)
         PaymentRequest payRequest = PaymentRequest.builder()
@@ -283,7 +283,7 @@ public class ReportingP1FixBatch2Test {
     void testInvoiceAndOrderPaymentStatusConsistency() {
         LocalDateTime date = LocalDateTime.of(2026, 8, 10, 10, 0);
 
-        Order order = createOrder("ORD-INV-SYNC", customer, new BigDecimal("4000.00"), OrderStatus.VERIFIED, date);
+        Order order = createOrder("ORD-INV-SYNC", customer, new BigDecimal("4000.00"), OrderStatus.DELIVERED, date);
 
         // Create Invoice associated with Order
         Invoice invoice = invoiceRepository.save(Invoice.builder()

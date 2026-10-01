@@ -91,22 +91,22 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COUNT(o) FROM Order o WHERE o.deliveryPerson.id = :agentId AND o.createdAt >= :start AND o.createdAt <= :end AND o.deliveryStatus = com.asenterprises.bms.entity.DeliveryStatus.DELIVERED")
     long countCompletedDeliveriesForAgentBetween(@Param("agentId") Long agentId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED")
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED)")
     java.math.BigDecimal sumRevenueBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT SUM(o.discountAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED")
+    @Query("SELECT SUM(o.discountAmount) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED)")
     java.math.BigDecimal sumDiscountBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED)")
     long countValidOrdersBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT SUM(o.totalAmount - COALESCE(o.amountReceived, 0)) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED")
+    @Query("SELECT SUM(o.totalAmount - COALESCE(o.amountReceived, 0)) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED)")
     java.math.BigDecimal sumOutstandingForOrdersBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT SUM(item.quantity * item.purchasePrice) FROM Order o JOIN o.items item WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED AND item.purchasePrice IS NOT NULL")
+    @Query("SELECT SUM(item.quantity * item.purchasePrice) FROM Order o JOIN o.items item WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED) AND item.purchasePrice IS NOT NULL")
     java.math.BigDecimal sumCogsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT COUNT(item) FROM Order o JOIN o.items item WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus != com.asenterprises.bms.entity.OrderStatus.CANCELLED AND item.purchasePrice IS NULL")
+    @Query("SELECT COUNT(item) FROM Order o JOIN o.items item WHERE o.createdAt >= :start AND o.createdAt <= :end AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED) AND item.purchasePrice IS NULL")
     long countLegacyItemsBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
     @Query("SELECT o FROM Order o JOIN FETCH o.customer WHERE o.customer.id = :customerId ORDER BY o.createdAt DESC")

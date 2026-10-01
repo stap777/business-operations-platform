@@ -5,6 +5,7 @@ import type {
   ProductResponse,
   ProductQueryParams,
   ProductDropdownResponse,
+  ProductDeletionCheckResponse,
   CategoryPageResponse,
   CategoryRequest,
   CategoryResponse,
@@ -105,6 +106,11 @@ export const productService = {
 
   deleteProduct: async (id: number): Promise<void> => {
     await apiClient.delete(`/products/${id}`);
+  },
+
+  checkProductDeletion: async (id: number): Promise<ProductDeletionCheckResponse> => {
+    const response = await apiClient.get<ProductDeletionCheckResponse>(`/products/${id}/deletion-check`);
+    return response.data;
   },
 
   deleteCategory: async (id: number): Promise<void> => {

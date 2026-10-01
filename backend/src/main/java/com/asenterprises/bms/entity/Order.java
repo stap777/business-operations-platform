@@ -50,8 +50,8 @@ import java.util.List;
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(callSuper = true, exclude = {"customer", "manager", "deliveryPerson", "items", "coupon"})
-@EqualsAndHashCode(callSuper = true, exclude = {"customer", "manager", "deliveryPerson", "items", "coupon"})
+@ToString(callSuper = true, exclude = {"customer", "manager", "deliveryPerson", "items", "coupon", "voidedBy"})
+@EqualsAndHashCode(callSuper = true, exclude = {"customer", "manager", "deliveryPerson", "items", "coupon", "voidedBy"})
 public class Order extends BaseEntity {
 
     @NotBlank(message = "Order number is required")
@@ -127,6 +127,21 @@ public class Order extends BaseEntity {
     @Size(max = 500, message = "Notes cannot exceed 500 characters")
     @Column(name = "notes", length = 500)
     private String notes;
+
+    @Column(name = "voided_at")
+    private java.time.LocalDateTime voidedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "voided_by_id")
+    private User voidedBy;
+
+    @Size(max = 100, message = "Void reason cannot exceed 100 characters")
+    @Column(name = "void_reason", length = 100)
+    private String voidReason;
+
+    @Size(max = 500, message = "Void notes cannot exceed 500 characters")
+    @Column(name = "void_notes", length = 500)
+    private String voidNotes;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coupon_id")

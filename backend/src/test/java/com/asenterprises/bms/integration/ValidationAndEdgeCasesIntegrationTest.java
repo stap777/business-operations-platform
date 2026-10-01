@@ -108,7 +108,7 @@ public class ValidationAndEdgeCasesIntegrationTest {
     }
 
     @Test
-    @DisplayName("Reject Verification for Order not in DELIVERED status")
+    @DisplayName("Reject Verification for unpaid Order")
     void testRejectVerificationForNonDeliveredOrder() {
         Order order = orderRepository.save(Order.builder()
                 .orderNumber("ORD-VAL-001")
@@ -123,7 +123,7 @@ public class ValidationAndEdgeCasesIntegrationTest {
 
         assertThatThrownBy(() -> verificationService.verifyOrder(order.getId(), adminUser.getUsername()))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Only orders with status DELIVERED can be verified");
+                .hasMessageContaining("cannot be verified until it is fully paid");
     }
 
     @Test
@@ -134,7 +134,8 @@ public class ValidationAndEdgeCasesIntegrationTest {
                 .customer(customer)
                 .manager(managerUser)
                 .orderStatus(OrderStatus.DELIVERED)
-                .paymentStatus(PaymentStatus.PENDING)
+                .paymentStatus(PaymentStatus.PAID)
+                .amountReceived(new BigDecimal("1000.00"))
                 .deliveryStatus(DeliveryStatus.DELIVERED)
                 .subtotal(new BigDecimal("1000.00"))
                 .totalAmount(new BigDecimal("1000.00"))
@@ -163,7 +164,8 @@ public class ValidationAndEdgeCasesIntegrationTest {
                 .customer(customer)
                 .manager(managerUser)
                 .orderStatus(OrderStatus.DELIVERED)
-                .paymentStatus(PaymentStatus.PENDING)
+                .paymentStatus(PaymentStatus.PAID)
+                .amountReceived(new BigDecimal("100.00"))
                 .deliveryStatus(DeliveryStatus.DELIVERED)
                 .subtotal(new BigDecimal("100.00"))
                 .totalAmount(new BigDecimal("100.00"))
@@ -173,7 +175,7 @@ public class ValidationAndEdgeCasesIntegrationTest {
                 .product(product)
                 .quantity(1)
                 .sellingPrice(new BigDecimal("100.00"))
-                .lineTotal(new BigDecimal("1000.00"))
+                .lineTotal(new BigDecimal("100.00"))
                 .build();
         order.addItem(item);
 
@@ -185,6 +187,6 @@ public class ValidationAndEdgeCasesIntegrationTest {
         // Second verification attempt fails
         assertThatThrownBy(() -> verificationService.verifyOrder(savedOrder.getId(), adminUser.getUsername()))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Only orders with status DELIVERED can be verified");
+                .hasMessageContaining("is already verified");
     }
 }

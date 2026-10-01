@@ -286,7 +286,7 @@ public class Phase7TransactionIntegrityTest {
         // TEST B: Deliver & Verify order -> still exactly one invoice exists
         deliveryService.startDelivery(orderRes.getId(), deliveryPerson.getUsername());
         deliveryService.markDelivered(orderRes.getId(), DeliveryPaymentRequest.builder()
-                .amountReceived(new BigDecimal("0.00"))
+                .amountReceived(new BigDecimal("1000.00"))
                 .paymentMethod(PaymentMethod.CASH)
                 .build(), deliveryPerson.getUsername());
 
@@ -566,7 +566,7 @@ public class Phase7TransactionIntegrityTest {
         // Repeated verification on VERIFIED order -> Throws IllegalStateException, stock remains unchanged
         assertThatThrownBy(() -> verificationService.verifyOrder(orderRes.getId(), admin.getUsername()))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Only orders with status DELIVERED can be verified");
+                .hasMessageContaining("is already verified");
 
         Product productAfterSecondVerify = productRepository.findById(product1.getId()).orElseThrow();
         assertThat(productAfterSecondVerify.getAvailableStock()).isEqualTo(initialStock - 5);

@@ -44,7 +44,7 @@ public class CustomerLedgerService {
 
         BigDecimal totalOrderAmount = BigDecimal.ZERO;
         for (Order order : orders) {
-            if (order.getOrderStatus() != OrderStatus.CANCELLED) {
+            if (order.getOrderStatus() != OrderStatus.CANCELLED && order.getOrderStatus() != OrderStatus.VOIDED) {
                 totalOrderAmount = totalOrderAmount.add(order.getTotalAmount());
                 rawEntries.add(LedgerEntryResponse.builder()
                         .date(order.getCreatedAt())

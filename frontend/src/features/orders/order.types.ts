@@ -7,7 +7,8 @@ export type OrderStatus =
   | 'DELIVERED'
   | 'VERIFIED'
   | 'COMPLETED'
-  | 'CANCELLED';
+  | 'CANCELLED'
+  | 'VOIDED';
 
 export type PaymentStatus = 'PENDING' | 'PARTIAL' | 'PAID';
 
@@ -48,8 +49,17 @@ export interface OrderResponse {
   notes?: string | null;
   items: OrderItemResponse[];
   isLocked?: boolean;
+  voidedAt?: string | null;
+  voidedByName?: string | null;
+  voidReason?: string | null;
+  voidNotes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface VoidOrderRequest {
+  reason: string;
+  notes?: string;
 }
 
 export interface OrderItemRequest {

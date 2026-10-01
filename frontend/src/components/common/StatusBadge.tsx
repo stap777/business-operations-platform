@@ -16,6 +16,7 @@ export type StatusVariant =
   | 'PARTIAL'
   | 'UNPAID'
   | 'CREDIT'
+  | 'VOIDED'
   | 'ADMIN'
   | 'MANAGER'
   | 'SALES_REPRESENTATIVE'
@@ -67,6 +68,8 @@ function formatStatusLabel(status: string): string {
       return 'Pending';
     case 'CANCELLED':
       return 'Cancelled';
+    case 'VOIDED':
+      return 'Voided';
     case 'DELIVERED':
       return 'Delivered';
     case 'OUT_FOR_DELIVERY':
@@ -121,6 +124,9 @@ function getStatusStyles(status: string): string {
 
     case 'LOW_STOCK':
       return 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300 border border-orange-200/60 dark:border-orange-800/40';
+
+    case 'VOIDED':
+      return 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200/60 dark:border-rose-800/40';
 
     case 'CREDIT':
       return 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/40';
