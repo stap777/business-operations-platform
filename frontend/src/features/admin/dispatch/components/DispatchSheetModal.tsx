@@ -188,7 +188,7 @@ export const DispatchSheetModal: React.FC<DispatchSheetModalProps> = ({ isOpen, 
 
       {/* Hidden Container Rendered Exclusively During Window.print() */}
       {dispatchData && (
-        <div ref={printRef} className="hidden print:block fixed inset-0 bg-white z-[9999]">
+        <div ref={printRef} className="hidden print:block bg-white">
           <PrintableDispatchSheet dispatchSheet={dispatchData} printMode={printMode} />
         </div>
       )}

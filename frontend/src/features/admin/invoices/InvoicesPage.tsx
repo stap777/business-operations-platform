@@ -241,7 +241,7 @@ export const InvoicesPage: React.FC = () => {
 
       {/* Hidden Bulk Print Container Rendered Exclusively During Bulk Print */}
       {bulkPrintInvoices && bulkPrintInvoices.length > 0 && (
-        <div className="hidden print:block fixed inset-0 bg-white z-[9999]">
+        <div className="hidden print:block bg-white">
           <PrintableInvoices invoices={bulkPrintInvoices} businessSettings={businessSettings} />
         </div>
       )}

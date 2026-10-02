@@ -34,13 +34,14 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     java.util.List<String> findLatestInvoiceNumberByPrefixPattern(@Param("prefixPattern") String prefixPattern, Pageable pageable);
 
     @Query(
-        value = "SELECT i FROM Invoice i JOIN FETCH i.order JOIN FETCH i.generatedBy " +
+        value = "SELECT i FROM Invoice i JOIN FETCH i.order LEFT JOIN FETCH i.generatedBy " +
                 "WHERE (CAST(:query AS String) IS NULL OR LOWER(i.invoiceNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
                 "OR LOWER(i.order.orderNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
                 "OR LOWER(i.customerNameSnapshot) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
                 "OR LOWER(i.customerPhoneSnapshot) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%')) " +
                 "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate >= :startDate) " +
-                "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate <= :endDate)",
+                "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR i.invoiceDate <= :endDate) " +
+                "ORDER BY i.invoiceDate DESC, i.id DESC",
         countQuery = "SELECT COUNT(i) FROM Invoice i " +
                      "WHERE (CAST(:query AS String) IS NULL OR LOWER(i.invoiceNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +
                      "OR LOWER(i.order.orderNumber) LIKE CONCAT('%', LOWER(CAST(:query AS String)), '%') " +

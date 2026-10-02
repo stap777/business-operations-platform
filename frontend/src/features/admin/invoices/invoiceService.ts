@@ -7,7 +7,7 @@ import type {
 
 export const invoiceService = {
   /**
-   * Search paginated admin invoices: GET /admin/invoices/search
+   * Search paginated admin invoices: GET /invoices/search
    */
   searchInvoices: async (params: InvoiceQueryParams = {}): Promise<InvoicePageResponse> => {
     const { query, startDate, endDate, page = 0, size = 20 } = params;
@@ -19,17 +19,17 @@ export const invoiceService = {
     if (startDate) queryParams.startDate = startDate;
     if (endDate) queryParams.endDate = endDate;
 
-    const response = await apiClient.get<InvoicePageResponse>('/admin/invoices/search', {
+    const response = await apiClient.get<InvoicePageResponse>('/invoices/search', {
       params: queryParams,
     });
     return response.data;
   },
 
   /**
-   * Get single invoice details by ID: GET /admin/invoices/{id}
+   * Get single invoice details by ID: GET /invoices/{id}
    */
   getInvoiceById: async (id: number): Promise<InvoiceResponse> => {
-    const response = await apiClient.get<InvoiceResponse>(`/admin/invoices/${id}`);
+    const response = await apiClient.get<InvoiceResponse>(`/invoices/${id}`);
     return response.data;
   },
 
