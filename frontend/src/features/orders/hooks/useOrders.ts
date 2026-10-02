@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { orderService } from '../orderService';
 import type { OrderQueryParams, OrderRequest } from '../order.types';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ export const useOrders = (params: OrderQueryParams = {}) => {
   return useQuery({
     queryKey: orderKeys.list(params),
     queryFn: () => orderService.searchOrders(params),
+    placeholderData: keepPreviousData,
     staleTime: 15_000,
   });
 };
@@ -79,6 +80,7 @@ export const usePendingVerificationOrders = (page = 0, size = 50) => {
   return useQuery({
     queryKey: ['admin', 'orders', 'pending-verification', page, size],
     queryFn: () => orderService.getPendingVerificationOrders(page, size),
+    placeholderData: keepPreviousData,
     staleTime: 10_000,
   });
 };

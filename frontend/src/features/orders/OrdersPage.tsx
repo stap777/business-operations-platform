@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus, OrderRequest, VoidOrderRequest } from './order.types';
 import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder, useDeleteOrder, useVoidOrder } from './hooks/useOrders';
@@ -71,7 +71,7 @@ export const OrdersPage: React.FC = () => {
   const deleteOrderMutation = useDeleteOrder();
   const voidOrderMutation = useVoidOrder();
 
-  const handleQuickFilterChange = (filter: QuickFilter) => {
+  const handleQuickFilterChange = useCallback((filter: QuickFilter) => {
     setQuickFilter(filter);
     setPage(0);
     const todayStr = new Date().toISOString().split('T')[0];
@@ -94,34 +94,49 @@ export const OrdersPage: React.FC = () => {
       setStartDate(undefined);
       setEndDate(undefined);
     }
-  };
+  }, []);
 
-  const handleSearchChange = (query: string) => {
-    setSearchOrderNumber(query);
-    setPage(0);
-  };
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchOrderNumber((prev) => {
+      if (prev === query) return prev;
+      setPage(0);
+      return query;
+    });
+  }, []);
 
-  const handleStatusChange = (status?: OrderStatus) => {
-    setSelectedStatus(status);
+  const handleStatusChange = useCallback((status?: OrderStatus) => {
+    setSelectedStatus((prev) => {
+      if (prev === status) return prev;
+      setPage(0);
+      return status;
+    });
     setQuickFilter('ALL');
-    setPage(0);
-  };
+  }, []);
 
-  const handleDateRangeChange = (start?: string, end?: string) => {
-    setStartDate(start);
-    setEndDate(end);
+  const handleDateRangeChange = useCallback((start?: string, end?: string) => {
+    setStartDate((prevStart) => {
+      if (prevStart !== start) {
+        setPage(0);
+      }
+      return start;
+    });
+    setEndDate((prevEnd) => {
+      if (prevEnd !== end) {
+        setPage(0);
+      }
+      return end;
+    });
     setQuickFilter('ALL');
-    setPage(0);
-  };
+  }, []);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     setSearchOrderNumber('');
     setSelectedStatus(undefined);
     setStartDate(undefined);
     setEndDate(undefined);
     setQuickFilter('ALL');
     setPage(0);
-  };
+  }, []);
 
   const handleViewOrder = (order: OrderResponse) => {
     setSelectedOrder(order);
@@ -293,7 +308,7 @@ export const OrdersPage: React.FC = () => {
   }, [rawOrders, todayStr]);
 
   const totalPages = ordersData?.totalPages || 0;
-  const totalElements = filteredOrders.length;
+  const totalElements = ordersData?.totalElements || filteredOrders.length;
 
   return (
     <div className="space-y-6 pb-8">
@@ -523,6 +538,40 @@ export const OrdersPage: React.FC = () => {
                 onVoidOrder={handleOpenVoidOrder}
                 userRole={user?.role}
               />
+
+              {/* Pagination Controls for Pending Verification */}
+              {pendingData && pendingData.totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-xl text-xs">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">
+                    Showing Page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{page + 1}</span> of{' '}
+                    <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{pendingData.totalPages}</span> ({pendingData.totalElements} pending orders)
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 0 || isPendingLoading}
+                      onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+                      className="h-8 px-2.5 border-[#ECECEC] dark:border-[#232323]"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= pendingData.totalPages - 1 || isPendingLoading}
+                      onClick={() => setPage((prev) => prev + 1)}
+                      className="h-8 px-2.5 border-[#ECECEC] dark:border-[#232323]"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

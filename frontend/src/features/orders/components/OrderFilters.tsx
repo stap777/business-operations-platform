@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { OrderStatus } from '../order.types';
 import { Search, Filter, RotateCcw, Calendar } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
@@ -29,9 +29,31 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
   const [startDate, setStartDate] = useState<string>(initialStartDate);
   const [endDate, setEndDate] = useState<string>(initialEndDate);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState<boolean>(false);
+  const prevSearchRef = useRef(initialOrderNumber);
+
+  // Sync internal state when initial props change externally
+  useEffect(() => {
+    setSearchTerm(initialOrderNumber);
+    prevSearchRef.current = initialOrderNumber;
+  }, [initialOrderNumber]);
 
   useEffect(() => {
+    setStatus(initialStatus || '');
+  }, [initialStatus]);
+
+  useEffect(() => {
+    setStartDate(initialStartDate || '');
+  }, [initialStartDate]);
+
+  useEffect(() => {
+    setEndDate(initialEndDate || '');
+  }, [initialEndDate]);
+
+  useEffect(() => {
+    if (prevSearchRef.current === searchTerm) return;
+
     const timer = setTimeout(() => {
+      prevSearchRef.current = searchTerm;
       onSearchChange(searchTerm);
     }, 300);
 
@@ -62,8 +84,15 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
     setStatus('');
     setStartDate('');
     setEndDate('');
+    prevSearchRef.current = '';
     if (onClearFilters) {
       onClearFilters();
+    } else {
+      onSearchChange('');
+      onStatusChange(undefined);
+      if (onDateRangeChange) {
+        onDateRangeChange(undefined, undefined);
+      }
     }
   };
 

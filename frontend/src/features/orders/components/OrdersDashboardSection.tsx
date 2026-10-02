@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus } from '../order.types';
 import { useOrders, useCancelOrder, useVerifyOrder } from '../hooks/useOrders';
@@ -44,15 +44,21 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
   const cancelOrderMutation = useCancelOrder();
   const verifyOrderMutation = useVerifyOrder();
 
-  const handleSearchChange = (query: string) => {
-    setSearchOrderNumber(query);
-    setPage(0);
-  };
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchOrderNumber((prev) => {
+      if (prev === query) return prev;
+      setPage(0);
+      return query;
+    });
+  }, []);
 
-  const handleStatusChange = (status?: OrderStatus) => {
-    setSelectedStatus(status);
-    setPage(0);
-  };
+  const handleStatusChange = useCallback((status?: OrderStatus) => {
+    setSelectedStatus((prev) => {
+      if (prev === status) return prev;
+      setPage(0);
+      return status;
+    });
+  }, []);
 
   const handleViewOrder = (order: OrderResponse) => {
     setSelectedOrder(order);
@@ -143,7 +149,7 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
       {ordersData && totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
           <div>
-            Showing page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{ordersData.number + 1}</span> of{' '}
+            Showing page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{page + 1}</span> of{' '}
             <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{totalPages}</span> ({totalElements} records)
           </div>
 
@@ -151,7 +157,7 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
             <Button
               variant="outline"
               size="sm"
-              disabled={ordersData.first || isLoading}
+              disabled={page === 0 || isLoading}
               onClick={() => setPage((prev) => Math.max(0, prev - 1))}
               className="h-8 text-xs font-medium gap-1 border-[#ECECEC] dark:border-[#232323]"
             >
@@ -161,7 +167,7 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
             <Button
               variant="outline"
               size="sm"
-              disabled={ordersData.last || isLoading}
+              disabled={page >= totalPages - 1 || isLoading}
               onClick={() => setPage((prev) => prev + 1)}
               className="h-8 text-xs font-medium gap-1 border-[#ECECEC] dark:border-[#232323]"
             >
