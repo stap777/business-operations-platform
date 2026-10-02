@@ -114,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ sidebarOpen, setSidebarOpen })
 
   return (
     <aside
-      className={`fixed lg:static inset-y-0 left-0 z-50 w-72 sm:w-64 bg-white dark:bg-[#0F0F0F] border-r border-[#ECECEC] dark:border-[#232323] flex flex-col justify-between transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none ${
+      className={`fixed lg:static inset-y-0 left-0 z-50 w-72 sm:w-64 bg-white dark:bg-[#0F0F0F] border-r border-[#ECECEC] dark:border-[#232323] flex flex-col justify-between transition-transform duration-300 ease-in-out shadow-2xl lg:shadow-none print:hidden ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`}
     >

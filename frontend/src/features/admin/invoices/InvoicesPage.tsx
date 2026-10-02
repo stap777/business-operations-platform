@@ -127,7 +127,7 @@ export const InvoicesPage: React.FC = () => {
   const totalElements = invoiceData?.totalElements || 0;
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-6 pb-8 print:space-y-0 print:pb-0 print:p-0 print:m-0">
       {/* Screen UI - Excluded completely during print */}
       <div className="space-y-6 print:hidden">
         {/* Header Bar */}
@@ -241,7 +241,7 @@ export const InvoicesPage: React.FC = () => {
 
       {/* Hidden Bulk Print Container Rendered Exclusively During Bulk Print */}
       {bulkPrintInvoices && bulkPrintInvoices.length > 0 && (
-        <div className="hidden print:block bg-white">
+        <div className="hidden print:block bg-white print:p-0 print:m-0">
           <PrintableInvoices invoices={bulkPrintInvoices} businessSettings={businessSettings} />
         </div>
       )}

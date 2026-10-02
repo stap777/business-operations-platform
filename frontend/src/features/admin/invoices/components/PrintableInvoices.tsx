@@ -15,7 +15,7 @@ export const PrintableInvoices: React.FC<PrintableInvoicesProps> = ({
   if (!invoices || invoices.length === 0) return null;
 
   return (
-    <div className="printable-invoices bg-white text-black">
+    <div className="printable-invoices bg-white text-black print:p-0 print:m-0">
       {invoices.map((invoice, index) => {
         const isLast = index === invoices.length - 1;
 

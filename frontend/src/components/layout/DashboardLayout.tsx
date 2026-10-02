@@ -14,9 +14,9 @@ export const DashboardLayout: React.FC = () => {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#000000] text-[#111111] dark:text-[#FAFAFA] flex flex-col font-sans antialiased">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-[#000000] text-[#111111] dark:text-[#FAFAFA] flex flex-col font-sans antialiased print:min-h-0 print:h-auto print:bg-white">
       {/* Top Mobile Header Bar */}
-      <header className="lg:hidden sticky top-0 border-b border-[#ECECEC] dark:border-[#232323] bg-white/95 dark:bg-[#0F0F0F]/95 backdrop-blur-md px-4 py-3 flex items-center justify-between z-30 shadow-xs">
+      <header className="lg:hidden sticky top-0 border-b border-[#ECECEC] dark:border-[#232323] bg-white/95 dark:bg-[#0F0F0F]/95 backdrop-blur-md px-4 py-3 flex items-center justify-between z-30 shadow-xs print:hidden">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -47,12 +47,12 @@ export const DashboardLayout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden print:block print:overflow-visible">
         {/* Backdrop overlay for mobile drawer */}
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-xs lg:hidden z-40 transition-opacity"
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs lg:hidden z-40 transition-opacity print:hidden"
           />
         )}
 
@@ -60,7 +60,7 @@ export const DashboardLayout: React.FC = () => {
         <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
         {/* Persistent Main Content Shell Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex flex-col justify-between">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto w-full flex flex-col justify-between print:p-0 print:m-0 print:space-y-0 print:block print:max-w-none print:w-full print:overflow-visible">
           <div>
             <Outlet />
           </div>
