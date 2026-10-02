@@ -125,8 +125,8 @@ body {
   .printable-invoice {
     width: 142mm !important;
     max-width: 142mm !important;
-    height: 204mm !important;
-    max-height: 204mm !important;
+    height: 198mm !important;
+    max-height: 198mm !important;
     padding: 0 !important;
     margin: 0 auto !important;
     box-shadow: none !important;

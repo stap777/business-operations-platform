@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import type { OrderResponse } from '../order.types';
 import { OrderStatusBadge, PaymentStatusBadge, DeliveryStatusBadge } from './OrderStatusBadge';
 import { Button } from '../../../components/ui/button';
-import { X, User, Truck, FileText, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, AlertOctagon, Ban } from 'lucide-react';
+import { X, User, Truck, FileText, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, AlertOctagon, Ban, Receipt, Printer } from 'lucide-react';
 
 interface OrderDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   order: OrderResponse | null;
   onPrintOrder?: (order: OrderResponse) => void;
+  onPrintInvoice?: (order: OrderResponse) => void;
   onCancelOrder?: (id: number) => void;
   onVerifyOrder?: (id: number) => void;
   onVoidOrder?: (order: OrderResponse) => void;
   isCancelling?: boolean;
   isVerifying?: boolean;
+  isFetchingInvoice?: boolean;
   userRole?: string;
 }
 
@@ -22,11 +24,13 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onClose,
   order,
   onPrintOrder,
+  onPrintInvoice,
   onCancelOrder,
   onVerifyOrder,
   onVoidOrder,
   isCancelling = false,
   isVerifying = false,
+  isFetchingInvoice = false,
   userRole,
 }) => {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -336,14 +340,31 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           /* Footer Actions */
           <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#ECECEC] dark:border-[#232323]">
             <div className="flex items-center gap-2">
+              {onPrintInvoice && (
+                <Button
+                  size="sm"
+                  disabled={isFetchingInvoice}
+                  onClick={() => onPrintInvoice(order)}
+                  className="text-xs font-semibold px-3.5 h-8 bg-[#111111] hover:bg-[#27272A] text-white dark:bg-[#FAFAFA] dark:text-[#111111] dark:hover:bg-[#E4E4E7] gap-1.5 shadow-2xs"
+                >
+                  {isFetchingInvoice ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Receipt className="w-3.5 h-3.5" />
+                  )}
+                  Print Invoice
+                </Button>
+              )}
+
               {onPrintOrder && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onPrintOrder(order)}
-                  className="text-xs font-medium px-3 h-8 border-[#ECECEC] dark:border-[#232323] hover:bg-[#FAFAFA] dark:hover:bg-[#151515]"
+                  className="text-xs font-medium px-3 h-8 border-[#ECECEC] dark:border-[#232323] hover:bg-[#FAFAFA] dark:hover:bg-[#151515] gap-1.5"
                 >
-                  Print Order
+                  <Printer className="w-3.5 h-3.5" />
+                  Print Order Slip
                 </Button>
               )}
 

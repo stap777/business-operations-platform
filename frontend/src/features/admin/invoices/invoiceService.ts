@@ -34,6 +34,14 @@ export const invoiceService = {
   },
 
   /**
+   * Get single invoice details by Order ID: GET /invoices/order/{orderId}
+   */
+  getInvoiceByOrderId: async (orderId: number): Promise<InvoiceResponse> => {
+    const response = await apiClient.get<InvoiceResponse>(`/invoices/order/${orderId}`);
+    return response.data;
+  },
+
+  /**
    * Fetch all invoices matching current search/date filters sequentially across all pages.
    * Reports progress via callback for responsive UI feedback.
    */

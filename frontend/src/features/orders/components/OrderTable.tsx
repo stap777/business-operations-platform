@@ -4,7 +4,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from './OrderStatusBadge';
 import { ActionDropdownMenu } from '../../../components/common/ActionDropdownMenu';
 import type { ActionMenuItem } from '../../../components/common/ActionDropdownMenu';
 import { Button } from '../../../components/ui/button';
-import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit, Trash2, Ban } from 'lucide-react';
+import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit, Trash2, Ban, Receipt } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { TableSkeleton } from '../../../components/common/TableSkeleton';
 
@@ -14,6 +14,7 @@ interface OrderTableProps {
   onViewOrder: (order: OrderResponse) => void;
   onEditOrder?: (order: OrderResponse) => void;
   onPrintOrder?: (order: OrderResponse) => void;
+  onPrintInvoice?: (order: OrderResponse) => void;
   onCancelOrder?: (orderId: number) => void;
   onVerifyOrder?: (order: OrderResponse) => void;
   onDeleteOrder?: (order: OrderResponse) => void;
@@ -27,6 +28,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
   onViewOrder,
   onEditOrder,
   onPrintOrder,
+  onPrintInvoice,
   onCancelOrder,
   onVerifyOrder,
   onDeleteOrder,
@@ -100,8 +102,16 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                   });
                 }
 
+                if (onPrintInvoice) {
+                  dropdownItems.push({
+                    label: 'Print Invoice',
+                    icon: Receipt,
+                    onClick: () => onPrintInvoice(order),
+                  });
+                }
+
                 dropdownItems.push({
-                  label: 'Print Order',
+                  label: 'Print Order Slip',
                   icon: Printer,
                   onClick: () => onPrintOrder && onPrintOrder(order),
                 });
@@ -241,8 +251,16 @@ export const OrderTable: React.FC<OrderTableProps> = ({
             });
           }
 
+          if (onPrintInvoice) {
+            dropdownItems.push({
+              label: 'Print Invoice',
+              icon: Receipt,
+              onClick: () => onPrintInvoice(order),
+            });
+          }
+
           dropdownItems.push({
-            label: 'Print Order',
+            label: 'Print Order Slip',
             icon: Printer,
             onClick: () => onPrintOrder && onPrintOrder(order),
           });

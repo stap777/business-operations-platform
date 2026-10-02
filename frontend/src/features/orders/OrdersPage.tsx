@@ -9,12 +9,15 @@ import { OrderTable } from './components/OrderTable';
 import { OrderDetailsModal } from './components/OrderDetailsModal';
 import { EditOrderModal } from './components/EditOrderModal';
 import { PrintableOrder } from './components/PrintableOrder';
+import { PrintableInvoice } from '../admin/invoices/components/PrintableInvoice';
+import { invoiceService } from '../admin/invoices/invoiceService';
+import type { InvoiceResponse } from '../admin/invoices/invoice.types';
 import { VoidOrderModal } from './components/VoidOrderModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { Button } from '../../components/ui/button';
 import { PageHeader } from '../../components/common/PageHeader';
 import { DispatchSheetModal } from '../admin/dispatch/components/DispatchSheetModal';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw, CheckCircle2, ClipboardCheck, Filter } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, RefreshCw, CheckCircle2, ClipboardCheck, Filter, AlertCircle, X } from 'lucide-react';
 
 export type QuickFilter = 'ALL' | 'TODAY' | 'PENDING' | 'DELIVERED' | 'CASH' | 'UPI' | 'CREDIT';
 
@@ -36,6 +39,9 @@ export const OrdersPage: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState<boolean>(false);
   const [printOrderData, setPrintOrderData] = useState<OrderResponse | null>(null);
+  const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceResponse | null>(null);
+  const [isFetchingInvoice, setIsFetchingInvoice] = useState<boolean>(false);
+  const [invoiceErrorMessage, setInvoiceErrorMessage] = useState<string | null>(null);
   const [orderToEdit, setOrderToEdit] = useState<OrderResponse | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderResponse | null>(null);
   const [voidingOrder, setVoidingOrder] = useState<OrderResponse | null>(null);
@@ -138,10 +144,41 @@ export const OrdersPage: React.FC = () => {
   };
 
   const handlePrintOrder = (order: OrderResponse) => {
+    setPrintInvoiceData(null);
     setPrintOrderData(order);
+    setInvoiceErrorMessage(null);
     setTimeout(() => {
       window.print();
     }, 100);
+  };
+
+  const handlePrintInvoice = async (order: OrderResponse) => {
+    setPrintOrderData(null);
+    setPrintInvoiceData(null);
+    setInvoiceErrorMessage(null);
+    setIsFetchingInvoice(true);
+
+    try {
+      const invoice = await invoiceService.getInvoiceByOrderId(order.id);
+      if (!invoice) {
+        setInvoiceErrorMessage(`No invoice exists for order #${order.orderNumber}.`);
+        return;
+      }
+      setPrintInvoiceData(invoice);
+      setTimeout(() => {
+        window.print();
+      }, 150);
+    } catch (err: any) {
+      console.error('Failed to load invoice for order printing:', err);
+      if (err?.response?.status === 404) {
+        setInvoiceErrorMessage(`No invoice exists for order #${order.orderNumber}.`);
+      } else {
+        const msg = err?.response?.data?.message || err?.message || 'Failed to load invoice for printing.';
+        setInvoiceErrorMessage(msg);
+      }
+    } finally {
+      setIsFetchingInvoice(false);
+    }
   };
 
   const handleCloseDetails = () => {
@@ -260,221 +297,256 @@ export const OrdersPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Printable Order Container (rendered on window.print()) */}
-      <PrintableOrder
-        order={printOrderData || selectedOrder}
-        businessSettings={businessSettings}
-      />
-
-      {/* Screen Header Bar */}
-      <div className="print:hidden">
-        <PageHeader
-          title="Sales Orders"
-          description="Inspect customer sales orders, track payment & fulfillment status, and print order slips."
-          action={
+      {/* Screen UI - Excluded completely during print */}
+      <div className="space-y-6 print:hidden">
+        {/* Error Banner for Invoice Print if any */}
+        {invoiceErrorMessage && (
+          <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-xs text-rose-800 dark:text-rose-200 flex items-center justify-between animate-in fade-in">
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsDispatchModalOpen(true)}
-                className="border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-[#FAFAFA] text-xs font-semibold px-3.5 py-2 rounded-xl gap-1.5 cursor-pointer shadow-xs"
-              >
-                <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Dispatch Sheet
-              </Button>
-
-              <Button
-                size="sm"
-                onClick={() => navigate('/orders/create')}
-                className="bg-[#09090B] text-white dark:bg-[#FAFAFA] dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold px-4 py-2 rounded-xl shadow-xs gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Create Order
-              </Button>
+              <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
+              <span>{invoiceErrorMessage}</span>
             </div>
-          }
-        />
-      </div>
+            <button
+              onClick={() => setInvoiceErrorMessage(null)}
+              className="text-rose-600 dark:text-rose-400 hover:text-rose-800 p-1 rounded-lg"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
-      {/* Sticky Quick Filter Chips with Result Counts */}
-      <div className="sticky top-0 z-20 bg-white/95 dark:bg-[#0F0F0F]/95 backdrop-blur-md py-2.5 border-y border-[#ECECEC] dark:border-[#232323] -mx-4 px-4 sm:-mx-6 sm:px-6 print:hidden">
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mr-1 flex items-center gap-1 shrink-0">
-            <Filter className="w-3.5 h-3.5" /> Quick:
-          </span>
-          {[
-            { id: 'ALL', label: 'ALL' },
-            { id: 'TODAY', label: 'TODAY' },
-            { id: 'PENDING', label: 'PENDING' },
-            { id: 'DELIVERED', label: 'DELIVERED' },
-            { id: 'CASH', label: 'CASH' },
-            { id: 'UPI', label: 'UPI' },
-            { id: 'CREDIT', label: 'CREDIT' },
-          ].map((chip) => {
-            const isActive = quickFilter === chip.id;
-            const count = filterCounts[chip.id as QuickFilter] ?? 0;
-            return (
-              <button
-                key={chip.id}
-                onClick={() => handleQuickFilterChange(chip.id as QuickFilter)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1 shrink-0 ${
-                  isActive
-                    ? 'bg-[#111111] text-white border-[#111111] dark:bg-[#FAFAFA] dark:text-[#111111] dark:border-[#FAFAFA] shadow-xs'
-                    : 'bg-white dark:bg-[#1A1A1A] text-[#71717A] dark:text-[#A1A1AA] border-[#ECECEC] dark:border-[#232323] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-                }`}
-              >
-                <span>{chip.label}</span>
-                <span
-                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+        {/* Screen Header Bar */}
+        <div>
+          <PageHeader
+            title="Sales Orders"
+            description="Inspect customer sales orders, track payment & fulfillment status, and print order slips."
+            action={
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsDispatchModalOpen(true)}
+                  className="border-[#E4E4E7] dark:border-[#27272A] text-[#09090B] dark:text-[#FAFAFA] text-xs font-semibold px-3.5 py-2 rounded-xl gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <ClipboardCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  Dispatch Sheet
+                </Button>
+
+                <Button
+                  size="sm"
+                  onClick={() => navigate('/orders/create')}
+                  className="bg-[#09090B] text-white dark:bg-[#FAFAFA] dark:text-[#09090B] hover:bg-[#27272A] dark:hover:bg-[#E4E4E7] text-xs font-semibold px-4 py-2 rounded-xl shadow-xs gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Order
+                </Button>
+              </div>
+            }
+          />
+        </div>
+
+        {/* Sticky Quick Filter Chips with Result Counts */}
+        <div className="sticky top-0 z-20 bg-white/95 dark:bg-[#0F0F0F]/95 backdrop-blur-md py-2.5 border-y border-[#ECECEC] dark:border-[#232323] -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-xs font-bold text-[#71717A] dark:text-[#A1A1AA] mr-1 flex items-center gap-1 shrink-0">
+              <Filter className="w-3.5 h-3.5" /> Quick:
+            </span>
+            {[
+              { id: 'ALL', label: 'ALL' },
+              { id: 'TODAY', label: 'TODAY' },
+              { id: 'PENDING', label: 'PENDING' },
+              { id: 'DELIVERED', label: 'DELIVERED' },
+              { id: 'CASH', label: 'CASH' },
+              { id: 'UPI', label: 'UPI' },
+              { id: 'CREDIT', label: 'CREDIT' },
+            ].map((chip) => {
+              const isActive = quickFilter === chip.id;
+              const count = filterCounts[chip.id as QuickFilter] ?? 0;
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => handleQuickFilterChange(chip.id as QuickFilter)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer border flex items-center gap-1 shrink-0 ${
                     isActive
-                      ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                      ? 'bg-[#111111] text-white border-[#111111] dark:bg-[#FAFAFA] dark:text-[#111111] dark:border-[#FAFAFA] shadow-xs'
+                      : 'bg-white dark:bg-[#1A1A1A] text-[#71717A] dark:text-[#A1A1AA] border-[#ECECEC] dark:border-[#232323] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
                   }`}
                 >
-                  • {count}
-                </span>
+                  <span>{chip.label}</span>
+                  <span
+                    className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                      isActive
+                        ? 'bg-white/20 dark:bg-black/20 text-white dark:text-black'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                    }`}
+                  >
+                    • {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Main View Container */}
+        <div className="space-y-4">
+          {/* Admin Workflow Navigation Tabs */}
+          {user?.role === 'ADMIN' && (
+            <div className="flex items-center gap-1 border-b border-[#ECECEC] dark:border-[#232323]">
+              <button
+                onClick={() => {
+                  setActiveTab('ALL');
+                  setPage(0);
+                }}
+                className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                  activeTab === 'ALL'
+                    ? 'border-[#111111] text-[#111111] dark:border-[#FAFAFA] dark:text-[#FAFAFA]'
+                    : 'border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+                }`}
+              >
+                All Orders
               </button>
-            );
-          })}
+              <button
+                onClick={() => {
+                  setActiveTab('PENDING_VERIFICATION');
+                  setPage(0);
+                }}
+                className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                  activeTab === 'PENDING_VERIFICATION'
+                    ? 'border-[#111111] text-[#111111] dark:border-[#FAFAFA] dark:text-[#FAFAFA]'
+                    : 'border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
+                }`}
+              >
+                Pending Verification
+                {pendingData && pendingData.totalElements > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                    {pendingData.totalElements}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Filters Bar */}
+          <OrderFilters
+            onSearchChange={handleSearchChange}
+            onStatusChange={handleStatusChange}
+            onDateRangeChange={handleDateRangeChange}
+            onClearFilters={handleClearFilters}
+            initialOrderNumber={searchOrderNumber}
+            initialStatus={selectedStatus}
+            initialStartDate={startDate}
+            initialEndDate={endDate}
+          />
+
+          {/* Tab Content: All Orders */}
+          {activeTab === 'ALL' && (
+            <div className="space-y-4">
+              <OrderTable
+                orders={filteredOrders}
+                isLoading={isLoading}
+                onViewOrder={handleViewOrder}
+                onEditOrder={handleEditOrder}
+                onPrintOrder={handlePrintOrder}
+                onPrintInvoice={handlePrintInvoice}
+                onCancelOrder={handleCancelOrder}
+                onVerifyOrder={handleVerifyOrder}
+                onDeleteOrder={(order) => setDeletingOrder(order)}
+                onVoidOrder={handleOpenVoidOrder}
+                userRole={user?.role}
+              />
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-xl text-xs">
+                  <span className="text-[#71717A] dark:text-[#A1A1AA]">
+                    Showing Page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{page + 1}</span> of{' '}
+                    <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{totalPages}</span> ({totalElements} total orders)
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page === 0 || isLoading}
+                      onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+                      className="h-8 px-2.5 border-[#ECECEC] dark:border-[#232323]"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={page >= totalPages - 1 || isLoading}
+                      onClick={() => setPage((prev) => prev + 1)}
+                      className="h-8 px-2.5 border-[#ECECEC] dark:border-[#232323]"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab Content: Pending Verification */}
+          {activeTab === 'PENDING_VERIFICATION' && (
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <span>Orders requiring administrator verification before fulfillment.</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => refetch()}
+                  className="h-7 text-xs gap-1 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                </Button>
+              </div>
+
+              <OrderTable
+                orders={pendingData?.content || []}
+                isLoading={isPendingLoading}
+                onViewOrder={handleViewOrder}
+                onEditOrder={handleEditOrder}
+                onPrintOrder={handlePrintOrder}
+                onPrintInvoice={handlePrintInvoice}
+                onCancelOrder={handleCancelOrder}
+                onVerifyOrder={handleVerifyOrder}
+                onDeleteOrder={(order) => setDeletingOrder(order)}
+                onVoidOrder={handleOpenVoidOrder}
+                userRole={user?.role}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Main View Container */}
-      <div className="space-y-4 print:hidden">
-        {/* Admin Workflow Navigation Tabs */}
-        {user?.role === 'ADMIN' && (
-          <div className="flex items-center gap-1 border-b border-[#ECECEC] dark:border-[#232323]">
-            <button
-              onClick={() => {
-                setActiveTab('ALL');
-                setPage(0);
-              }}
-              className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
-                activeTab === 'ALL'
-                  ? 'border-[#111111] text-[#111111] dark:border-[#FAFAFA] dark:text-[#FAFAFA]'
-                  : 'border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-              }`}
-            >
-              All Orders
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('PENDING_VERIFICATION');
-                setPage(0);
-              }}
-              className={`px-4 py-2.5 text-xs font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
-                activeTab === 'PENDING_VERIFICATION'
-                  ? 'border-[#111111] text-[#111111] dark:border-[#FAFAFA] dark:text-[#FAFAFA]'
-                  : 'border-transparent text-[#71717A] dark:text-[#A1A1AA] hover:text-[#111111] dark:hover:text-[#FAFAFA]'
-              }`}
-            >
-              Pending Verification
-              {pendingData && pendingData.totalElements > 0 && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                  {pendingData.totalElements}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
+      {/* Printable Order Slip Container (rendered on window.print() for Order Slip) */}
+      {printOrderData && (
+        <div className="hidden print:block fixed inset-0 bg-white z-[9999]">
+          <PrintableOrder
+            order={printOrderData}
+            businessSettings={businessSettings}
+          />
+        </div>
+      )}
 
-        {/* Filters Bar */}
-        <OrderFilters
-          onSearchChange={handleSearchChange}
-          onStatusChange={handleStatusChange}
-          onDateRangeChange={handleDateRangeChange}
-          onClearFilters={handleClearFilters}
-          initialOrderNumber={searchOrderNumber}
-          initialStatus={selectedStatus}
-          initialStartDate={startDate}
-          initialEndDate={endDate}
-        />
-
-        {/* Tab Content: All Orders */}
-        {activeTab === 'ALL' && (
-          <div className="space-y-4">
-            <OrderTable
-              orders={filteredOrders}
-              isLoading={isLoading}
-              onViewOrder={handleViewOrder}
-              onEditOrder={handleEditOrder}
-              onPrintOrder={handlePrintOrder}
-              onCancelOrder={handleCancelOrder}
-              onVerifyOrder={handleVerifyOrder}
-              onDeleteOrder={(order) => setDeletingOrder(order)}
-              onVoidOrder={handleOpenVoidOrder}
-              userRole={user?.role}
-            />
-
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 bg-white dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] rounded-xl text-xs">
-                <span className="text-[#71717A] dark:text-[#A1A1AA]">
-                  Showing Page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{page + 1}</span> of{' '}
-                  <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{totalPages}</span> ({totalElements} total orders)
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 0 || isLoading}
-                    onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-                    className="h-8 px-2.5 border-[#ECECEC] dark:border-[#232323]"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                    Previous
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= totalPages - 1 || isLoading}
-                    onClick={() => setPage((prev) => prev + 1)}
-                    className="h-8 px-2.5 border-[#ECECEC] dark:border-[#232323]"
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tab Content: Pending Verification */}
-        {activeTab === 'PENDING_VERIFICATION' && (
-          <div className="space-y-4">
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl text-xs text-amber-900 dark:text-amber-200 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <span>Orders requiring administrator verification before fulfillment.</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => refetch()}
-                className="h-7 text-xs gap-1 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Refresh
-              </Button>
-            </div>
-
-            <OrderTable
-              orders={pendingData?.content || []}
-              isLoading={isPendingLoading}
-              onViewOrder={handleViewOrder}
-              onEditOrder={handleEditOrder}
-              onPrintOrder={handlePrintOrder}
-              onCancelOrder={handleCancelOrder}
-              onVerifyOrder={handleVerifyOrder}
-              onDeleteOrder={(order) => setDeletingOrder(order)}
-              onVoidOrder={handleOpenVoidOrder}
-              userRole={user?.role}
-            />
-          </div>
-        )}
-      </div>
+      {/* Printable A5 Tax Invoice Container (rendered on window.print() for Invoice) */}
+      {printInvoiceData && (
+        <div className="hidden print:block fixed inset-0 bg-white z-[9999]">
+          <PrintableInvoice
+            invoice={printInvoiceData}
+            businessSettings={businessSettings}
+          />
+        </div>
+      )}
 
       {/* Modals */}
       <OrderDetailsModal
@@ -485,8 +557,10 @@ export const OrdersPage: React.FC = () => {
         onVerifyOrder={handleVerifyOrder}
         onVoidOrder={handleOpenVoidOrder}
         onPrintOrder={handlePrintOrder}
+        onPrintInvoice={handlePrintInvoice}
         isCancelling={cancelOrderMutation.isPending}
         isVerifying={verifyOrderMutation.isPending}
+        isFetchingInvoice={isFetchingInvoice}
         userRole={user?.role}
       />
 

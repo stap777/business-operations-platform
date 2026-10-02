@@ -128,90 +128,93 @@ export const InvoicesPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
-        <div>
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-[#111111] dark:text-[#FAFAFA]" />
-            <h1 className="text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
-              Invoices
-            </h1>
-          </div>
-          <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
-            View and print generated business invoices.
-          </p>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="space-y-4">
-        {/* Toolbar Filters */}
-        <InvoiceFilters
-          onSearchChange={handleSearchChange}
-          onDateRangeChange={handleDateRangeChange}
-          onPrintAll={handleOpenBulkPrint}
-          isPreparingPrint={isPreparingBulkPrint}
-          totalResults={totalElements}
-          initialQuery={searchQuery}
-          initialStartDate={startDate}
-          initialEndDate={endDate}
-        />
-
-        {/* Error State */}
-        {isError && (
-          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-xs text-red-600 dark:text-red-400 flex items-center justify-between">
-            <span>Unable to load invoices from server. Please check your connection or retry.</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="text-xs h-7 gap-1 border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/50"
-            >
-              <RefreshCw className="w-3 h-3" />
-              Retry
-            </Button>
-          </div>
-        )}
-
-        {/* Data Table */}
-        <InvoiceTable
-          invoices={invoices}
-          isLoading={isLoading}
-          onViewInvoice={handleViewInvoice}
-        />
-
-        {/* Pagination Controls */}
-        {invoiceData && totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
-            <div>
-              Showing page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{invoiceData.number + 1}</span> of{' '}
-              <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{totalPages}</span> ({totalElements} records)
-            </div>
-
+      {/* Screen UI - Excluded completely during print */}
+      <div className="space-y-6 print:hidden">
+        {/* Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
+          <div>
             <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[#111111] dark:text-[#FAFAFA]" />
+              <h1 className="text-xl sm:text-2xl font-bold text-[#111111] dark:text-[#FAFAFA]">
+                Invoices
+              </h1>
+            </div>
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA] mt-0.5">
+              View and print generated business invoices.
+            </p>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="space-y-4">
+          {/* Toolbar Filters */}
+          <InvoiceFilters
+            onSearchChange={handleSearchChange}
+            onDateRangeChange={handleDateRangeChange}
+            onPrintAll={handleOpenBulkPrint}
+            isPreparingPrint={isPreparingBulkPrint}
+            totalResults={totalElements}
+            initialQuery={searchQuery}
+            initialStartDate={startDate}
+            initialEndDate={endDate}
+          />
+
+          {/* Error State */}
+          {isError && (
+            <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 text-xs text-red-600 dark:text-red-400 flex items-center justify-between">
+              <span>Unable to load invoices from server. Please check your connection or retry.</span>
               <Button
                 variant="outline"
                 size="sm"
-                disabled={invoiceData.first || isLoading}
-                onClick={() => setPage((prev) => Math.max(0, prev - 1))}
-                className="h-8 text-xs font-medium gap-1 border-[#ECECEC] dark:border-[#232323]"
+                onClick={() => refetch()}
+                className="text-xs h-7 gap-1 border-red-200 dark:border-red-800/50 hover:bg-red-100 dark:hover:bg-red-900/50"
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={invoiceData.last || isLoading}
-                onClick={() => setPage((prev) => prev + 1)}
-                className="h-8 text-xs font-medium gap-1 border-[#ECECEC] dark:border-[#232323]"
-              >
-                Next
-                <ChevronRight className="w-3.5 h-3.5" />
+                <RefreshCw className="w-3 h-3" />
+                Retry
               </Button>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Data Table */}
+          <InvoiceTable
+            invoices={invoices}
+            isLoading={isLoading}
+            onViewInvoice={handleViewInvoice}
+          />
+
+          {/* Pagination Controls */}
+          {invoiceData && totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              <div>
+                Showing page <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{invoiceData.number + 1}</span> of{' '}
+                <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{totalPages}</span> ({totalElements} records)
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={invoiceData.first || isLoading}
+                  onClick={() => setPage((prev) => Math.max(0, prev - 1))}
+                  className="h-8 text-xs font-medium gap-1 border-[#ECECEC] dark:border-[#232323]"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={invoiceData.last || isLoading}
+                  onClick={() => setPage((prev) => prev + 1)}
+                  className="h-8 text-xs font-medium gap-1 border-[#ECECEC] dark:border-[#232323]"
+                >
+                  Next
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Single Invoice Details & Print Modal */}
