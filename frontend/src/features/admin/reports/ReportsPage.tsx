@@ -84,18 +84,11 @@ export const ReportsPage: React.FC = () => {
   const isLoss = (report?.netProfit || 0) < 0;
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Printable Component (rendered on window.print()) */}
-      <PrintableUnifiedReport
-        reportData={report}
-        paymentData={payment}
-        inventoryData={inventory}
-        expenses={expensesList}
-        businessSettings={businessSettings}
-      />
-
-      {/* Screen-Only Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323] print:hidden">
+    <div className="space-y-6 pb-12 print:space-y-0 print:pb-0 print:p-0 print:m-0">
+      {/* Screen Report UI - Hidden strictly during print */}
+      <div className="space-y-6 print:hidden">
+        {/* Screen-Only Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[#ECECEC] dark:border-[#232323]">
         <div>
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-[#111111] dark:text-[#FAFAFA]" />
@@ -347,6 +340,20 @@ export const ReportsPage: React.FC = () => {
           />
         </div>
       ) : null}
+      </div>
+
+      {/* Printable Report Component (rendered strictly on window.print()) */}
+      {report && (
+        <div className="hidden print:block bg-white print:p-0 print:m-0">
+          <PrintableUnifiedReport
+            reportData={report}
+            paymentData={payment}
+            inventoryData={inventory}
+            expenses={expensesList}
+            businessSettings={businessSettings}
+          />
+        </div>
+      )}
     </div>
   );
 };

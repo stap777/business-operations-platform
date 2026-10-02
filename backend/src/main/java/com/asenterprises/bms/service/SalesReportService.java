@@ -228,7 +228,8 @@ public class SalesReportService {
             }
 
             long pCompleted = orderRepository.countOrdersBetweenAndStatus(pStart, pEnd, OrderStatus.COMPLETED)
-                    + orderRepository.countOrdersBetweenAndStatus(pStart, pEnd, OrderStatus.VERIFIED);
+                    + orderRepository.countOrdersBetweenAndStatus(pStart, pEnd, OrderStatus.VERIFIED)
+                    + orderRepository.countOrdersBetweenAndStatus(pStart, pEnd, OrderStatus.DELIVERED);
             long pCancelled = orderRepository.countOrdersBetweenAndStatus(pStart, pEnd, OrderStatus.CANCELLED);
 
             BigDecimal pAvg = pValidOrders > 0

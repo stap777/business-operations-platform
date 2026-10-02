@@ -33,7 +33,7 @@ export const PrintableReportLayout: React.FC<PrintableReportLayoutProps> = ({
   const resolvedLogoUrl = getResolvedLogoUrl(logoUrl);
 
   return (
-    <div className="printable-report-container hidden print:block fixed inset-0 bg-white text-black p-8 z-[9999] font-sans text-xs overflow-y-auto">
+    <div className="printable-report-container hidden print:block bg-white text-black p-8 font-sans text-xs print:p-0 print:m-0">
       {/* Header Row */}
       <div className="flex items-start justify-between pb-6 border-b-2 border-neutral-800">
         <div className="space-y-1 max-w-sm">

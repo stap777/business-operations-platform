@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { paymentService } from '../paymentService';
 import type { PaymentFilterParams, PaymentRequest } from '../payment.types';
 
@@ -13,6 +13,7 @@ export const useCreditOrders = (params: PaymentFilterParams = {}) => {
   return useQuery({
     queryKey: paymentKeys.creditOrders(params),
     queryFn: () => paymentService.searchCreditOrders(params),
+    placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   });
 };

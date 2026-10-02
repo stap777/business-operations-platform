@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useCreditOrders } from './hooks/usePayments';
 import type { PaymentStatus } from './payment.types';
 import type { OrderResponse } from '../../orders/order.types';
@@ -21,12 +21,31 @@ export const AdminPaymentsPage: React.FC = () => {
     null
   );
 
+  const handleSearchChange = useCallback((val: string) => {
+    setSearch((prev) => {
+      if (prev === val) return prev;
+      setPage(0);
+      return val;
+    });
+  }, []);
+
+  const handleStatusChange = useCallback((val: 'ALL_OUTSTANDING' | PaymentStatus | 'ALL') => {
+    setSelectedStatusFilter((prev) => {
+      if (prev === val) return prev;
+      setPage(0);
+      return val;
+    });
+  }, []);
+
   // Build backend search filters
-  const filterParams = {
-    page,
-    size: 15,
-    orderNumber: search || undefined,
-  };
+  const filterParams = useMemo(
+    () => ({
+      page,
+      size: 15,
+      orderNumber: search || undefined,
+    }),
+    [page, search]
+  );
 
   const { data: pageData, isLoading, isFetching, isError, refetch } = useCreditOrders(filterParams);
 
@@ -98,15 +117,9 @@ export const AdminPaymentsPage: React.FC = () => {
 
       {/* Filters Toolbar */}
       <PaymentFilters
-        onSearchChange={(val) => {
-          setSearch(val);
-          setPage(0);
-        }}
+        onSearchChange={handleSearchChange}
         selectedStatus={selectedStatusFilter}
-        onStatusChange={(val) => {
-          setSelectedStatusFilter(val);
-          setPage(0);
-        }}
+        onStatusChange={handleStatusChange}
         onRefresh={() => refetch()}
         isFetching={isFetching}
       />

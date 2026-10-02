@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, RefreshCw, Filter } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import type { PaymentStatus } from '../payment.types';
@@ -19,10 +19,15 @@ export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   isFetching,
 }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const prevSearchRef = useRef<string>(searchTerm);
 
   // 300ms Debounce for Search input
   useEffect(() => {
+    if (prevSearchRef.current === searchTerm) {
+      return;
+    }
     const timer = setTimeout(() => {
+      prevSearchRef.current = searchTerm;
       onSearchChange(searchTerm);
     }, 300);
 
