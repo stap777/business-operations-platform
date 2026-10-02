@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { InvoiceResponse } from './invoice.types';
 import { useInvoices } from './hooks/useInvoices';
 import { useBusinessSettings } from '../settings/hooks/useBusinessSettings';
@@ -45,16 +45,28 @@ export const InvoicesPage: React.FC = () => {
 
   const { data: businessSettings } = useBusinessSettings();
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    setPage(0);
-  };
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery((prev) => {
+      if (prev === query) return prev;
+      setPage(0);
+      return query;
+    });
+  }, []);
 
-  const handleDateRangeChange = (start?: string, end?: string) => {
-    setStartDate(start);
-    setEndDate(end);
-    setPage(0);
-  };
+  const handleDateRangeChange = useCallback((start?: string, end?: string) => {
+    setStartDate((prevStart) => {
+      if (prevStart !== start) {
+        setPage(0);
+      }
+      return start;
+    });
+    setEndDate((prevEnd) => {
+      if (prevEnd !== end) {
+        setPage(0);
+      }
+      return end;
+    });
+  }, []);
 
   const handleViewInvoice = (invoice: InvoiceResponse) => {
     setBulkPrintInvoices(null);

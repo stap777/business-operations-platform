@@ -1,6 +1,8 @@
 export interface DispatchSheetProductDto {
+  productId?: number;
   name: string;
   quantity: number;
+  unit?: string;
 }
 
 export interface DispatchSheetOrderDto {

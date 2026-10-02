@@ -10,6 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DispatchSheetProductDto {
+    private Long productId;
     private String name;
     private Integer quantity;
+    private String unit;
 }

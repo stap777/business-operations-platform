@@ -32,6 +32,47 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
     return `[${upper}]`;
   };
 
+  // Helper to format unit with proper singular/plural labeling
+  const formatUnit = (unit?: string, qty: number = 1): string => {
+    if (!unit) return qty === 1 ? 'BOX' : 'BOXES';
+    const u = unit.toUpperCase().trim();
+    if (u === 'BOX') return qty === 1 ? 'BOX' : 'BOXES';
+    if (u === 'BOTTLE') return qty === 1 ? 'BOTTLE' : 'BOTTLES';
+    if (u === 'BARREL') return qty === 1 ? 'BARREL' : 'BARRELS';
+    if (u === 'PCS' || u === 'PIECE' || u === 'PIECES') return 'PCS';
+    return qty === 1 ? u : `${u}S`;
+  };
+
+  // Aggregate loading summary by product ID and unit across all active orders
+  const loadingSummary = React.useMemo(() => {
+    const summaryMap = new Map<string, { productId?: number; name: string; quantity: number; unit: string }>();
+
+    for (const order of dispatchSheet.orders || []) {
+      if (order.orderStatus === 'VOIDED' || order.orderStatus === 'CANCELLED') {
+        continue;
+      }
+      for (const prod of order.products || []) {
+        const prodIdKey = prod.productId !== undefined && prod.productId !== null ? `id_${prod.productId}` : `name_${prod.name}`;
+        const unitKey = (prod.unit || 'BOX').toUpperCase().trim();
+        const groupKey = `${prodIdKey}__${unitKey}`;
+
+        const existing = summaryMap.get(groupKey);
+        if (existing) {
+          existing.quantity += prod.quantity;
+        } else {
+          summaryMap.set(groupKey, {
+            productId: prod.productId,
+            name: prod.name,
+            quantity: prod.quantity,
+            unit: prod.unit || 'BOX',
+          });
+        }
+      }
+    }
+
+    return Array.from(summaryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [dispatchSheet.orders]);
+
   // Helper to split notes by newline or bullet and format with safe ASCII hyphen (-)
   const renderFormattedNotes = (notesText: string) => {
     const lines = notesText
@@ -83,6 +124,25 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
             <p>Printed: {formattedPrintTime} by {dispatchSheet.printedByName}</p>
           </div>
         </div>
+
+        {/* Thermal Loading Summary */}
+        {loadingSummary.length > 0 && (
+          <div className="border-b border-black pb-1.5 mb-1.5 space-y-1 text-[10px] break-inside-avoid print:break-inside-avoid">
+            <p className="font-bold uppercase tracking-wider text-[9px] border-b border-dotted border-black pb-0.5">
+              LOADING SUMMARY:
+            </p>
+            <div className="space-y-0.5">
+              {loadingSummary.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center font-mono">
+                  <span className="truncate pr-1">{item.name}</span>
+                  <span className="font-bold whitespace-nowrap">
+                    {item.quantity} {formatUnit(item.unit, item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Thermal Orders Stack */}
         {dispatchSheet.orders.length === 0 ? (
@@ -220,6 +280,25 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Loading Summary Box */}
+      {loadingSummary.length > 0 && (
+        <div className="border border-black rounded p-2 bg-neutral-50 print:bg-white text-xs break-inside-avoid print:break-inside-avoid">
+          <div className="font-bold text-[10.5px] uppercase tracking-wider text-neutral-800 border-b border-neutral-300 pb-1 mb-1.5 flex justify-between items-center">
+            <span>LOADING SUMMARY (TOTAL GOODS TO LOAD)</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-1 font-mono text-[11px]">
+            {loadingSummary.map((item, idx) => (
+              <div key={idx} className="flex justify-between items-center border-b border-dotted border-neutral-300 py-0.5">
+                <span className="font-sans font-semibold text-black truncate pr-1">{item.name}</span>
+                <span className="font-bold text-black whitespace-nowrap">
+                  {item.quantity} {formatUnit(item.unit, item.quantity)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Orders List Container */}
       {dispatchSheet.orders.length === 0 ? (

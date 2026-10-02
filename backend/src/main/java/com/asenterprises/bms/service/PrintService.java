@@ -128,8 +128,10 @@ public class PrintService {
         List<DispatchSheetOrderDto> orderDtos = sortedOrders.stream().map(order -> {
             List<DispatchSheetProductDto> productDtos = order.getItems().stream().map(item ->
                     DispatchSheetProductDto.builder()
+                            .productId(item.getProduct() != null ? item.getProduct().getId() : null)
                             .name(item.getProduct() != null ? item.getProduct().getName() : "Product")
                             .quantity(item.getQuantity())
+                            .unit(item.getProduct() != null && item.getProduct().getUnit() != null ? item.getProduct().getUnit().name() : "BOX")
                             .build()
             ).collect(Collectors.toList());
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Calendar, RotateCcw, Printer } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 
@@ -26,9 +26,13 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
   const [searchTerm, setSearchTerm] = useState(initialQuery);
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
+  const prevSearchRef = useRef(initialQuery);
 
   useEffect(() => {
+    if (prevSearchRef.current === searchTerm) return;
+
     const timer = setTimeout(() => {
+      prevSearchRef.current = searchTerm;
       onSearchChange(searchTerm);
     }, 300);
 
@@ -45,6 +49,7 @@ export const InvoiceFilters: React.FC<InvoiceFiltersProps> = ({
     setSearchTerm('');
     setStartDate('');
     setEndDate('');
+    prevSearchRef.current = '';
     onSearchChange('');
     onDateRangeChange(undefined, undefined);
   };

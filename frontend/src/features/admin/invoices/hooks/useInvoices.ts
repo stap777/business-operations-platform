@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { invoiceService } from '../invoiceService';
 import type { InvoiceQueryParams } from '../invoice.types';
 
@@ -12,6 +12,7 @@ export const useInvoices = (params: InvoiceQueryParams = {}) => {
   return useQuery({
     queryKey: invoiceKeys.list(params),
     queryFn: () => invoiceService.searchInvoices(params),
+    placeholderData: keepPreviousData,
     staleTime: 60_000,
   });
 };
