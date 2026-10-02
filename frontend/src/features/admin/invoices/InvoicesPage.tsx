@@ -114,19 +114,21 @@ export const InvoicesPage: React.FC = () => {
       setIsBulkModalOpen(false);
 
       // Trigger print after rendering bulk printable invoices DOM and cleanup state afterward
-      setTimeout(() => {
-        const cleanupPrint = () => {
-          setBulkPrintInvoices(null);
-          window.removeEventListener('afterprint', cleanupPrint);
-        };
-        window.addEventListener('afterprint', cleanupPrint);
-        window.print();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const cleanupPrint = () => {
+            setBulkPrintInvoices(null);
+            window.removeEventListener('afterprint', cleanupPrint);
+          };
+          window.addEventListener('afterprint', cleanupPrint);
+          window.print();
 
-        // Fallback cleanup after 2 seconds if afterprint doesn't fire
-        setTimeout(() => {
-          setBulkPrintInvoices(null);
-        }, 2000);
-      }, 150);
+          // Fallback cleanup after 2 seconds if afterprint doesn't fire
+          setTimeout(() => {
+            setBulkPrintInvoices(null);
+          }, 2000);
+        });
+      });
     } catch (err: any) {
       setIsPreparingBulkPrint(false);
       const msg = err?.response?.data?.message || err?.message || 'Failed to prepare all invoices for printing.';

@@ -101,6 +101,12 @@ body {
 }
 
 @media print {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    -webkit-transition: none !important;
+    -webkit-animation: none !important;
+  }
   @page {
     size: 148mm 210mm;
     margin: 3mm;

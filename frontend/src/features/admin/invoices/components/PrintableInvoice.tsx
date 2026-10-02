@@ -84,6 +84,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
               <img
                 src={fssaiLogoImg}
                 alt="FSSAI Logo"
+                decoding="async"
                 className="h-8 w-8 sm:h-9 sm:w-9 object-contain shrink-0"
               />
             </div>
@@ -249,6 +250,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
                 <img
                   src={upiQrCodeImg}
                   alt="Scan to pay with any UPI app"
+                  decoding="async"
                   className="w-[88px] h-[88px] object-contain"
                 />
               </div>
@@ -259,6 +261,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
                 <img
                   src={authorisedSigImg}
                   alt="Authorised Signature"
+                  decoding="async"
                   className="h-7 w-auto object-contain ml-7 -mb-1"
                 />
               </div>
