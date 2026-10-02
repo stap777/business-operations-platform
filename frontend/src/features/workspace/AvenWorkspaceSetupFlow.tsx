@@ -214,7 +214,7 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
       await authService.setupFirstAdmin(setupPayload);
 
       toast.success('Workspace Created Successfully!', {
-        description: 'Your Aven workspace and administrator account have been initialized.',
+        description: 'Your AS ENTERPRISES workspace and administrator account have been initialized.',
       });
 
       setCurrentStep(5);
@@ -718,8 +718,8 @@ export const AvenWorkspaceSetupFlow: React.FC = () => {
                     <span>Workspace URL:</span>
                     <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">
                       {step2Values.businessName
-                        ? `${step2Values.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.aven.app`
-                        : 'workspace.aven.app'}
+                        ? `${step2Values.businessName.toLowerCase().replace(/[^a-z0-9]/g, '-')}.asenterprises.com`
+                        : 'workspace.asenterprises.com'}
                     </span>
                     <span>Industry:</span>
                     <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{step2Values.industry || '—'}</span>

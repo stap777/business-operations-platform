@@ -52,7 +52,7 @@ export const AvenAuthLayout: React.FC<AvenAuthLayoutProps> = ({
       {/* Footer copyright */}
       <footer className="w-full text-center py-4">
         <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
-          &copy; {new Date().getFullYear()} Aven. All rights reserved.
+          &copy; {new Date().getFullYear()} AS ENTERPRISES. All rights reserved.
         </p>
       </footer>
     </div>

@@ -77,7 +77,7 @@ export const AvenLoginPage: React.FC = () => {
       if (err?.response?.data?.message) {
         errorMsg = err.response.data.message;
       } else if (!err.response) {
-        errorMsg = 'Unable to connect to Aven. Please try again.';
+        errorMsg = 'Unable to connect to AS ENTERPRISES. Please try again.';
       }
       setApiError(errorMsg);
       toast.error('Authentication Error', { description: errorMsg });

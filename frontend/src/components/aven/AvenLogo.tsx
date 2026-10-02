@@ -30,11 +30,11 @@ export const AvenLogo: React.FC<AvenLogoProps> = ({
   return (
     <div className={`space-y-0.5 ${alignClass}`}>
       <span className={`font-bold tracking-tight text-[#111111] dark:text-[#FAFAFA] block ${titleSizeClass}`}>
-        Aven
+        AS ENTERPRISES
       </span>
       {showTagline && (
         <span className={`font-normal text-[#71717A] dark:text-[#A1A1AA] block ${taglineSizeClass}`}>
-          Business, organized.
+          Business Operations Platform
         </span>
       )}
     </div>

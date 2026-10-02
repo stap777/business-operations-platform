@@ -58,7 +58,7 @@ export const App: React.FC = () => {
               <Suspense
               fallback={
                 <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] dark:bg-[#000000]">
-                  <LoadingSpinner size="lg" label="Loading Aven Platform..." />
+                  <LoadingSpinner size="lg" label="Loading AS ENTERPRISES..." />
                 </div>
               }
             >

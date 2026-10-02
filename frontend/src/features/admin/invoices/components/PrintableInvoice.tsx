@@ -37,8 +37,8 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
   const amountInWords = numberToWords(totalAmount);
 
   const items = invoice.items || [];
-  // Render empty rows up to min 7 rows so the table has standard retail bill book structure
-  const emptyRowsCount = Math.max(1, 7 - items.length);
+  // Render empty rows up to min 4 rows so the table has standard retail bill book structure
+  const emptyRowsCount = Math.max(1, 4 - items.length);
   const emptyRows = Array.from({ length: emptyRowsCount });
 
   return (
@@ -220,20 +220,20 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
         </div>
 
         {/* Bottom Section: Signatures & QR Code */}
-        <div className="grid grid-cols-12 h-[140px] min-h-[140px] text-black">
+        <div className="grid grid-cols-12 h-[105px] min-h-[105px] text-black">
           {/* Left Column: Amount in words & Customers Signature */}
-          <div className="col-span-7 p-2.5 flex flex-col justify-between border-r border-black">
+          <div className="col-span-7 p-2 flex flex-col justify-between border-r border-black">
             <div>
-              <div className="text-[9.5px] font-semibold text-black mb-1">
+              <div className="text-[9px] font-semibold text-black mb-0.5">
                 Amount in words:
               </div>
-              <div className="text-[11.5px] font-medium italic font-serif border-b border-black pb-0.5 leading-snug">
+              <div className="text-[10.5px] font-medium italic font-serif border-b border-black pb-0.5 leading-snug">
                 {amountInWords}
               </div>
             </div>
 
             <div>
-              <div className="text-[9.5px] font-bold text-black pb-0.5">
+              <div className="text-[9px] font-bold text-black pb-0.5">
                 Customers Signature
               </div>
               <div className="border-b border-black w-full" />
@@ -241,9 +241,9 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
           </div>
 
           {/* Right Column: Scan to Pay UPI QR Code & Authorised Signatory */}
-          <div className="col-span-5 p-2 flex flex-col items-center justify-between text-center relative">
+          <div className="col-span-5 p-1.5 flex flex-col items-center justify-between text-center relative">
             <div>
-              <div className="text-[8.5px] font-bold text-black tracking-tight text-center">
+              <div className="text-[8px] font-bold text-black tracking-tight text-center">
                 Scan to pay with any UPI app
               </div>
               <div className="my-0.5 flex justify-center">
@@ -251,25 +251,41 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
                   src={upiQrCodeImg}
                   alt="Scan to pay with any UPI app"
                   decoding="async"
-                  className="w-[88px] h-[88px] object-contain"
+                  className="w-[64px] h-[64px] object-contain"
                 />
               </div>
             </div>
 
-            <div className="w-full flex flex-col items-center -mt-3">
-              <div className="h-7 flex items-center justify-center">
+            <div className="w-full flex flex-col items-center -mt-2">
+              <div className="h-6 flex items-center justify-center">
                 <img
                   src={authorisedSigImg}
                   alt="Authorised Signature"
                   decoding="async"
-                  className="h-7 w-auto object-contain ml-7 -mb-1"
+                  className="h-6 w-auto object-contain ml-6 -mb-0.5"
                 />
               </div>
-              <div className="text-[8.5px] font-bold text-black tracking-tight">
+              <div className="text-[8px] font-bold text-black tracking-tight">
                 Authorised Signatory
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Terms & Conditions Section */}
+        <div className="border-t border-black px-2 py-1 bg-white text-black">
+          <div className="font-bold uppercase tracking-wider text-[8px] mb-0.5">
+            TERMS & CONDITIONS
+          </div>
+          <ol className="list-decimal list-inside space-y-0.5 text-black text-[7px] leading-tight font-medium">
+            <li>Please check the quantity and condition of goods at the time of delivery.</li>
+            <li>Any shortage or damage must be reported immediately or within 24 hours.</li>
+            <li>Goods once sold are not returnable or exchangeable without prior approval.</li>
+            <li>Payment must be made as per the agreed credit terms.</li>
+            <li>Prices are subject to change without prior notice.</li>
+            <li>Cheque payments are subject to realization.</li>
+            <li>All disputes are subject to the applicable jurisdiction of Ratnagiri, Maharashtra.</li>
+          </ol>
         </div>
       </div>
     </div>
