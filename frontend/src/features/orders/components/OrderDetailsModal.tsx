@@ -61,7 +61,9 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
     order.orderStatus !== 'DELIVERED' &&
     order.orderStatus !== 'VERIFIED';
 
-  const isVerifiable = userRole === 'ADMIN' && order.orderStatus === 'DELIVERED';
+  const isVerifiable =
+    userRole === 'ADMIN' &&
+    ['CREATED', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.orderStatus);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
@@ -280,7 +282,7 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
             </div>
 
             <p className="text-[#71717A] dark:text-[#A1A1AA] text-[11px]">
-              Confirming verification will transition status to <strong>VERIFIED</strong>, generate an official invoice, deduct inventory stock, and log an audit entry.
+              Are you sure you want to verify order <strong>{order.orderNumber}</strong>? This will record the order as delivered and verified, generate the official tax invoice, and deduct inventory stock.
             </p>
 
             <div className="flex items-center gap-2 pt-1">

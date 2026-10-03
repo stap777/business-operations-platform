@@ -74,7 +74,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 const paid = order.amountReceived || 0;
                 const balance = Math.max(0, total - paid);
 
-                const canVerify = userRole === 'ADMIN' && order.orderStatus === 'DELIVERED';
+                const canVerify =
+                  userRole === 'ADMIN' &&
+                  ['CREATED', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.orderStatus);
                 const canCancel =
                   order.orderStatus !== 'CANCELLED' &&
                   order.orderStatus !== 'COMPLETED' &&
@@ -223,7 +225,9 @@ export const OrderTable: React.FC<OrderTableProps> = ({
           const paid = order.amountReceived || 0;
           const balance = Math.max(0, total - paid);
 
-          const canVerify = userRole === 'ADMIN' && order.orderStatus === 'DELIVERED';
+          const canVerify =
+            userRole === 'ADMIN' &&
+            ['CREATED', 'ASSIGNED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.orderStatus);
           const canCancel =
             order.orderStatus !== 'CANCELLED' &&
             order.orderStatus !== 'COMPLETED' &&

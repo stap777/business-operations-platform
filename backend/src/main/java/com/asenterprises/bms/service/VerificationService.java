@@ -5,6 +5,7 @@ import com.asenterprises.bms.dto.InvoiceResponse;
 import com.asenterprises.bms.dto.PendingVerificationResponse;
 import com.asenterprises.bms.entity.Coupon;
 import com.asenterprises.bms.entity.CustomerStatus;
+import com.asenterprises.bms.entity.DeliveryStatus;
 import com.asenterprises.bms.entity.Invoice;
 import com.asenterprises.bms.entity.InvoiceItem;
 import com.asenterprises.bms.entity.Order;
@@ -51,6 +52,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class VerificationService {
 
+    private static final List<OrderStatus> ALLOWED_VERIFICATION_STATUSES = List.of(
+            OrderStatus.CREATED,
+            OrderStatus.ASSIGNED,
+            OrderStatus.OUT_FOR_DELIVERY,
+            OrderStatus.DELIVERED
+    );
+
     private final OrderRepository orderRepository;
     private final InvoiceRepository invoiceRepository;
     private final ProductRepository productRepository;
@@ -76,15 +84,18 @@ public class VerificationService {
         Order order = orderRepository.findWithLockById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
-        // Step 1 & 2: Validate Order Status and Payment Status
-        if (order.getOrderStatus() == OrderStatus.VERIFIED || order.getOrderStatus() == OrderStatus.COMPLETED) {
-            throw new IllegalStateException("Order #" + order.getOrderNumber() + " is already verified.");
-        }
-        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("Cannot verify a CANCELLED order.");
-        }
-        if (order.getOrderStatus() == OrderStatus.VOIDED) {
-            throw new IllegalStateException("Cannot verify a VOIDED order.");
+        // Step 1 & 2: Validate Order Status (explicit allow-list) and Payment Status
+        if (!ALLOWED_VERIFICATION_STATUSES.contains(order.getOrderStatus())) {
+            if (order.getOrderStatus() == OrderStatus.VERIFIED || order.getOrderStatus() == OrderStatus.COMPLETED) {
+                throw new IllegalStateException("Order #" + order.getOrderNumber() + " is already verified.");
+            }
+            if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+                throw new IllegalStateException("Cannot verify a CANCELLED order.");
+            }
+            if (order.getOrderStatus() == OrderStatus.VOIDED) {
+                throw new IllegalStateException("Cannot verify a VOIDED order.");
+            }
+            throw new IllegalStateException("Cannot verify order in " + order.getOrderStatus() + " state.");
         }
         if (order.getPaymentStatus() != com.asenterprises.bms.entity.PaymentStatus.PAID) {
             throw new IllegalStateException("Order #" + order.getOrderNumber() + " cannot be verified until it is fully paid. Current payment status: " + order.getPaymentStatus());
@@ -137,7 +148,7 @@ public class VerificationService {
 
         // Step 10: Audit Log Coupon Verification if coupon was applied at order placement
         if (order.getCoupon() != null) {
-            Coupon coupon = order.getCoupon();
+            Coupon coupon = couponRepository.findById(order.getCoupon().getId()).orElse(order.getCoupon());
             auditLogService.recordAuditLog(
                     "COUPON",
                     coupon.getId(),
@@ -157,8 +168,9 @@ public class VerificationService {
                         ". Invoice #" + savedInvoice.getInvoiceNumber() + " generated."
         );
 
-        // Step 12: Update Order Status to VERIFIED
+        // Step 12: Update Order Status to VERIFIED and Delivery Status to DELIVERED
         order.setOrderStatus(OrderStatus.VERIFIED);
+        order.setDeliveryStatus(DeliveryStatus.DELIVERED);
         orderRepository.save(order);
 
         // Ensure invoice items are fully loaded within session before mapping

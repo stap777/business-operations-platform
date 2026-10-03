@@ -112,7 +112,7 @@ public class OrderReferenceCollisionAndIntegrityTest {
                     .build());
 
             customer = customerRepository.save(Customer.builder()
-                    .customerCode("GOKUL-" + seed)
+                    .customerCode(String.format("GOKUL-%08d", uniqueSuffix))
                     .fullName("GOKUL SWEETS")
                     .phoneNumber(String.format("98%08d", uniqueSuffix))
                     .address("Main Bazaar, Shop 42")
