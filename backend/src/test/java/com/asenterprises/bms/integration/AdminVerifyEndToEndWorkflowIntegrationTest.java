@@ -54,6 +54,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -378,5 +379,25 @@ public class AdminVerifyEndToEndWorkflowIntegrationTest {
         mockMvc.perform(post("/admin/orders/" + orderId + "/verify")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "e2e_admin", roles = {"ADMIN"})
+    @DisplayName("Delivered Filter: Searching with status=DELIVERED returns verified orders")
+    void testDeliveredStatusSearchIncludesVerifiedOrders() throws Exception {
+        Long orderId = createPaidOrder(OrderStatus.CREATED, DeliveryStatus.PENDING, false);
+
+        // Verify order as admin
+        mockMvc.perform(post("/admin/orders/" + orderId + "/verify")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated());
+
+        // Search with status=DELIVERED
+        mockMvc.perform(get("/orders/search")
+                        .param("status", "DELIVERED")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + orderId + ")].orderStatus").value("VERIFIED"))
+                .andExpect(jsonPath("$.content[?(@.id == " + orderId + ")].deliveryStatus").value("DELIVERED"));
     }
 }

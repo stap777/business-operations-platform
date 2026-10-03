@@ -161,7 +161,8 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 return (
                   <tr
                     key={order.id}
-                    className="h-14 hover:bg-[#F4F4F5]/60 dark:hover:bg-[#27272A]/40 transition-colors"
+                    onClick={() => onViewOrder(order)}
+                    className="h-14 hover:bg-[#F4F4F5]/60 dark:hover:bg-[#27272A]/40 transition-colors cursor-pointer"
                   >
                     <td className="py-3.5 px-4 font-mono font-bold text-[#09090B] dark:text-[#FAFAFA]">
                       {order.orderNumber}
@@ -207,8 +208,28 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <ActionDropdownMenu items={dropdownItems} />
+                    <td
+                      className="py-3.5 px-4 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        {canVerify && onVerifyOrder && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onVerifyOrder(order);
+                            }}
+                            className="h-7 text-xs font-semibold px-2.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 gap-1 rounded-lg shadow-2xs"
+                            title="Verify Order"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                            Verify
+                          </Button>
+                        )}
+                        <ActionDropdownMenu items={dropdownItems} />
+                      </div>
                     </td>
                   </tr>
                 );
@@ -357,15 +378,25 @@ export const OrderTable: React.FC<OrderTableProps> = ({
               </div>
 
               {/* Actions Footer */}
-              <div className="flex items-center justify-between pt-2.5 border-t border-[#E4E4E7] dark:border-[#27272A]">
+              <div className="flex items-center justify-between pt-2.5 border-t border-[#E4E4E7] dark:border-[#27272A] gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onViewOrder(order)}
-                  className="h-8 text-xs font-medium px-4 border-[#E4E4E7] dark:border-[#27272A] flex-1 mr-2 rounded-xl"
+                  className="h-8 text-xs font-medium px-3 border-[#E4E4E7] dark:border-[#27272A] flex-1 rounded-xl"
                 >
                   View Details
                 </Button>
+                {canVerify && onVerifyOrder && (
+                  <Button
+                    size="sm"
+                    onClick={() => onVerifyOrder(order)}
+                    className="h-8 text-xs font-semibold px-3 bg-indigo-600 hover:bg-indigo-700 text-white gap-1 rounded-xl shadow-2xs"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Verify
+                  </Button>
+                )}
                 <ActionDropdownMenu items={dropdownItems} />
               </div>
             </div>

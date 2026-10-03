@@ -250,7 +250,8 @@ export const OrdersPage: React.FC = () => {
           o.orderStatus !== 'DELIVERED' &&
           o.orderStatus !== 'COMPLETED' &&
           o.orderStatus !== 'CANCELLED' &&
-          o.orderStatus !== 'VOIDED'
+          o.orderStatus !== 'VOIDED' &&
+          o.orderStatus !== 'VERIFIED'
       );
     }
     if (quickFilter === 'CASH') {
@@ -283,11 +284,16 @@ export const OrdersPage: React.FC = () => {
         o.orderStatus !== 'DELIVERED' &&
         o.orderStatus !== 'COMPLETED' &&
         o.orderStatus !== 'CANCELLED' &&
-        o.orderStatus !== 'VOIDED'
+        o.orderStatus !== 'VOIDED' &&
+        o.orderStatus !== 'VERIFIED'
       ) {
         pendingCount++;
       }
-      if (o.orderStatus === 'DELIVERED') {
+      if (
+        o.orderStatus === 'DELIVERED' ||
+        o.deliveryStatus === 'DELIVERED' ||
+        o.orderStatus === 'VERIFIED'
+      ) {
         deliveredCount++;
       }
       const pay = o.paymentMethod?.toUpperCase() || '';

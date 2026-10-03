@@ -42,13 +42,21 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         value = "SELECT DISTINCT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.manager " +
                 "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
                 "AND (CAST(:customerId AS Long) IS NULL OR o.customer.id = :customerId) " +
-                "AND (:status IS NULL OR o.orderStatus = :status) " +
+                "AND (" +
+                "  :status IS NULL " +
+                "  OR (:status = com.asenterprises.bms.entity.OrderStatus.DELIVERED AND (o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED OR o.deliveryStatus = com.asenterprises.bms.entity.DeliveryStatus.DELIVERED)) " +
+                "  OR (:status != com.asenterprises.bms.entity.OrderStatus.DELIVERED AND o.orderStatus = :status)" +
+                ") " +
                 "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
                 "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)",
         countQuery = "SELECT COUNT(o) FROM Order o " +
                      "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
                      "AND (CAST(:customerId AS Long) IS NULL OR o.customer.id = :customerId) " +
-                     "AND (:status IS NULL OR o.orderStatus = :status) " +
+                     "AND (" +
+                     "  :status IS NULL " +
+                     "  OR (:status = com.asenterprises.bms.entity.OrderStatus.DELIVERED AND (o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED OR o.deliveryStatus = com.asenterprises.bms.entity.DeliveryStatus.DELIVERED)) " +
+                     "  OR (:status != com.asenterprises.bms.entity.OrderStatus.DELIVERED AND o.orderStatus = :status)" +
+                     ") " +
                      "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
                      "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)"
     )
