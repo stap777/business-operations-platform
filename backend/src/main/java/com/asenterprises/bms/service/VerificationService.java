@@ -188,22 +188,7 @@ public class VerificationService {
 
     @Transactional(readOnly = true)
     public Page<PendingVerificationResponse> getPendingVerificationOrders(Pageable pageable) {
-        return orderRepository.findPendingVerificationOrders(pageable)
-                .map(order -> PendingVerificationResponse.builder()
-                        .orderId(order.getId())
-                        .orderNumber(order.getOrderNumber())
-                        .customerId(order.getCustomer().getId())
-                        .customerName(order.getCustomer().getFullName())
-                        .customerPhone(order.getCustomer().getPhone())
-                        .deliveryPersonId(order.getDeliveryPerson() != null ? order.getDeliveryPerson().getId() : null)
-                        .deliveryPersonName(order.getDeliveryPerson() != null ? order.getDeliveryPerson().getFullName() : null)
-                        .totalAmount(order.getTotalAmount())
-                        .orderStatus(order.getOrderStatus())
-                        .paymentStatus(order.getPaymentStatus())
-                        .deliveryStatus(order.getDeliveryStatus())
-                        .itemCount(order.getItems().size())
-                        .deliveredAt(order.getUpdatedAt())
-                        .build());
+        return orderRepository.findPendingVerificationOrders(pageable);
     }
 
     @Transactional(readOnly = true)

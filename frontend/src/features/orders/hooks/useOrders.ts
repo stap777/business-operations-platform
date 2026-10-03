@@ -76,12 +76,13 @@ export const useCancelOrder = () => {
   });
 };
 
-export const usePendingVerificationOrders = (page = 0, size = 50) => {
+export const usePendingVerificationOrders = (page = 0, size = 50, enabled = true) => {
   return useQuery({
     queryKey: ['admin', 'orders', 'pending-verification', page, size],
     queryFn: () => orderService.getPendingVerificationOrders(page, size),
     placeholderData: keepPreviousData,
     staleTime: 10_000,
+    enabled,
   });
 };
 

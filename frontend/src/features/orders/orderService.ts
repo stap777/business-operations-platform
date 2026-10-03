@@ -6,6 +6,7 @@ import type {
   OrderQueryParams,
   InvoiceResponse,
   VoidOrderRequest,
+  PendingVerificationPageResponse,
 } from './order.types';
 
 export const orderService = {
@@ -69,8 +70,8 @@ export const orderService = {
   /**
    * Fetch delivered orders awaiting admin verification: GET /admin/orders/pending-verification
    */
-  getPendingVerificationOrders: async (page = 0, size = 50) => {
-    const response = await apiClient.get<OrderPageResponse>('/admin/orders/pending-verification', {
+  getPendingVerificationOrders: async (page = 0, size = 50): Promise<PendingVerificationPageResponse> => {
+    const response = await apiClient.get<PendingVerificationPageResponse>('/admin/orders/pending-verification', {
       params: { page, size },
     });
     return response.data;

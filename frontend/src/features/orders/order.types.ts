@@ -141,3 +141,13 @@ export interface PendingVerificationResponse {
   itemCount: number;
   deliveredAt: string;
 }
+
+export interface PendingVerificationPageResponse {
+  content: PendingVerificationResponse[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  first: boolean;
+  last: boolean;
+}

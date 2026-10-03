@@ -36,6 +36,7 @@ import com.asenterprises.bms.service.BusinessSettingsService;
 import com.asenterprises.bms.service.DeliveryService;
 import com.asenterprises.bms.service.OrderService;
 import com.asenterprises.bms.service.PaymentService;
+import java.time.LocalDate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -294,7 +295,7 @@ public class AdminVerifyEndToEndWorkflowIntegrationTest {
         assertThat(assigned.getContent()).noneMatch(o -> o.getId().equals(orderId));
 
         var pending = orderRepository.findPendingVerificationOrders(PageRequest.of(0, 10));
-        assertThat(pending.getContent()).noneMatch(o -> o.getId().equals(orderId));
+        assertThat(pending.getContent()).noneMatch(o -> o.getOrderId().equals(orderId));
     }
 
     @Test
@@ -383,21 +384,164 @@ public class AdminVerifyEndToEndWorkflowIntegrationTest {
 
     @Test
     @WithMockUser(username = "e2e_admin", roles = {"ADMIN"})
-    @DisplayName("Delivered Filter: Searching with status=DELIVERED returns verified orders")
-    void testDeliveredStatusSearchIncludesVerifiedOrders() throws Exception {
-        Long orderId = createPaidOrder(OrderStatus.CREATED, DeliveryStatus.PENDING, false);
+    @DisplayName("OrdersPage Queries: Test all requests made by Orders page on load and filtering")
+    void testAllOrdersPageQueries() throws Exception {
+        Long createdOrderId = createPaidOrder(OrderStatus.CREATED, DeliveryStatus.PENDING, false);
+        Long assignedOrderId = createPaidOrder(OrderStatus.ASSIGNED, DeliveryStatus.PENDING, true);
+        Long deliveredOrderId = createPaidOrder(OrderStatus.DELIVERED, DeliveryStatus.DELIVERED, true);
+        Long verifiedOrderId = createPaidOrder(OrderStatus.VERIFIED, DeliveryStatus.DELIVERED, true);
 
-        // Verify order as admin
-        mockMvc.perform(post("/admin/orders/" + orderId + "/verify")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isCreated());
-
-        // Search with status=DELIVERED
+        // 1. Initial load: GET /orders/search?page=0&size=50
         mockMvc.perform(get("/orders/search")
-                        .param("status", "DELIVERED")
+                        .param("page", "0")
+                        .param("size", "50")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[?(@.id == " + orderId + ")].orderStatus").value("VERIFIED"))
-                .andExpect(jsonPath("$.content[?(@.id == " + orderId + ")].deliveryStatus").value("DELIVERED"));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(4));
+
+        // 2. Pending verification: GET /admin/orders/pending-verification?page=0&size=50
+        mockMvc.perform(get("/admin/orders/pending-verification")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].orderId").value(deliveredOrderId))
+                .andExpect(jsonPath("$.content[0].customerPhone").isString())
+                .andExpect(jsonPath("$.content[0].itemCount").value(1));
+
+        // 3. Delivered filter: GET /orders/search?status=DELIVERED&page=0&size=50 (should match DELIVERED and VERIFIED with deliveryStatus=DELIVERED)
+        mockMvc.perform(get("/orders/search")
+                        .param("status", "DELIVERED")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2));
+
+        // 4. Status filter: GET /orders/search?status=CREATED&page=0&size=50
+        mockMvc.perform(get("/orders/search")
+                        .param("status", "CREATED")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        // 5. Status filter: GET /orders/search?status=VERIFIED&page=0&size=50
+        mockMvc.perform(get("/orders/search")
+                        .param("status", "VERIFIED")
+                        .param("page", "0")
+                        .param("size", "50")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1));
+
+        // 6. Date filter: GET /orders/search?startDate=2026-10-04&endDate=2026-10-04
+        mockMvc.perform(get("/orders/search")
+                        .param("startDate", LocalDate.now().toString())
+                        .param("endDate", LocalDate.now().toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        // 7. Search query: GET /orders/search?orderNumber=ORD
+        mockMvc.perform(get("/orders/search")
+                        .param("orderNumber", "ORD")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(4));
+    }
+
+    @Test
+    @WithMockUser(username = "e2e_admin", roles = {"ADMIN"})
+    @DisplayName("Pending Verification: Projection returns exact item counts, excludes verified orders, and paginates cleanly")
+    void testPendingVerificationProjectionAndItemCounts() throws Exception {
+        // Order 1: DELIVERED with 1 item
+        Long order1Id = createPaidOrder(OrderStatus.DELIVERED, DeliveryStatus.DELIVERED, true);
+
+        // Order 2: DELIVERED with 2 items
+        OrderResponse order2Resp = orderService.createOrder(OrderRequest.builder()
+                .customerId(customer.getId())
+                .managerId(managerUser.getId())
+                .deliveryPersonId(deliveryUser.getId())
+                .items(List.of(
+                        OrderItemRequest.builder().productId(product.getId()).quantity(1).build(),
+                        OrderItemRequest.builder().productId(product.getId()).quantity(2).build()
+                ))
+                .notes("Two items order")
+                .build(), managerUser.getUsername());
+
+        paymentService.createPayment(PaymentRequest.builder()
+                .customerId(customer.getId())
+                .totalAmount(order2Resp.getTotalAmount())
+                .paymentMethod(PaymentMethod.CASH)
+                .remarks("Payment for order 2")
+                .allocations(List.of(PaymentAllocationRequest.builder()
+                        .orderId(order2Resp.getId())
+                        .allocatedAmount(order2Resp.getTotalAmount())
+                        .build()))
+                .build(), adminUser.getUsername());
+
+        transactionTemplate.execute(txStatus -> {
+            Order o = orderRepository.findById(order2Resp.getId()).orElseThrow();
+            o.setOrderStatus(OrderStatus.DELIVERED);
+            o.setDeliveryStatus(DeliveryStatus.DELIVERED);
+            orderRepository.save(o);
+            return null;
+        });
+
+        // Order 3: VERIFIED (should NOT appear in pending verification)
+        Long order3Id = createPaidOrder(OrderStatus.VERIFIED, DeliveryStatus.DELIVERED, true);
+
+        // Fetch pending verification page 0, size 10
+        mockMvc.perform(get("/admin/orders/pending-verification")
+                        .param("page", "0")
+                        .param("size", "10")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.content[0].orderId").value(order1Id))
+                .andExpect(jsonPath("$.content[0].itemCount").value(1))
+                .andExpect(jsonPath("$.content[0].customerName").value("E2E Client Retailer"))
+                .andExpect(jsonPath("$.content[0].customerPhone").isString())
+                .andExpect(jsonPath("$.content[0].deliveryPersonName").value("E2E Delivery"))
+                .andExpect(jsonPath("$.content[0].orderStatus").value("DELIVERED"))
+                .andExpect(jsonPath("$.content[0].deliveryStatus").value("DELIVERED"))
+                .andExpect(jsonPath("$.content[1].orderId").value(order2Resp.getId()))
+                .andExpect(jsonPath("$.content[1].itemCount").value(2));
+
+        // Pagination test: page 0, size 1
+        mockMvc.perform(get("/admin/orders/pending-verification")
+                        .param("page", "0")
+                        .param("size", "1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].orderId").value(order1Id));
+
+        // Pagination test: page 1, size 1
+        mockMvc.perform(get("/admin/orders/pending-verification")
+                        .param("page", "1")
+                        .param("size", "1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].orderId").value(order2Resp.getId()));
+    }
+
+    @Test
+    @WithMockUser(username = "e2e_manager", roles = {"MANAGER"})
+    @DisplayName("Non-ADMIN user cannot access pending-verification endpoint (403 Forbidden)")
+    void testNonAdminCannotAccessPendingVerification() throws Exception {
+        mockMvc.perform(get("/admin/orders/pending-verification")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
     }
 }

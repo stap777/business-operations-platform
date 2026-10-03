@@ -63,7 +63,7 @@ export const OrdersPage: React.FC = () => {
   const {
     data: pendingData,
     isLoading: isPendingLoading,
-  } = usePendingVerificationOrders(page, 50);
+  } = usePendingVerificationOrders(page, 50, user?.role === 'ADMIN');
 
   const cancelOrderMutation = useCancelOrder();
   const verifyOrderMutation = useVerifyOrder();
@@ -265,6 +265,30 @@ export const OrdersPage: React.FC = () => {
     }
     return rawOrders;
   }, [rawOrders, quickFilter]);
+
+  const pendingOrders = useMemo<OrderResponse[]>(() => {
+    if (!pendingData?.content) return [];
+    return pendingData.content.map((p) => ({
+      id: p.orderId,
+      orderNumber: p.orderNumber,
+      customerId: p.customerId,
+      customerName: p.customerName,
+      managerId: 0,
+      deliveryPersonId: p.deliveryPersonId,
+      deliveryPersonName: p.deliveryPersonName,
+      orderStatus: p.orderStatus,
+      paymentStatus: p.paymentStatus,
+      deliveryStatus: p.deliveryStatus,
+      subtotal: p.totalAmount,
+      discountAmount: 0,
+      totalAmount: p.totalAmount,
+      amountReceived: p.paymentStatus === 'PAID' ? p.totalAmount : 0,
+      items: [],
+      isLocked: false,
+      createdAt: p.deliveredAt || new Date().toISOString(),
+      updatedAt: p.deliveredAt || new Date().toISOString(),
+    }));
+  }, [pendingData]);
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -532,7 +556,7 @@ export const OrdersPage: React.FC = () => {
               </div>
 
               <OrderTable
-                orders={pendingData?.content || []}
+                orders={pendingOrders}
                 isLoading={isPendingLoading}
                 onViewOrder={handleViewOrder}
                 onEditOrder={handleEditOrder}

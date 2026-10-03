@@ -1,5 +1,6 @@
 package com.asenterprises.bms.repository;
 
+import com.asenterprises.bms.dto.PendingVerificationResponse;
 import com.asenterprises.bms.entity.Order;
 import com.asenterprises.bms.entity.OrderStatus;
 import org.springframework.data.domain.Page;
@@ -70,13 +71,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     );
 
     @Query(
-        value = "SELECT o FROM Order o JOIN FETCH o.customer LEFT JOIN FETCH o.deliveryPerson " +
+        value = "SELECT new com.asenterprises.bms.dto.PendingVerificationResponse(" +
+                "o.id, o.orderNumber, c.id, c.fullName, c.phoneNumber, " +
+                "dp.id, dp.fullName, o.totalAmount, o.orderStatus, o.paymentStatus, o.deliveryStatus, " +
+                "SIZE(o.items), o.updatedAt) " +
+                "FROM Order o " +
+                "JOIN o.customer c " +
+                "LEFT JOIN o.deliveryPerson dp " +
                 "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED " +
                 "ORDER BY o.updatedAt ASC",
         countQuery = "SELECT COUNT(o) FROM Order o " +
                      "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED"
     )
-    Page<Order> findPendingVerificationOrders(Pageable pageable);
+    Page<PendingVerificationResponse> findPendingVerificationOrders(Pageable pageable);
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :start AND o.createdAt <= :end")
     long countOrdersBetween(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
