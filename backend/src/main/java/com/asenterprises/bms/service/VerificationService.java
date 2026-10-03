@@ -128,17 +128,22 @@ public class VerificationService {
 
         Invoice savedInvoice = invoice;
 
+        // Reload managed actor and order references after persistence-context eviction from deductStock()
+        User reloadedAdmin = userRepository.findByUsername(adminUsername).orElse(adminUser);
+        Order reloadedOrder = orderRepository.findById(orderId).orElse(order);
+
         // Step 9: Create StockAdjustment history records for tracked products
-        for (OrderItem item : order.getItems()) {
+        for (OrderItem item : reloadedOrder.getItems()) {
             Product product = item.getProduct();
             if (Boolean.TRUE.equals(product.getTrackInventory())) {
+                Product reloadedProduct = productRepository.findById(product.getId()).orElse(product);
                 StockAdjustment adjustment = StockAdjustment.builder()
-                        .product(product)
+                        .product(reloadedProduct)
                         .adjustmentType(StockAdjustmentType.OUT)
                         .quantity(item.getQuantity())
                         .reason("ORDER_FULFILLMENT")
-                        .referenceNumber(order.getOrderNumber())
-                        .adjustedBy(adminUser)
+                        .referenceNumber(reloadedOrder.getOrderNumber())
+                        .adjustedBy(reloadedAdmin)
                         .adjustmentDate(LocalDateTime.now())
                         .build();
                 stockAdjustmentRepository.save(adjustment);
@@ -147,37 +152,36 @@ public class VerificationService {
         }
 
         // Step 10: Audit Log Coupon Verification if coupon was applied at order placement
-        if (order.getCoupon() != null) {
-            Coupon coupon = couponRepository.findById(order.getCoupon().getId()).orElse(order.getCoupon());
+        if (reloadedOrder.getCoupon() != null) {
+            Coupon coupon = couponRepository.findById(reloadedOrder.getCoupon().getId()).orElse(reloadedOrder.getCoupon());
             auditLogService.recordAuditLog(
                     "COUPON",
                     coupon.getId(),
                     "COUPON_VERIFIED",
-                    adminUser,
-                    "Coupon '" + coupon.getCode() + "' verified for Order #" + order.getOrderNumber()
+                    reloadedAdmin,
+                    "Coupon '" + coupon.getCode() + "' verified for Order #" + reloadedOrder.getOrderNumber()
             );
         }
 
         // Step 11: Audit Logging
         auditLogService.recordAuditLog(
                 "ORDER",
-                order.getId(),
+                reloadedOrder.getId(),
                 "ORDER_VERIFIED",
-                adminUser,
-                "Order #" + order.getOrderNumber() + " verified by admin " + adminUser.getUsername() +
-                        ". Invoice #" + savedInvoice.getInvoiceNumber() + " generated."
+                reloadedAdmin,
+                "Order #" + reloadedOrder.getOrderNumber() + " verified by admin " + reloadedAdmin.getUsername() +
+                        ". Invoice #" + (savedInvoice != null ? savedInvoice.getInvoiceNumber() : "N/A") + " generated."
         );
 
         // Step 12: Update Order Status to VERIFIED and Delivery Status to DELIVERED
-        order.setOrderStatus(OrderStatus.VERIFIED);
-        order.setDeliveryStatus(DeliveryStatus.DELIVERED);
-        orderRepository.save(order);
+        reloadedOrder.setOrderStatus(OrderStatus.VERIFIED);
+        reloadedOrder.setDeliveryStatus(DeliveryStatus.DELIVERED);
+        orderRepository.save(reloadedOrder);
 
-        // Ensure invoice items are fully loaded within session before mapping
-        Invoice reloadedInvoice = invoiceRepository.findById(savedInvoice.getId()).orElse(savedInvoice);
-        if (reloadedInvoice.getItems() != null) {
-            reloadedInvoice.getItems().size();
-        }
+        // Ensure invoice items, order, and generatedBy are fully loaded within session before mapping
+        Invoice reloadedInvoice = invoiceRepository.findByIdWithDetails(savedInvoice.getId())
+                .orElseGet(() -> invoiceRepository.findByOrderIdWithDetails(orderId)
+                        .orElse(savedInvoice));
 
         return mapToResponse(reloadedInvoice);
     }
@@ -204,7 +208,7 @@ public class VerificationService {
 
     @Transactional(readOnly = true)
     public InvoiceResponse getInvoiceById(Long id) {
-        Invoice invoice = invoiceRepository.findById(id)
+        Invoice invoice = invoiceRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + id));
         return mapToResponse(invoice);
     }
@@ -224,7 +228,7 @@ public class VerificationService {
     }
 
     public InvoiceResponse mapToResponse(Invoice invoice) {
-        List<InvoiceItemResponse> itemResponses = invoice.getItems().stream()
+        List<InvoiceItemResponse> itemResponses = (invoice.getItems() != null ? invoice.getItems() : List.<InvoiceItem>of()).stream()
                 .map(item -> InvoiceItemResponse.builder()
                         .id(item.getId())
                         .productNameSnapshot(item.getProductNameSnapshot())
@@ -234,11 +238,19 @@ public class VerificationService {
                         .build())
                 .collect(Collectors.toList());
 
+        Long orderId = invoice.getOrder() != null ? invoice.getOrder().getId() : null;
+        String orderNumber = invoice.getOrder() != null ? invoice.getOrder().getOrderNumber() : null;
+        OrderStatus orderStatus = invoice.getOrder() != null ? invoice.getOrder().getOrderStatus() : null;
+
+        Long generatedById = invoice.getGeneratedBy() != null ? invoice.getGeneratedBy().getId() : null;
+        String generatedByName = invoice.getGeneratedBy() != null ? invoice.getGeneratedBy().getFullName() : "System";
+
         return InvoiceResponse.builder()
                 .id(invoice.getId())
                 .invoiceNumber(invoice.getInvoiceNumber())
-                .orderId(invoice.getOrder().getId())
-                .orderNumber(invoice.getOrder().getOrderNumber())
+                .orderId(orderId)
+                .orderNumber(orderNumber)
+                .orderStatus(orderStatus)
                 .invoiceDate(invoice.getInvoiceDate())
                 .customerNameSnapshot(invoice.getCustomerNameSnapshot())
                 .customerPhoneSnapshot(invoice.getCustomerPhoneSnapshot())
@@ -248,8 +260,8 @@ public class VerificationService {
                 .totalAmount(invoice.getTotalAmount())
                 .paymentStatus(invoice.getPaymentStatus())
                 .paymentReceivedAtGeneration(invoice.getPaymentReceivedAtGeneration())
-                .generatedById(invoice.getGeneratedBy().getId())
-                .generatedByName(invoice.getGeneratedBy().getFullName())
+                .generatedById(generatedById)
+                .generatedByName(generatedByName)
                 .items(itemResponses)
                 .createdAt(invoice.getCreatedAt())
                 .build();

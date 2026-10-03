@@ -108,9 +108,8 @@ public class Invoice extends BaseEntity {
     @Column(name = "payment_received_at_generation", nullable = false, precision = 12, scale = 2)
     private BigDecimal paymentReceivedAtGeneration;
 
-    @NotNull(message = "Generating admin user is required")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "generated_by_id", nullable = false)
+    @JoinColumn(name = "generated_by_id")
     private User generatedBy;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)

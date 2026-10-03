@@ -135,14 +135,14 @@ public class InvoiceService {
 
     @Transactional(readOnly = true)
     public InvoiceResponse getInvoiceById(Long id) {
-        Invoice invoice = invoiceRepository.findById(id)
+        Invoice invoice = invoiceRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found with id: " + id));
         return mapToResponse(invoice);
     }
 
     @Transactional(readOnly = true)
     public InvoiceResponse getInvoiceByOrderId(Long orderId) {
-        Invoice invoice = invoiceRepository.findByOrderId(orderId)
+        Invoice invoice = invoiceRepository.findByOrderIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invoice not found for order id: " + orderId));
         return mapToResponse(invoice);
     }
@@ -209,7 +209,7 @@ public class InvoiceService {
     }
 
     public InvoiceResponse mapToResponse(Invoice invoice) {
-        List<InvoiceItemResponse> itemResponses = invoice.getItems().stream()
+        List<InvoiceItemResponse> itemResponses = (invoice.getItems() != null ? invoice.getItems() : List.<InvoiceItem>of()).stream()
                 .map(item -> InvoiceItemResponse.builder()
                         .id(item.getId())
                         .productNameSnapshot(item.getProductNameSnapshot())
@@ -219,9 +219,13 @@ public class InvoiceService {
                         .build())
                 .collect(Collectors.toList());
 
-        BigDecimal paidAmount = invoiceCalculationService.calculatePaidAmount(invoice.getOrder().getId(), invoice.getPaymentReceivedAtGeneration());
+        Long orderId = invoice.getOrder() != null ? invoice.getOrder().getId() : null;
+        String orderNumber = invoice.getOrder() != null ? invoice.getOrder().getOrderNumber() : null;
+        com.asenterprises.bms.entity.OrderStatus orderStatus = invoice.getOrder() != null ? invoice.getOrder().getOrderStatus() : null;
+
+        BigDecimal paidAmount = invoiceCalculationService.calculatePaidAmount(orderId, invoice.getPaymentReceivedAtGeneration());
         BigDecimal creditRemaining = invoiceCalculationService.calculateRemainingCredit(invoice.getTotalAmount(), paidAmount);
-        List<PaymentAllocation> allocations = paymentAllocationRepository.findByOrderId(invoice.getOrder().getId());
+        List<PaymentAllocation> allocations = orderId != null ? paymentAllocationRepository.findByOrderId(orderId) : List.of();
         String paymentMethod = invoiceCalculationService.resolvePaymentMethod(invoice.getOrder(), allocations);
 
         BusinessSettingsResponse settings = null;
@@ -231,12 +235,15 @@ public class InvoiceService {
             log.warn("Could not load business settings for invoice response mapping: {}", e.getMessage());
         }
 
+        Long generatedById = invoice.getGeneratedBy() != null ? invoice.getGeneratedBy().getId() : null;
+        String generatedByName = invoice.getGeneratedBy() != null ? invoice.getGeneratedBy().getFullName() : "System";
+
         return InvoiceResponse.builder()
                 .id(invoice.getId())
                 .invoiceNumber(invoice.getInvoiceNumber())
-                .orderId(invoice.getOrder().getId())
-                .orderNumber(invoice.getOrder().getOrderNumber())
-                .orderStatus(invoice.getOrder().getOrderStatus())
+                .orderId(orderId)
+                .orderNumber(orderNumber)
+                .orderStatus(orderStatus)
                 .invoiceDate(invoice.getInvoiceDate())
                 .customerNameSnapshot(invoice.getCustomerNameSnapshot())
                 .customerPhoneSnapshot(invoice.getCustomerPhoneSnapshot())
@@ -254,8 +261,8 @@ public class InvoiceService {
                 .enterpriseAddress(settings != null ? settings.getAddress() : null)
                 .enterprisePhone(settings != null ? settings.getPhone() : null)
                 .invoiceFooter(settings != null ? settings.getInvoiceFooter() : "Thank You Visit Again")
-                .generatedById(invoice.getGeneratedBy().getId())
-                .generatedByName(invoice.getGeneratedBy().getFullName())
+                .generatedById(generatedById)
+                .generatedByName(generatedByName)
                 .items(itemResponses)
                 .createdAt(invoice.getCreatedAt())
                 .build();

@@ -19,6 +19,12 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     Optional<Invoice> findByOrderId(Long orderId);
 
+    @Query("SELECT DISTINCT i FROM Invoice i JOIN FETCH i.order LEFT JOIN FETCH i.generatedBy LEFT JOIN FETCH i.items WHERE i.id = :id")
+    Optional<Invoice> findByIdWithDetails(@Param("id") Long id);
+
+    @Query("SELECT DISTINCT i FROM Invoice i JOIN FETCH i.order LEFT JOIN FETCH i.generatedBy LEFT JOIN FETCH i.items WHERE i.order.id = :orderId")
+    Optional<Invoice> findByOrderIdWithDetails(@Param("orderId") Long orderId);
+
     boolean existsByOrderId(Long orderId);
 
     long countByOrderCustomerId(Long customerId);
