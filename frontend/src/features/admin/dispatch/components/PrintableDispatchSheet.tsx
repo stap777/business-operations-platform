@@ -73,6 +73,25 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
     return Array.from(summaryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [dispatchSheet.orders]);
 
+  // Aggregate total cash to be collected across all active orders
+  const totalCashToCollect = React.useMemo(() => {
+    let sum = 0;
+    for (const order of dispatchSheet.orders || []) {
+      if (order.orderStatus === 'VOIDED' || order.orderStatus === 'CANCELLED') {
+        continue;
+      }
+      const payMethod = (order.paymentMethod || 'CASH').toUpperCase();
+      if (payMethod.includes('CASH') || payMethod === 'UNPAID') {
+        const balance =
+          order.balanceDue !== undefined && order.balanceDue !== null
+            ? order.balanceDue
+            : (order.totalAmount || 0) - (order.amountReceived || 0);
+        sum += Math.max(0, balance);
+      }
+    }
+    return sum;
+  }, [dispatchSheet.orders]);
+
   // Helper to split notes by newline or bullet and format with safe ASCII hyphen (-)
   const renderFormattedNotes = (notesText: string) => {
     const lines = notesText
@@ -126,21 +145,28 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
         </div>
 
         {/* Thermal Loading Summary */}
-        {loadingSummary.length > 0 && (
+        {(loadingSummary.length > 0 || totalCashToCollect > 0) && (
           <div className="border-b border-black pb-1.5 mb-1.5 space-y-1 text-[10px] break-inside-avoid print:break-inside-avoid">
-            <p className="font-bold uppercase tracking-wider text-[9px] border-b border-dotted border-black pb-0.5">
-              LOADING SUMMARY:
-            </p>
-            <div className="space-y-0.5">
-              {loadingSummary.map((item, idx) => (
-                <div key={idx} className="flex justify-between items-center font-mono">
-                  <span className="truncate pr-1">{item.name}</span>
-                  <span className="font-bold whitespace-nowrap">
-                    {item.quantity} {formatUnit(item.unit, item.quantity)}
-                  </span>
-                </div>
-              ))}
+            <div className="flex justify-between items-center border-b border-dotted border-black pb-0.5">
+              <span className="font-bold uppercase tracking-wider text-[9px]">
+                LOADING SUMMARY:
+              </span>
+              <span className="font-bold font-mono text-[9.5px]">
+                CASH: ₹{totalCashToCollect.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              </span>
             </div>
+            {loadingSummary.length > 0 && (
+              <div className="space-y-0.5">
+                {loadingSummary.map((item, idx) => (
+                  <div key={idx} className="flex justify-between items-center font-mono">
+                    <span className="truncate pr-1">{item.name}</span>
+                    <span className="font-bold whitespace-nowrap">
+                      {item.quantity} {formatUnit(item.unit, item.quantity)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -282,21 +308,27 @@ export const PrintableDispatchSheet: React.FC<PrintableDispatchSheetProps> = ({
       </div>
 
       {/* Loading Summary Box */}
-      {loadingSummary.length > 0 && (
+      {(loadingSummary.length > 0 || totalCashToCollect > 0) && (
         <div className="border border-black rounded p-2 bg-neutral-50 print:bg-white text-xs break-inside-avoid print:break-inside-avoid">
-          <div className="font-bold text-[10.5px] uppercase tracking-wider text-neutral-800 border-b border-neutral-300 pb-1 mb-1.5 flex justify-between items-center">
+          <div className="font-bold text-[10.5px] uppercase tracking-wider text-neutral-800 border-b border-neutral-300 pb-1 mb-1.5 flex flex-wrap justify-between items-center gap-2">
             <span>LOADING SUMMARY (TOTAL GOODS TO LOAD)</span>
+            <div className="flex items-center gap-1.5 font-mono border border-black px-2 py-0.5 rounded bg-white print:bg-white text-black">
+              <span className="text-[10px] uppercase font-sans font-bold text-neutral-700">TOTAL CASH TO COLLECT:</span>
+              <span className="text-xs font-bold text-black">₹{totalCashToCollect.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-1 font-mono text-[11px]">
-            {loadingSummary.map((item, idx) => (
-              <div key={idx} className="flex justify-between items-center border-b border-dotted border-neutral-300 py-0.5">
-                <span className="font-sans font-semibold text-black truncate pr-1">{item.name}</span>
-                <span className="font-bold text-black whitespace-nowrap">
-                  {item.quantity} {formatUnit(item.unit, item.quantity)}
-                </span>
-              </div>
-            ))}
-          </div>
+          {loadingSummary.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-1 font-mono text-[11px]">
+              {loadingSummary.map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center border-b border-dotted border-neutral-300 py-0.5">
+                  <span className="font-sans font-semibold text-black truncate pr-1">{item.name}</span>
+                  <span className="font-bold text-black whitespace-nowrap">
+                    {item.quantity} {formatUnit(item.unit, item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
