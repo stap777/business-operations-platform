@@ -122,7 +122,7 @@ export const PrintableUnifiedReport: React.FC<PrintableUnifiedReportProps> = ({
           <h3 className="text-xs font-bold uppercase tracking-wider text-black border-b border-black pb-1">
             3. PAYMENT & COLLECTION SUMMARY
           </h3>
-          <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+          <div className="grid grid-cols-3 gap-3 text-xs font-mono">
             <div className="p-2.5 border border-black rounded">
               <span className="block font-sans text-[10px] text-neutral-600 uppercase">Total Payments Received</span>
               <span className="font-bold text-sm">₹{paymentData.totalPaymentsReceived?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -130,6 +130,10 @@ export const PrintableUnifiedReport: React.FC<PrintableUnifiedReportProps> = ({
             <div className="p-2.5 border border-black rounded">
               <span className="block font-sans text-[10px] text-neutral-600 uppercase">Total Outstanding Balance</span>
               <span className="font-bold text-sm">₹{paymentData.totalOutstandingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="p-2.5 border border-black rounded">
+              <span className="block font-sans text-[10px] text-neutral-600 uppercase">Cash in Hand</span>
+              <span className="font-bold text-sm">₹{paymentData.cashInHand?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </div>

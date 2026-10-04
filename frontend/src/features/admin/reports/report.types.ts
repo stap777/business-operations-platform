@@ -49,6 +49,8 @@ export interface PaymentItemResponse {
 export interface PaymentReportResponse {
   totalPaymentsReceived: number;
   totalOutstandingAmount: number;
+  totalOperatingExpenses?: number;
+  cashInHand?: number;
   totalTransactions: number;
   methodSummaries: PaymentMethodSummaryResponse[];
   recentPayments?: PaymentItemResponse[];
@@ -130,6 +132,8 @@ export interface UnifiedReportResponse {
   totalOperatingExpenses: number;
   netProfit: number;
   netMarginPercentage: number;
+  totalPaymentsReceived?: number;
+  cashInHand?: number;
   cogsIncomplete?: boolean;
   periodItems: SalesPeriodItemResponse[];
 }

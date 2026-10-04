@@ -20,6 +20,8 @@ public class DashboardResponse {
     private BigDecimal todaysRevenue;
     private BigDecimal todaysPaymentsReceived;
     private BigDecimal todaysOutstandingAmount;
+    private BigDecimal todaysOperatingExpenses;
+    private BigDecimal cashInHand;
     private long todaysDeliveriesPending;
     private long todaysDeliveriesCompleted;
     private long todaysVerifiedOrders;

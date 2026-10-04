@@ -19,6 +19,8 @@ public class PaymentReportResponse {
 
     private BigDecimal totalPaymentsReceived;
     private BigDecimal totalOutstandingAmount;
+    private BigDecimal totalOperatingExpenses;
+    private BigDecimal cashInHand;
     private long totalTransactions;
     private List<PaymentMethodSummaryResponse> methodSummaries;
     private List<PaymentResponse> recentPayments;

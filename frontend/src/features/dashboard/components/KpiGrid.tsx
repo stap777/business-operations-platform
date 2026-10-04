@@ -1,5 +1,5 @@
 import React from 'react';
-import { IndianRupee, ShoppingBag, CreditCard, AlertCircle, Truck, CheckCircle2, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { IndianRupee, ShoppingBag, CreditCard, AlertCircle, Truck, CheckCircle2, ShieldCheck, Wallet } from 'lucide-react';
 import { KpiCard } from './KpiCard';
 import type { DashboardSummary } from '../dashboard.types';
 
@@ -84,10 +84,10 @@ export const KpiGrid: React.FC<KpiGridProps> = ({ data, isLoading, isError }) =>
           error={isError}
         />
         <KpiCard
-          title="Low Stock Items"
-          value={data?.lowStockProductsCount ?? 0}
-          subtitle="Items below reorder level"
-          icon={AlertTriangle}
+          title="Cash in Hand"
+          value={formatCurrency(data?.cashInHand)}
+          subtitle="Today's payments minus OPEX"
+          icon={Wallet}
           isLoading={isLoading}
           error={isError}
         />

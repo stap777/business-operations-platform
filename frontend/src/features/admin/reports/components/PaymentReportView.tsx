@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PaymentReportResponse } from '../report.types';
-import { CreditCard, Wallet, AlertCircle, RefreshCw } from 'lucide-react';
+import { Wallet, AlertCircle, RefreshCw, Banknote } from 'lucide-react';
 import { Button } from '../../../../components/ui/button';
 import { PaymentStatusBadge } from '../../../orders/components/OrderStatusBadge';
 
@@ -80,10 +80,10 @@ export const PaymentReportView: React.FC<PaymentReportViewProps> = ({
 
         <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-1">
           <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase font-semibold tracking-wider flex items-center gap-1.5">
-            <CreditCard className="w-3.5 h-3.5 text-indigo-500" /> Total Transactions
+            <Banknote className="w-3.5 h-3.5 text-blue-500" /> Cash in Hand
           </span>
           <p className="text-xl font-bold font-mono text-[#111111] dark:text-[#FAFAFA]">
-            {data?.totalTransactions ?? 0}
+            {formatCurrency(data?.cashInHand)}
           </p>
         </div>
       </div>

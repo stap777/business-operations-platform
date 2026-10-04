@@ -5,6 +5,7 @@ import com.asenterprises.bms.dto.PaymentReportResponse;
 import com.asenterprises.bms.dto.PaymentResponse;
 import com.asenterprises.bms.entity.PaymentMethod;
 
+import com.asenterprises.bms.repository.OperatingExpenseRepository;
 import com.asenterprises.bms.repository.OrderRepository;
 import com.asenterprises.bms.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class PaymentReportService {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final PaymentService paymentService;
+    private final OperatingExpenseRepository operatingExpenseRepository;
 
     @Transactional(readOnly = true)
     public PaymentReportResponse getPaymentReport(LocalDate startDate, LocalDate endDate, PaymentMethod paymentMethod) {
@@ -48,6 +50,13 @@ public class PaymentReportService {
             outstandingAmount = BigDecimal.ZERO;
         }
 
+        BigDecimal totalOperatingExpenses = operatingExpenseRepository.sumExpensesBetween(start, end);
+        if (totalOperatingExpenses == null) {
+            totalOperatingExpenses = BigDecimal.ZERO;
+        }
+
+        BigDecimal cashInHand = totalPayments.subtract(totalOperatingExpenses);
+
         List<PaymentResponse> recentPayments = paymentService.searchPayments(null, null, paymentMethod, start, end, Pageable.ofSize(50))
                 .getContent();
 
@@ -60,6 +69,8 @@ public class PaymentReportService {
         return PaymentReportResponse.builder()
                 .totalPaymentsReceived(totalPayments)
                 .totalOutstandingAmount(outstandingAmount)
+                .totalOperatingExpenses(totalOperatingExpenses)
+                .cashInHand(cashInHand)
                 .totalTransactions(totalTransactions)
                 .methodSummaries(methodSummaries)
                 .recentPayments(recentPayments)

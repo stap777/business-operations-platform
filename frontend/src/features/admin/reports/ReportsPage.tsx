@@ -271,7 +271,7 @@ export const ReportsPage: React.FC = () => {
                 <h2 className="text-sm font-bold text-[#111111] dark:text-[#FAFAFA]">Payment & Collection Summary</h2>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div className="p-4 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-500/20 space-y-1">
                   <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
                     Total Payments Received
@@ -293,6 +293,18 @@ export const ReportsPage: React.FC = () => {
                   </p>
                   <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
                     Unpaid & partially paid order balances
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-blue-50/50 dark:bg-blue-950/10 border border-blue-500/20 space-y-1">
+                  <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
+                    Cash in Hand
+                  </span>
+                  <p className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400">
+                    ₹{payment.cashInHand?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[10px] text-[#71717A] dark:text-[#A1A1AA]">
+                    Total payments received minus OPEX
                   </p>
                 </div>
               </div>

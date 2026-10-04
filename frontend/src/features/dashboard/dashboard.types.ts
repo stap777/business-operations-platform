@@ -3,6 +3,8 @@ export interface DashboardSummary {
   todaysRevenue: number;
   todaysPaymentsReceived: number;
   todaysOutstandingAmount: number;
+  todaysOperatingExpenses?: number;
+  cashInHand?: number;
   todaysDeliveriesPending: number;
   todaysDeliveriesCompleted: number;
   todaysVerifiedOrders: number;

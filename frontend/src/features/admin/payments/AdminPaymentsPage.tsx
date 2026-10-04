@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { useCreditOrders } from './hooks/usePayments';
+import { usePaymentReport } from '../reports/hooks/useReports';
 import type { PaymentStatus } from './payment.types';
 import type { OrderResponse } from '../../orders/order.types';
 import { PaymentFilters } from './components/PaymentFilters';
 import { PaymentTable } from './components/PaymentTable';
 import { PaymentDetailsModal } from './components/PaymentDetailsModal';
 import { RecordPaymentModal } from './components/RecordPaymentModal';
-import { CreditCard, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { CreditCard, ChevronLeft, ChevronRight, AlertCircle, Wallet, Banknote } from 'lucide-react';
 import { Button } from '../../../components/ui/button';
 
 export const AdminPaymentsPage: React.FC = () => {
@@ -48,6 +49,12 @@ export const AdminPaymentsPage: React.FC = () => {
   );
 
   const { data: pageData, isLoading, isFetching, isError, refetch } = useCreditOrders(filterParams);
+  const { data: paymentReport, refetch: refetchReport } = usePaymentReport();
+
+  const handleRefreshAll = useCallback(() => {
+    refetch();
+    refetchReport();
+  }, [refetch, refetchReport]);
 
   const rawOrders = pageData?.content || [];
 
@@ -115,12 +122,42 @@ export const AdminPaymentsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Overview Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-1">
+          <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase font-semibold tracking-wider flex items-center gap-1.5">
+            <Wallet className="w-3.5 h-3.5 text-emerald-500" /> Payments Received
+          </span>
+          <p className="text-xl font-bold font-mono text-[#111111] dark:text-[#FAFAFA]">
+            {formatCurrency(paymentReport?.totalPaymentsReceived)}
+          </p>
+        </div>
+
+        <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-1">
+          <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase font-semibold tracking-wider flex items-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 text-amber-500" /> Outstanding Balance
+          </span>
+          <p className="text-xl font-bold font-mono text-[#111111] dark:text-[#FAFAFA]">
+            {formatCurrency(paymentReport?.totalOutstandingAmount)}
+          </p>
+        </div>
+
+        <div className="p-4 rounded-xl border border-[#ECECEC] dark:border-[#232323] bg-white dark:bg-[#0F0F0F] space-y-1">
+          <span className="text-[10px] text-[#71717A] dark:text-[#A1A1AA] uppercase font-semibold tracking-wider flex items-center gap-1.5">
+            <Banknote className="w-3.5 h-3.5 text-blue-500" /> Cash in Hand
+          </span>
+          <p className="text-xl font-bold font-mono text-[#111111] dark:text-[#FAFAFA]">
+            {formatCurrency(paymentReport?.cashInHand)}
+          </p>
+        </div>
+      </div>
+
       {/* Filters Toolbar */}
       <PaymentFilters
         onSearchChange={handleSearchChange}
         selectedStatus={selectedStatusFilter}
         onStatusChange={handleStatusChange}
-        onRefresh={() => refetch()}
+        onRefresh={handleRefreshAll}
         isFetching={isFetching}
       />
 
@@ -201,7 +238,7 @@ export const AdminPaymentsPage: React.FC = () => {
         isOpen={!!selectedOrderRecordPayment}
         onClose={() => setSelectedOrderRecordPayment(null)}
         onSuccess={() => {
-          refetch();
+          handleRefreshAll();
         }}
       />
     </div>

@@ -5,6 +5,7 @@ import com.asenterprises.bms.entity.OrderStatus;
 import com.asenterprises.bms.repository.CouponRepository;
 import com.asenterprises.bms.repository.CustomerRepository;
 import com.asenterprises.bms.repository.InvoiceRepository;
+import com.asenterprises.bms.repository.OperatingExpenseRepository;
 import com.asenterprises.bms.repository.OrderRepository;
 import com.asenterprises.bms.repository.PaymentRepository;
 import com.asenterprises.bms.repository.ProductRepository;
@@ -32,6 +33,7 @@ public class DashboardService {
     private final ProductRepository productRepository;
     private final CustomerRepository customerRepository;
     private final CouponRepository couponRepository;
+    private final OperatingExpenseRepository operatingExpenseRepository;
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardSummary() {
@@ -54,6 +56,13 @@ public class DashboardService {
             todaysOutstandingAmount = BigDecimal.ZERO;
         }
 
+        BigDecimal todaysOperatingExpenses = operatingExpenseRepository.sumExpensesBetween(LocalDate.now(), LocalDate.now());
+        if (todaysOperatingExpenses == null) {
+            todaysOperatingExpenses = BigDecimal.ZERO;
+        }
+
+        BigDecimal cashInHand = todaysPaymentsReceived.subtract(todaysOperatingExpenses);
+
         long pendingDeliveries = orderRepository.countDeliveriesPendingBetween(startOfDay, endOfDay);
         long completedDeliveries = orderRepository.countDeliveriesCompletedBetween(startOfDay, endOfDay);
         long verifiedOrders = orderRepository.countOrdersBetweenAndStatus(startOfDay, endOfDay, OrderStatus.VERIFIED);
@@ -71,6 +80,8 @@ public class DashboardService {
                 .todaysRevenue(todaysRevenue)
                 .todaysPaymentsReceived(todaysPaymentsReceived)
                 .todaysOutstandingAmount(todaysOutstandingAmount)
+                .todaysOperatingExpenses(todaysOperatingExpenses)
+                .cashInHand(cashInHand)
                 .todaysDeliveriesPending(pendingDeliveries)
                 .todaysDeliveriesCompleted(completedDeliveries)
                 .todaysVerifiedOrders(verifiedOrders)

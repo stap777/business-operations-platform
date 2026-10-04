@@ -7,6 +7,7 @@ import com.asenterprises.bms.entity.OrderStatus;
 import com.asenterprises.bms.dto.UnifiedReportResponse;
 import com.asenterprises.bms.repository.OperatingExpenseRepository;
 import com.asenterprises.bms.repository.OrderRepository;
+import com.asenterprises.bms.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ public class SalesReportService {
 
     private final OrderRepository orderRepository;
     private final OperatingExpenseRepository operatingExpenseRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public UnifiedReportResponse getUnifiedReport(LocalDate startDate, LocalDate endDate, String granularity) {
@@ -75,6 +77,13 @@ public class SalesReportService {
                     .divide(totalRevenue, 2, RoundingMode.HALF_UP);
         }
 
+        BigDecimal totalPayments = paymentRepository.sumPaymentsBetween(startDateTime, endDateTime);
+        if (totalPayments == null) {
+            totalPayments = BigDecimal.ZERO;
+        }
+
+        BigDecimal cashInHand = totalPayments.subtract(opex);
+
         long completedOrders = orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.COMPLETED)
                 + orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.VERIFIED)
                 + orderRepository.countOrdersBetweenAndStatus(startDateTime, endDateTime, OrderStatus.DELIVERED);
@@ -109,6 +118,8 @@ public class SalesReportService {
                 .totalOperatingExpenses(opex)
                 .netProfit(netProfit)
                 .netMarginPercentage(netMarginPercentage)
+                .totalPaymentsReceived(totalPayments)
+                .cashInHand(cashInHand)
                 .cogsIncomplete(cogsIncomplete)
                 .periodItems(periodItems)
                 .build();

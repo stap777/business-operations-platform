@@ -37,6 +37,10 @@ public class UnifiedReportResponse {
     private BigDecimal netProfit;
     private BigDecimal netMarginPercentage;
 
+    // Payments & Liquid Cash
+    private BigDecimal totalPaymentsReceived;
+    private BigDecimal cashInHand;
+
     private boolean cogsIncomplete;
 
     // Period breakdown
