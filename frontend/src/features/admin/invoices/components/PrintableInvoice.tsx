@@ -26,8 +26,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
     invoice.enterpriseName || businessSettings?.businessName || 'A.S ENTERPRISES';
   const businessAddress =
     businessSettings?.address || invoice.enterpriseAddress || 'HNO. 3484, Zadgaon, Ratnagiri – 415612';
-  const businessPhone =
-    businessSettings?.phone || invoice.enterprisePhone || '93598 20403 / 73978 81177';
+  const businessPhone = '73978 81177, 93598 20403';
   const fssaiNumber = '21526025001185';
 
   const subtotal = invoice.subtotal ?? (invoice.totalAmount ?? 0) + (invoice.discountAmount ?? 0);
