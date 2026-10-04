@@ -81,7 +81,7 @@ public class VerificationService {
             throw new IllegalArgumentException("Admin user account is inactive");
         }
 
-        Order order = orderRepository.findWithLockById(orderId)
+        Order order = orderRepository.findByIdWithDetails(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
 
         // Step 1 & 2: Validate Order Status (explicit allow-list) and Payment Status
@@ -102,7 +102,7 @@ public class VerificationService {
         }
 
         // Step 3: Validate Customer status
-        if (order.getCustomer().getStatus() != CustomerStatus.ACTIVE) {
+        if (order.getCustomer() != null && order.getCustomer().getStatus() != CustomerStatus.ACTIVE) {
             throw new IllegalArgumentException("Cannot verify order for an inactive customer");
         }
 
@@ -113,75 +113,79 @@ public class VerificationService {
         }
 
         // Step 5: Validate & Deduct Product Stock atomically for tracked products
-        for (OrderItem item : order.getItems()) {
-            Product product = item.getProduct();
-            if (product.getStatus() != ProductStatus.ACTIVE) {
-                throw new IllegalArgumentException("Product '" + product.getName() + "' is inactive");
+        if (order.getItems() != null) {
+            for (OrderItem item : order.getItems()) {
+                Product product = item.getProduct();
+                if (product != null) {
+                    if (product.getStatus() != ProductStatus.ACTIVE) {
+                        throw new IllegalArgumentException("Product '" + product.getName() + "' is inactive");
+                    }
+                    if (Boolean.TRUE.equals(product.getTrackInventory())) {
+                        int updated = productRepository.deductStock(product.getId(), item.getQuantity());
+                        if (updated == 0) {
+                            throw new IllegalStateException("Insufficient stock for product '" + product.getName() + "'");
+                        }
+                        if (product.getAvailableStock() != null) {
+                            product.setAvailableStock(product.getAvailableStock() - item.getQuantity());
+                        }
+                    }
+                }
             }
-            if (Boolean.TRUE.equals(product.getTrackInventory())) {
-                int updated = productRepository.deductStock(product.getId(), item.getQuantity());
-                if (updated == 0) {
-                    throw new IllegalStateException("Insufficient stock for product '" + product.getName() + "'");
+
+            // Step 9: Create StockAdjustment history records for tracked products
+            for (OrderItem item : order.getItems()) {
+                Product product = item.getProduct();
+                if (product != null && Boolean.TRUE.equals(product.getTrackInventory())) {
+                    Product currentProduct = productRepository.findById(product.getId()).orElse(product);
+                    StockAdjustment adjustment = StockAdjustment.builder()
+                            .product(currentProduct)
+                            .adjustmentType(StockAdjustmentType.OUT)
+                            .quantity(item.getQuantity())
+                            .reason("ORDER_FULFILLMENT")
+                            .referenceNumber(order.getOrderNumber())
+                            .adjustedBy(adminUser)
+                            .adjustmentDate(LocalDateTime.now())
+                            .build();
+                    stockAdjustmentRepository.save(adjustment);
+                    log.info("Stock deducted for product '{}' by quantity {}.", product.getName(), item.getQuantity());
                 }
             }
         }
 
-        Invoice savedInvoice = invoice;
-
-        // Reload managed actor and order references after persistence-context eviction from deductStock()
-        User reloadedAdmin = userRepository.findByUsername(adminUsername).orElse(adminUser);
-        Order reloadedOrder = orderRepository.findById(orderId).orElse(order);
-
-        // Step 9: Create StockAdjustment history records for tracked products
-        for (OrderItem item : reloadedOrder.getItems()) {
-            Product product = item.getProduct();
-            if (Boolean.TRUE.equals(product.getTrackInventory())) {
-                Product reloadedProduct = productRepository.findById(product.getId()).orElse(product);
-                StockAdjustment adjustment = StockAdjustment.builder()
-                        .product(reloadedProduct)
-                        .adjustmentType(StockAdjustmentType.OUT)
-                        .quantity(item.getQuantity())
-                        .reason("ORDER_FULFILLMENT")
-                        .referenceNumber(reloadedOrder.getOrderNumber())
-                        .adjustedBy(reloadedAdmin)
-                        .adjustmentDate(LocalDateTime.now())
-                        .build();
-                stockAdjustmentRepository.save(adjustment);
-                log.info("Stock deducted for product '{}' by quantity {}.", product.getName(), item.getQuantity());
-            }
-        }
-
         // Step 10: Audit Log Coupon Verification if coupon was applied at order placement
-        if (reloadedOrder.getCoupon() != null) {
-            Coupon coupon = couponRepository.findById(reloadedOrder.getCoupon().getId()).orElse(reloadedOrder.getCoupon());
+        if (order.getCoupon() != null) {
+            Coupon coupon = couponRepository.findById(order.getCoupon().getId()).orElse(order.getCoupon());
             auditLogService.recordAuditLog(
                     "COUPON",
                     coupon.getId(),
                     "COUPON_VERIFIED",
-                    reloadedAdmin,
-                    "Coupon '" + coupon.getCode() + "' verified for Order #" + reloadedOrder.getOrderNumber()
+                    adminUser,
+                    "Coupon '" + coupon.getCode() + "' verified for Order #" + order.getOrderNumber()
             );
         }
 
         // Step 11: Audit Logging
         auditLogService.recordAuditLog(
                 "ORDER",
-                reloadedOrder.getId(),
+                order.getId(),
                 "ORDER_VERIFIED",
-                reloadedAdmin,
-                "Order #" + reloadedOrder.getOrderNumber() + " verified by admin " + reloadedAdmin.getUsername() +
-                        ". Invoice #" + (savedInvoice != null ? savedInvoice.getInvoiceNumber() : "N/A") + " generated."
+                adminUser,
+                "Order #" + order.getOrderNumber() + " verified by admin " + adminUser.getUsername() +
+                        ". Invoice #" + (invoice != null ? invoice.getInvoiceNumber() : "N/A") + " generated."
         );
 
         // Step 12: Update Order Status to VERIFIED and Delivery Status to DELIVERED
-        reloadedOrder.setOrderStatus(OrderStatus.VERIFIED);
-        reloadedOrder.setDeliveryStatus(DeliveryStatus.DELIVERED);
-        orderRepository.save(reloadedOrder);
+        order.setOrderStatus(OrderStatus.VERIFIED);
+        order.setDeliveryStatus(DeliveryStatus.DELIVERED);
+        orderRepository.save(order);
 
         // Ensure invoice items, order, and generatedBy are fully loaded within session before mapping
-        Invoice reloadedInvoice = invoiceRepository.findByIdWithDetails(savedInvoice.getId())
-                .orElseGet(() -> invoiceRepository.findByOrderIdWithDetails(orderId)
-                        .orElse(savedInvoice));
+        final Invoice targetInvoice = invoice;
+        Invoice reloadedInvoice = targetInvoice != null && targetInvoice.getId() != null
+                ? invoiceRepository.findByIdWithDetails(targetInvoice.getId())
+                        .orElseGet(() -> invoiceRepository.findByOrderIdWithDetails(orderId)
+                                .orElse(targetInvoice))
+                : targetInvoice;
 
         return mapToResponse(reloadedInvoice);
     }

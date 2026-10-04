@@ -50,7 +50,6 @@ export const OrdersPage: React.FC = () => {
   const {
     data: ordersData,
     isLoading,
-    refetch,
   } = useOrders({
     orderNumber: searchOrderNumber,
     status: selectedStatus,
@@ -63,6 +62,7 @@ export const OrdersPage: React.FC = () => {
   const {
     data: pendingData,
     isLoading: isPendingLoading,
+    refetch: refetchPending,
   } = usePendingVerificationOrders(page, 50, user?.role === 'ADMIN');
 
   const cancelOrderMutation = useCancelOrder();
@@ -548,7 +548,7 @@ export const OrdersPage: React.FC = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => refetch()}
+                  onClick={() => refetchPending()}
                   className="h-7 text-xs gap-1 text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60"
                 >
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh

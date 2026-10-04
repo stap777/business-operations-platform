@@ -54,11 +54,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Query("SELECT SUM(p.purchasePrice * COALESCE(p.availableStock, 0)) FROM Product p")
     java.math.BigDecimal sumInventoryValuation();
 
-    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
     @Query("UPDATE Product p SET p.availableStock = p.availableStock - :qty WHERE p.id = :id AND p.trackInventory = true AND p.availableStock >= :qty")
     int deductStock(@Param("id") Long id, @Param("qty") Integer qty);
 
-    @org.springframework.data.jpa.repository.Modifying(clearAutomatically = true, flushAutomatically = true)
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
     @Query("UPDATE Product p SET p.availableStock = p.availableStock + :qty WHERE p.id = :id AND p.trackInventory = true")
     int addStock(@Param("id") Long id, @Param("qty") Integer qty);
 }

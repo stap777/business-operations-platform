@@ -27,6 +27,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findWithLockById(@Param("id") Long id);
 
+    @Query("SELECT DISTINCT o FROM Order o LEFT JOIN FETCH o.items item LEFT JOIN FETCH item.product LEFT JOIN FETCH o.customer LEFT JOIN FETCH o.deliveryPerson LEFT JOIN FETCH o.coupon WHERE o.id = :id")
+    Optional<Order> findByIdWithDetails(@Param("id") Long id);
+
     @Query("SELECT COUNT(o) FROM Order o WHERE o.createdAt >= :startOfDay AND o.createdAt <= :endOfDay")
     long countOrdersForDate(@Param("startOfDay") LocalDateTime startOfDay, @Param("endOfDay") LocalDateTime endOfDay);
 
@@ -78,10 +81,10 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                 "FROM Order o " +
                 "JOIN o.customer c " +
                 "LEFT JOIN o.deliveryPerson dp " +
-                "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED " +
+                "WHERE o.orderStatus IN (com.asenterprises.bms.entity.OrderStatus.CREATED, com.asenterprises.bms.entity.OrderStatus.ASSIGNED, com.asenterprises.bms.entity.OrderStatus.OUT_FOR_DELIVERY, com.asenterprises.bms.entity.OrderStatus.DELIVERED) " +
                 "ORDER BY o.updatedAt ASC",
         countQuery = "SELECT COUNT(o) FROM Order o " +
-                     "WHERE o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED"
+                     "WHERE o.orderStatus IN (com.asenterprises.bms.entity.OrderStatus.CREATED, com.asenterprises.bms.entity.OrderStatus.ASSIGNED, com.asenterprises.bms.entity.OrderStatus.OUT_FOR_DELIVERY, com.asenterprises.bms.entity.OrderStatus.DELIVERED)"
     )
     Page<PendingVerificationResponse> findPendingVerificationOrders(Pageable pageable);
 
