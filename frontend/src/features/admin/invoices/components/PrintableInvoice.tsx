@@ -3,7 +3,6 @@ import type { InvoiceResponse } from '../invoice.types';
 import type { BusinessSettingsResponse } from '../../settings/businessSettings.types';
 import { numberToWords } from '../../../../utils/numberToWords';
 import fssaiLogoImg from '../../../../assets/fssai_logo.png';
-import upiQrCodeImg from '../../../../assets/upi_qr_code.png';
 import authorisedSigImg from '../../../../assets/authorised_signature.png';
 
 interface PrintableInvoiceProps {
@@ -27,8 +26,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
     invoice.enterpriseName || businessSettings?.businessName || 'A.S ENTERPRISES';
   const businessAddress =
     businessSettings?.address || invoice.enterpriseAddress || 'HNO. 3484, Zadgaon, Ratnagiri – 415612';
-  const businessPhone =
-    businessSettings?.phone || invoice.enterprisePhone || '9359820403 / 7397881177';
+  const businessPhone = '93598 20403';
   const fssaiNumber = '21526025001185';
 
   const subtotal = invoice.subtotal ?? (invoice.totalAmount ?? 0) + (invoice.discountAmount ?? 0);
@@ -219,7 +217,7 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
           </table>
         </div>
 
-        {/* Bottom Section: Signatures & QR Code */}
+        {/* Bottom Section: Signatures */}
         <div className="grid grid-cols-12 h-[105px] min-h-[105px] text-black">
           {/* Left Column: Amount in words & Customers Signature */}
           <div className="col-span-7 p-2 flex flex-col justify-between border-r border-black">
@@ -240,23 +238,9 @@ export const PrintableInvoice: React.FC<PrintableInvoiceProps> = ({
             </div>
           </div>
 
-          {/* Right Column: Scan to Pay UPI QR Code & Authorised Signatory */}
-          <div className="col-span-5 p-1.5 flex flex-col items-center justify-between text-center relative">
-            <div>
-              <div className="text-[8px] font-bold text-black tracking-tight text-center">
-                Scan to pay with any UPI app
-              </div>
-              <div className="my-0.5 flex justify-center">
-                <img
-                  src={upiQrCodeImg}
-                  alt="Scan to pay with any UPI app"
-                  decoding="async"
-                  className="w-[64px] h-[64px] object-contain"
-                />
-              </div>
-            </div>
-
-            <div className="w-full flex flex-col items-center -mt-2">
+          {/* Right Column: Authorised Signatory */}
+          <div className="col-span-5 p-1.5 flex flex-col items-center justify-end text-center relative">
+            <div className="w-full flex flex-col items-center">
               <div className="h-6 flex items-center justify-center">
                 <img
                   src={authorisedSigImg}
