@@ -49,10 +49,11 @@ export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
   };
 
   const handleEndDateChange = (val: string) => {
-    if (startDate && val && val < startDate) {
-      return;
+    let adjustedStart = startDate;
+    if (val && startDate && val < startDate) {
+      adjustedStart = val;
     }
-    onDateChange(startDate || undefined, val || undefined);
+    onDateChange(adjustedStart || undefined, val || undefined);
   };
 
   const handleClearDates = () => {
@@ -121,7 +122,6 @@ export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 type="date"
                 aria-label="Start Date"
                 value={startDate || ''}
-                max={endDate || undefined}
                 onChange={(e) => handleStartDateChange(e.target.value)}
                 className="p-1.5 text-xs bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
               />
@@ -135,7 +135,6 @@ export const PaymentFilters: React.FC<PaymentFiltersProps> = ({
                 type="date"
                 aria-label="End Date"
                 value={endDate || ''}
-                min={startDate || undefined}
                 onChange={(e) => handleEndDateChange(e.target.value)}
                 className="p-1.5 text-xs bg-white dark:bg-[#0F0F0F] border border-[#ECECEC] dark:border-[#232323] rounded-lg text-[#111111] dark:text-[#FAFAFA] focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-[#FAFAFA]"
               />

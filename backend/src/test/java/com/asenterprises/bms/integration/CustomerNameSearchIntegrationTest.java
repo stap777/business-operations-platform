@@ -26,7 +26,9 @@ import com.asenterprises.bms.repository.PaymentRepository;
 import com.asenterprises.bms.repository.ProductRepository;
 import com.asenterprises.bms.repository.UserRepository;
 import com.asenterprises.bms.service.OrderService;
+import com.asenterprises.bms.service.PaymentReportService;
 import com.asenterprises.bms.service.PaymentService;
+import com.asenterprises.bms.dto.PaymentReportResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,9 @@ public class CustomerNameSearchIntegrationTest {
 
     @Autowired
     private PaymentService paymentService;
+
+    @Autowired
+    private PaymentReportService paymentReportService;
 
     @Autowired
     private UserRepository userRepository;
@@ -471,7 +476,42 @@ public class CustomerNameSearchIntegrationTest {
         );
         assertThat(aliceTomorrow.getContent()).isEmpty();
 
-        // Payment: Search "Alice" + PaymentMethod BANK_TRANSFER -> returns only PAY-ALICE-02
+        // Order: Search "Alice" + open-ended endDate today -> matches Alice's orders
+        Page<OrderResponse> aliceEndOnly = orderService.searchOrders(
+                "Alice",
+                null,
+                null,
+                null,
+                LocalDate.now(),
+                PageRequest.of(0, 10)
+        );
+        assertThat(aliceEndOnly.getContent()).hasSize(2);
+
+        // Order: Search "Alice" + open-ended endDate yesterday -> returns 0
+        Page<OrderResponse> aliceEndPast = orderService.searchOrders(
+                "Alice",
+                null,
+                null,
+                null,
+                LocalDate.now().minusDays(1),
+                PageRequest.of(0, 10)
+        );
+        assertThat(aliceEndPast.getContent()).isEmpty();
+
+        // Order: Search "Alice" + inverted range (startDate > endDate normalized without error)
+        Page<OrderResponse> aliceInverted = orderService.searchOrders(
+                "Alice",
+                null,
+                null,
+                LocalDate.now().plusDays(2),
+                LocalDate.now().plusDays(1),
+                PageRequest.of(0, 10)
+        );
+        assertThat(aliceInverted.getContent()).isEmpty();
+
+        // PaymentReport: Open-ended endDate more than 30 days ago should not invert range or throw
+        PaymentReportResponse pastReport = paymentReportService.getPaymentReport(null, LocalDate.now().minusDays(45), null);
+        assertThat(pastReport).isNotNull();
         Page<PaymentResponse> aliceTransfer = paymentService.searchPayments(
                 "Alice",
                 null,

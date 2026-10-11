@@ -399,8 +399,13 @@ public class OrderService {
             Pageable pageable) {
 
         String trimmedOrderNumber = trim(orderNumber);
-        LocalDateTime startDateTime = startDate != null ? startDate.atStartOfDay() : null;
-        LocalDateTime endDateTime = endDate != null ? endDate.atTime(LocalTime.MAX) : null;
+        LocalDate effectiveStart = startDate;
+        LocalDate effectiveEnd = endDate;
+        if (effectiveStart != null && effectiveEnd != null && effectiveStart.isAfter(effectiveEnd)) {
+            effectiveStart = effectiveEnd;
+        }
+        LocalDateTime startDateTime = effectiveStart != null ? effectiveStart.atStartOfDay() : null;
+        LocalDateTime endDateTime = effectiveEnd != null ? effectiveEnd.atTime(LocalTime.MAX) : null;
 
         return orderRepository.searchOrders(trimmedOrderNumber, customerId, status, startDateTime, endDateTime, pageable)
                 .map(this::mapToResponse);

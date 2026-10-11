@@ -36,8 +36,12 @@ public class PaymentReportService {
 
     @Transactional(readOnly = true)
     public PaymentReportResponse getPaymentReport(LocalDate startDate, LocalDate endDate, PaymentMethod paymentMethod) {
-        LocalDate start = startDate != null ? startDate : LocalDate.now().minusDays(30);
         LocalDate end = endDate != null ? endDate : LocalDate.now();
+        LocalDate start = startDate != null ? startDate : (endDate != null ? endDate.minusDays(30) : LocalDate.now().minusDays(30));
+
+        if (start.isAfter(end)) {
+            start = end;
+        }
 
         LocalDateTime startDateTime = start.atStartOfDay();
         LocalDateTime endDateTime = end.atTime(LocalTime.MAX);
