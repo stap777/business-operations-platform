@@ -50,7 +50,7 @@ export const AdminPaymentsPage: React.FC = () => {
   const filterParams = useMemo(
     () => ({
       page,
-      size: 15,
+      size: 20,
       orderNumber: search || undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
