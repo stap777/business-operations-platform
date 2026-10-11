@@ -112,8 +112,11 @@ public class VerificationService {
             invoice = invoiceService.createInvoiceForOrder(order, adminUser);
         }
 
-        // Step 5: Validate & Deduct Product Stock atomically for tracked products
-        if (order.getItems() != null) {
+        // Step 5: Validate & Deduct Product Stock atomically for tracked products (if not already deducted during delivery)
+        boolean alreadyDeducted = stockAdjustmentRepository.existsByReferenceNumberAndAdjustmentType(
+                order.getOrderNumber(), StockAdjustmentType.OUT);
+
+        if (!alreadyDeducted && order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 Product product = item.getProduct();
                 if (product != null) {
@@ -150,6 +153,8 @@ public class VerificationService {
                     log.info("Stock deducted for product '{}' by quantity {}.", product.getName(), item.getQuantity());
                 }
             }
+        } else if (alreadyDeducted) {
+            log.info("Stock already deducted for Order #{} upon delivery; skipping verification stock deduction.", order.getOrderNumber());
         }
 
         // Step 10: Audit Log Coupon Verification if coupon was applied at order placement

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus, OrderRequest, VoidOrderRequest } from './order.types';
-import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder, useDeleteOrder, useVoidOrder } from './hooks/useOrders';
+import { useOrders, useCancelOrder, useVerifyOrder, usePendingVerificationOrders, useUpdateOrder, useDeleteOrder, useVoidOrder, useMarkDelivered } from './hooks/useOrders';
 import { useAuth } from '../../context/AuthContext';
 import { useBusinessSettings } from '../admin/settings/hooks/useBusinessSettings';
 import { OrderFilters } from './components/OrderFilters';
@@ -14,10 +14,11 @@ import { invoiceService } from '../admin/invoices/invoiceService';
 import type { InvoiceResponse } from '../admin/invoices/invoice.types';
 import { VoidOrderModal } from './components/VoidOrderModal';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
+import { Modal } from '../../components/common/Modal';
 import { Button } from '../../components/ui/button';
 import { PageHeader } from '../../components/common/PageHeader';
 import { DispatchSheetModal } from '../admin/dispatch/components/DispatchSheetModal';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw, CheckCircle2, ClipboardCheck, Filter, AlertCircle, X } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, RefreshCw, CheckCircle2, ClipboardCheck, Filter, AlertCircle, X, Truck, Loader2 } from 'lucide-react';
 
 export type QuickFilter = 'ALL' | 'TODAY' | 'PENDING' | 'DELIVERED' | 'CASH' | 'UPI' | 'CREDIT';
 
@@ -45,6 +46,7 @@ export const OrdersPage: React.FC = () => {
   const [orderToEdit, setOrderToEdit] = useState<OrderResponse | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderResponse | null>(null);
   const [voidingOrder, setVoidingOrder] = useState<OrderResponse | null>(null);
+  const [deliveringOrder, setDeliveringOrder] = useState<OrderResponse | null>(null);
 
   // React Query Hooks
   const {
@@ -70,6 +72,7 @@ export const OrdersPage: React.FC = () => {
   const updateOrderMutation = useUpdateOrder();
   const deleteOrderMutation = useDeleteOrder();
   const voidOrderMutation = useVoidOrder();
+  const markDeliveredMutation = useMarkDelivered();
 
   const handleQuickFilterChange = useCallback((filter: QuickFilter) => {
     setQuickFilter(filter);
@@ -238,6 +241,18 @@ export const OrdersPage: React.FC = () => {
         },
       }
     );
+  };
+
+  const handleMarkDelivered = (orderOrId: OrderResponse | number) => {
+    const id = typeof orderOrId === 'number' ? orderOrId : orderOrId.id;
+    markDeliveredMutation.mutate(id, {
+      onSuccess: (updated) => {
+        setDeliveringOrder(null);
+        if (selectedOrder?.id === id) {
+          setSelectedOrder(updated);
+        }
+      },
+    });
   };
 
   const rawOrders = ordersData?.content || [];
@@ -498,6 +513,7 @@ export const OrdersPage: React.FC = () => {
                 onVerifyOrder={handleVerifyOrder}
                 onDeleteOrder={(order) => setDeletingOrder(order)}
                 onVoidOrder={handleOpenVoidOrder}
+                onMarkDelivered={(order) => setDeliveringOrder(order)}
                 userRole={user?.role}
               />
 
@@ -566,6 +582,7 @@ export const OrdersPage: React.FC = () => {
                 onVerifyOrder={handleVerifyOrder}
                 onDeleteOrder={(order) => setDeletingOrder(order)}
                 onVoidOrder={handleOpenVoidOrder}
+                onMarkDelivered={(order) => setDeliveringOrder(order)}
                 userRole={user?.role}
               />
 
@@ -635,10 +652,12 @@ export const OrdersPage: React.FC = () => {
         onCancelOrder={handleCancelOrder}
         onVerifyOrder={handleVerifyOrder}
         onVoidOrder={handleOpenVoidOrder}
+        onMarkDelivered={handleMarkDelivered}
         onPrintOrder={handlePrintOrder}
         onPrintInvoice={handlePrintInvoice}
         isCancelling={cancelOrderMutation.isPending}
         isVerifying={verifyOrderMutation.isPending}
+        isMarkingDelivered={markDeliveredMutation.isPending}
         isFetchingInvoice={isFetchingInvoice}
         userRole={user?.role}
       />
@@ -681,6 +700,79 @@ export const OrdersPage: React.FC = () => {
         onConfirm={handleConfirmVoidOrder}
         isVoiding={voidOrderMutation.isPending}
       />
+
+      {/* Mark Order as Delivered Confirmation Modal */}
+      {deliveringOrder && (
+        <Modal
+          isOpen={!!deliveringOrder}
+          onClose={() => !markDeliveredMutation.isPending && setDeliveringOrder(null)}
+          title="Mark Order as Delivered"
+          maxWidth="sm"
+        >
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800/40">
+              <Truck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-800 dark:text-amber-200 leading-relaxed space-y-1">
+                <div>
+                  Mark order <strong className="font-semibold text-amber-900 dark:text-amber-100">{deliveringOrder.orderNumber}</strong> ({deliveringOrder.customerName}) as Delivered?
+                </div>
+                <p className="text-amber-700 dark:text-amber-300 font-medium">
+                  Marking this order as Delivered immediately deducts tracked product inventory.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-lg bg-[#FAFAFA] dark:bg-[#151515] border border-[#ECECEC] dark:border-[#232323] text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-[#71717A]">Order Total:</span>
+                <span className="font-semibold font-mono text-[#111111] dark:text-[#FAFAFA]">
+                  ₹{deliveringOrder.totalAmount?.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#71717A]">Payment Status:</span>
+                <span className="font-medium text-[#111111] dark:text-[#FAFAFA]">{deliveringOrder.paymentStatus}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#71717A] dark:text-[#A1A1AA]">
+              Fulfillment status will update to Delivered independently of payment recording and order verification.
+            </p>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeliveringOrder(null)}
+                disabled={markDeliveredMutation.isPending}
+                className="text-xs rounded-xl border-[#ECECEC] dark:border-[#232323] min-h-[40px]"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => handleMarkDelivered(deliveringOrder.id)}
+                disabled={markDeliveredMutation.isPending}
+                className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded-xl min-h-[40px] px-4 shadow-xs gap-1.5"
+              >
+                {markDeliveredMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Marking Delivered...
+                  </>
+                ) : (
+                  <>
+                    <Truck className="w-4 h-4" />
+                    Confirm Delivery
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

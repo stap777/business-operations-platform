@@ -50,7 +50,7 @@ public class DeliveryController {
     @PatchMapping("/orders/{id}/mark-delivered")
     public ResponseEntity<OrderResponse> markDelivered(
             @PathVariable Long id,
-            @Valid @RequestBody DeliveryPaymentRequest paymentRequest,
+            @Valid @RequestBody(required = false) DeliveryPaymentRequest paymentRequest,
             Principal principal) {
 
         return ResponseEntity.ok(deliveryService.markDelivered(id, paymentRequest, principal.getName()));

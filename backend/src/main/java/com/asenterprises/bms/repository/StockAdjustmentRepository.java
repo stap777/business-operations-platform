@@ -40,4 +40,13 @@ public interface StockAdjustmentRepository extends JpaRepository<StockAdjustment
     boolean existsByProductId(Long productId);
 
     long countByProductId(Long productId);
+
+    boolean existsByReferenceNumberAndAdjustmentType(String referenceNumber, StockAdjustmentType adjustmentType);
+
+    @Query("SELECT COUNT(sa) > 0 FROM StockAdjustment sa WHERE sa.referenceNumber = :referenceNumber AND sa.product.id = :productId AND sa.adjustmentType = :adjustmentType")
+    boolean existsByReferenceNumberAndProductIdAndAdjustmentType(
+            @Param("referenceNumber") String referenceNumber,
+            @Param("productId") Long productId,
+            @Param("adjustmentType") StockAdjustmentType adjustmentType
+    );
 }

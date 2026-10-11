@@ -606,18 +606,16 @@ public class Phase7TransactionIntegrityTest {
 
         OrderResponse orderRes = orderService.createOrder(orderReq, manager.getUsername());
         deliveryService.startDelivery(orderRes.getId(), deliveryPerson.getUsername());
-        deliveryService.markDelivered(orderRes.getId(), DeliveryPaymentRequest.builder()
+        // Delivery must fail due to insufficient stock on lowStockProduct
+        assertThatThrownBy(() -> deliveryService.markDelivered(orderRes.getId(), DeliveryPaymentRequest.builder()
                 .amountReceived(new BigDecimal("3000.00"))
                 .paymentMethod(PaymentMethod.CASH)
-                .build(), deliveryPerson.getUsername());
-
-        // Verification must fail due to insufficient stock on lowStockProduct
-        assertThatThrownBy(() -> verificationService.verifyOrder(orderRes.getId(), admin.getUsername()))
+                .build(), deliveryPerson.getUsername()))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Insufficient stock for product 'Low Stock Item'");
+                .hasMessageContaining("Insufficient available stock for product 'Low Stock Item'");
 
-        // Order status MUST remain DELIVERED (verification was rejected)
-        Order orderAfterFailedVerify = orderRepository.findById(orderRes.getId()).orElseThrow();
-        assertThat(orderAfterFailedVerify.getOrderStatus()).isEqualTo(OrderStatus.DELIVERED);
+        // Order status MUST remain OUT_FOR_DELIVERY (delivery was rejected and rolled back)
+        Order orderAfterFailedDelivery = orderRepository.findById(orderRes.getId()).orElseThrow();
+        assertThat(orderAfterFailedDelivery.getOrderStatus()).isEqualTo(OrderStatus.OUT_FOR_DELIVERY);
     }
 }

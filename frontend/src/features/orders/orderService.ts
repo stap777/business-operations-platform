@@ -48,6 +48,11 @@ export const orderService = {
     return response.data;
   },
 
+  markDelivered: async (id: number): Promise<OrderResponse> => {
+    const response = await apiClient.patch<OrderResponse>(`/orders/${id}/mark-delivered`);
+    return response.data;
+  },
+
   voidOrder: async (id: number, data: VoidOrderRequest): Promise<OrderResponse> => {
     const response = await apiClient.patch<OrderResponse>(`/orders/${id}/void`, data);
     return response.data;

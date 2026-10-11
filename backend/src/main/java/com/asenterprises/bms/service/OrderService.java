@@ -474,25 +474,35 @@ public class OrderService {
             user = userRepository.findByUsername(username).orElse(null);
         }
 
-        // 1. If order was verified or completed, inventory was deducted; restore it atomically
-        if (currentStatus == OrderStatus.VERIFIED || currentStatus == OrderStatus.COMPLETED) {
+        // 1. Restore inventory only for products that were actually deducted and not yet restored
+        if (order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 Product product = item.getProduct();
-                if (Boolean.TRUE.equals(product.getTrackInventory())) {
-                    productRepository.addStock(product.getId(), item.getQuantity());
+                if (product != null && Boolean.TRUE.equals(product.getTrackInventory())) {
+                    boolean wasDeducted = stockAdjustmentRepository.existsByReferenceNumberAndProductIdAndAdjustmentType(
+                            order.getOrderNumber(), product.getId(), StockAdjustmentType.OUT);
+                    boolean alreadyRestored = stockAdjustmentRepository.existsByReferenceNumberAndProductIdAndAdjustmentType(
+                            order.getOrderNumber(), product.getId(), StockAdjustmentType.IN);
 
-                    StockAdjustment adjustment = StockAdjustment.builder()
-                            .product(product)
-                            .adjustmentType(StockAdjustmentType.IN)
-                            .quantity(item.getQuantity())
-                            .reason("ORDER_VOIDED")
-                            .referenceNumber(order.getOrderNumber())
-                            .adjustedBy(user)
-                            .adjustmentDate(LocalDateTime.now(BUSINESS_ZONE))
-                            .build();
-                    stockAdjustmentRepository.save(adjustment);
-                    log.info("Restored {} units of stock for product '{}' due to voiding of Order #{}",
-                            item.getQuantity(), product.getName(), order.getOrderNumber());
+                    if (wasDeducted && !alreadyRestored) {
+                        productRepository.addStock(product.getId(), item.getQuantity());
+
+                        StockAdjustment adjustment = StockAdjustment.builder()
+                                .product(product)
+                                .adjustmentType(StockAdjustmentType.IN)
+                                .quantity(item.getQuantity())
+                                .reason("ORDER_VOIDED")
+                                .referenceNumber(order.getOrderNumber())
+                                .adjustedBy(user)
+                                .adjustmentDate(LocalDateTime.now(BUSINESS_ZONE))
+                                .build();
+                        stockAdjustmentRepository.save(adjustment);
+                        log.info("Restored {} units of stock for product '{}' due to voiding of Order #{}",
+                                item.getQuantity(), product.getName(), order.getOrderNumber());
+                    } else {
+                        log.info("Skipping stock restoration for product '{}' on void of Order #{}: wasDeducted={}, alreadyRestored={}",
+                                product.getName(), order.getOrderNumber(), wasDeducted, alreadyRestored);
+                    }
                 }
             }
         }

@@ -512,9 +512,12 @@ public class AdminVerifyFallbackIntegrationTest {
         assertThat(delivered.getDeliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
         assertThat(delivered.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
 
-        // Crucial verification: Delivery Person action must NOT deduct stock or create stock adjustment
-        assertThat(productRepository.findById(product.getId()).orElseThrow().getAvailableStock()).isEqualTo(100);
-        assertThat(stockAdjustmentRepository.findByProductId(product.getId())).isEmpty();
+        // Delivery Person action marks DELIVERED and deducts stock with OUT stock adjustment
+        assertThat(productRepository.findById(product.getId()).orElseThrow().getAvailableStock()).isEqualTo(97);
+        List<StockAdjustment> deliveryAdjustments = stockAdjustmentRepository.findByProductId(product.getId());
+        assertThat(deliveryAdjustments).hasSize(1);
+        assertThat(deliveryAdjustments.get(0).getAdjustmentType()).isEqualTo(StockAdjustmentType.OUT);
+        assertThat(deliveryAdjustments.get(0).getReason()).isEqualTo("ORDER_DELIVERED");
 
         // Step 4: Admin verifies the delivered order
         verificationService.verifyOrder(orderId, adminUser.getUsername());
@@ -523,7 +526,7 @@ public class AdminVerifyFallbackIntegrationTest {
         assertThat(verified.getOrderStatus()).isEqualTo(OrderStatus.VERIFIED);
         assertThat(verified.getDeliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
 
-        // Inventory is deducted exactly once (100 - 3 = 97)
+        // Inventory is not double-deducted (remains 97) and no duplicate stock adjustment
         assertThat(productRepository.findById(product.getId()).orElseThrow().getAvailableStock()).isEqualTo(97);
         assertThat(stockAdjustmentRepository.findByProductId(product.getId())).hasSize(1);
     }

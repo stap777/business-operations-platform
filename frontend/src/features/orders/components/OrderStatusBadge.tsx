@@ -15,5 +15,12 @@ export const PaymentStatusBadge: React.FC<{ status: PaymentStatus }> = ({ status
 };
 
 export const DeliveryStatusBadge: React.FC<{ status: DeliveryStatus }> = ({ status }) => {
-  return <StatusBadge status={status} size="sm" />;
+  const isDelivered = status === 'DELIVERED';
+  return (
+    <StatusBadge
+      status={isDelivered ? 'DELIVERED' : 'PENDING'}
+      label={isDelivered ? 'Delivered' : 'Not Delivered'}
+      size="sm"
+    />
+  );
 };

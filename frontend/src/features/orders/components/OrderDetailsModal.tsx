@@ -13,9 +13,11 @@ interface OrderDetailsModalProps {
   onCancelOrder?: (id: number) => void;
   onVerifyOrder?: (id: number) => void;
   onVoidOrder?: (order: OrderResponse) => void;
+  onMarkDelivered?: (id: number) => void;
   isCancelling?: boolean;
   isVerifying?: boolean;
   isFetchingInvoice?: boolean;
+  isMarkingDelivered?: boolean;
   userRole?: string;
 }
 
@@ -28,13 +30,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
   onCancelOrder,
   onVerifyOrder,
   onVoidOrder,
+  onMarkDelivered,
   isCancelling = false,
   isVerifying = false,
   isFetchingInvoice = false,
+  isMarkingDelivered = false,
   userRole,
 }) => {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showVerifyConfirm, setShowVerifyConfirm] = useState(false);
+  const [showDeliverConfirm, setShowDeliverConfirm] = useState(false);
+
+  React.useEffect(() => {
+    setShowCancelConfirm(false);
+    setShowVerifyConfirm(false);
+    setShowDeliverConfirm(false);
+  }, [order?.id, isOpen]);
 
   if (!isOpen || !order) return null;
 
@@ -54,6 +65,22 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
       setShowVerifyConfirm(false);
     }
   };
+
+  const handleConfirmDeliver = () => {
+    if (onMarkDelivered) {
+      onMarkDelivered(order.id);
+      setShowDeliverConfirm(false);
+    }
+  };
+
+  const canMarkDelivered =
+    (userRole === 'ADMIN' || userRole === 'MANAGER') &&
+    order.orderStatus !== 'CANCELLED' &&
+    order.orderStatus !== 'VOIDED' &&
+    order.orderStatus !== 'DELIVERED' &&
+    order.orderStatus !== 'VERIFIED' &&
+    order.orderStatus !== 'COMPLETED' &&
+    order.deliveryStatus !== 'DELIVERED';
 
   const isCancellable =
     order.orderStatus !== 'CANCELLED' &&
@@ -250,8 +277,65 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
           </div>
         )}
 
-        {/* Admin Verification Confirmation Sub-view */}
-        {showVerifyConfirm ? (
+        {/* Mark as Delivered Confirmation Sub-view */}
+        {showDeliverConfirm ? (
+          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 text-xs space-y-3">
+            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-semibold text-sm">
+              <Truck className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>Mark order {order.orderNumber} as Delivered?</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-white/70 dark:bg-[#111111]/70 border border-amber-100 dark:border-amber-900/40 text-[11px]">
+              <div>
+                <span className="text-[#71717A] block">Customer:</span>
+                <span className="font-semibold text-[#111111] dark:text-[#FAFAFA]">{order.customerName}</span>
+              </div>
+              <div>
+                <span className="text-[#71717A] block">Order Amount:</span>
+                <span className="font-semibold font-mono text-[#111111] dark:text-[#FAFAFA]">
+                  ₹{order.totalAmount?.toFixed(2)}
+                </span>
+              </div>
+              <div>
+                <span className="text-[#71717A] block">Payment Status:</span>
+                <PaymentStatusBadge status={order.paymentStatus} />
+              </div>
+              <div>
+                <span className="text-[#71717A] block">Current Delivery:</span>
+                <DeliveryStatusBadge status={order.deliveryStatus} />
+              </div>
+            </div>
+
+            <p className="text-amber-800 dark:text-amber-300 text-[11px] font-medium leading-relaxed">
+              Marking this order as Delivered immediately deducts tracked inventory stock. Payment recording and order verification remain independent workflows.
+            </p>
+
+            <div className="flex items-center gap-2 pt-1">
+              <Button
+                size="sm"
+                disabled={isMarkingDelivered}
+                onClick={handleConfirmDeliver}
+                className="h-8 text-xs font-semibold px-4 bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+              >
+                {isMarkingDelivered ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Truck className="w-3.5 h-3.5" />
+                )}
+                Confirm Delivery
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isMarkingDelivered}
+                onClick={() => setShowDeliverConfirm(false)}
+                className="h-8 text-xs font-medium px-3 border-[#ECECEC] dark:border-[#232323]"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : showVerifyConfirm ? (
           <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800/40 text-xs space-y-3">
             <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-semibold text-sm">
               <ShieldCheck className="w-4 h-4 shrink-0 text-indigo-600 dark:text-indigo-400" />
@@ -367,6 +451,18 @@ export const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Print Order Slip
+                </Button>
+              )}
+
+              {canMarkDelivered && onMarkDelivered && (
+                <Button
+                  size="sm"
+                  disabled={isMarkingDelivered}
+                  onClick={() => setShowDeliverConfirm(true)}
+                  className="text-xs font-semibold px-3.5 h-8 bg-amber-600 hover:bg-amber-700 text-white gap-1.5 shadow-2xs"
+                >
+                  <Truck className="w-3.5 h-3.5" />
+                  Mark as Delivered
                 </Button>
               )}
 

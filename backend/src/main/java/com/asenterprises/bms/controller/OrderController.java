@@ -1,5 +1,6 @@
 package com.asenterprises.bms.controller;
 
+import com.asenterprises.bms.dto.DeliveryPaymentRequest;
 import com.asenterprises.bms.dto.OrderRequest;
 import com.asenterprises.bms.dto.OrderResponse;
 import com.asenterprises.bms.dto.VoidOrderRequest;
@@ -36,6 +37,7 @@ import java.time.LocalDate;
 public class OrderController {
 
     private final OrderService orderService;
+    private final com.asenterprises.bms.service.DeliveryService deliveryService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
@@ -84,6 +86,15 @@ public class OrderController {
             @Valid @RequestBody VoidOrderRequest request,
             Principal principal) {
         return ResponseEntity.ok(orderService.voidOrder(id, request, principal.getName()));
+    }
+
+    @PatchMapping("/{id}/mark-delivered")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<OrderResponse> markDelivered(
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) DeliveryPaymentRequest paymentRequest,
+            Principal principal) {
+        return ResponseEntity.ok(deliveryService.markDeliveredByAdmin(id, paymentRequest, principal.getName()));
     }
 
     @org.springframework.web.bind.annotation.DeleteMapping("/{id}")

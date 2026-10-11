@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { OrderResponse, OrderStatus } from '../order.types';
-import { useOrders, useCancelOrder, useVerifyOrder } from '../hooks/useOrders';
+import { useOrders, useCancelOrder, useVerifyOrder, useMarkDelivered } from '../hooks/useOrders';
 import { useAuth } from '../../../context/AuthContext';
 import { OrderFilters } from './OrderFilters';
 import { OrderTable } from './OrderTable';
@@ -43,6 +43,7 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
 
   const cancelOrderMutation = useCancelOrder();
   const verifyOrderMutation = useVerifyOrder();
+  const markDeliveredMutation = useMarkDelivered();
 
   const handleSearchChange = useCallback((query: string) => {
     setSearchOrderNumber((prev) => {
@@ -86,6 +87,17 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
       onSuccess: () => {
         if (selectedOrder?.id === id) {
           handleCloseDetails();
+        }
+      },
+    });
+  };
+
+  const handleMarkDelivered = (orderOrId: OrderResponse | number) => {
+    const id = typeof orderOrId === 'number' ? orderOrId : orderOrId.id;
+    markDeliveredMutation.mutate(id, {
+      onSuccess: (updated) => {
+        if (selectedOrder?.id === id) {
+          setSelectedOrder(updated);
         }
       },
     });
@@ -185,8 +197,10 @@ export const OrdersDashboardSection: React.FC<OrdersDashboardSectionProps> = ({
         order={selectedOrder}
         onCancelOrder={handleCancelOrder}
         onVerifyOrder={handleVerifyOrder}
+        onMarkDelivered={handleMarkDelivered}
         isCancelling={cancelOrderMutation.isPending}
         isVerifying={verifyOrderMutation.isPending}
+        isMarkingDelivered={markDeliveredMutation.isPending}
         userRole={user?.role}
       />
     </div>

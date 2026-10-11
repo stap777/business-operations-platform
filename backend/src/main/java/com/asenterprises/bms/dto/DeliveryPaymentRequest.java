@@ -21,10 +21,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class DeliveryPaymentRequest {
 
-    @NotNull(message = "Amount received is required")
     @DecimalMin(value = "0.0", message = "Amount received must be greater than or equal to 0")
     private BigDecimal amountReceived;
 
-    @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;
 }

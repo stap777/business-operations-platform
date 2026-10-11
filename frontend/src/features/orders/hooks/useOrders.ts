@@ -76,6 +76,27 @@ export const useCancelOrder = () => {
   });
 };
 
+export const useMarkDelivered = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => orderService.markDelivered(id),
+    onSuccess: (data) => {
+      toast.success(`Order #${data.orderNumber} marked as Delivered. Inventory has been deducted.`);
+      queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders', 'pending-verification'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || 'Failed to mark order as delivered.';
+      toast.error(msg);
+    },
+  });
+};
+
 export const usePendingVerificationOrders = (page = 0, size = 50, enabled = true) => {
   return useQuery({
     queryKey: ['admin', 'orders', 'pending-verification', page, size],

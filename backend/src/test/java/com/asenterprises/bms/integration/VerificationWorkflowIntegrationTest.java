@@ -273,7 +273,7 @@ public class VerificationWorkflowIntegrationTest {
         assertThat(adjustments).hasSize(1);
         assertThat(adjustments.get(0).getAdjustmentType()).isEqualTo(StockAdjustmentType.OUT);
         assertThat(adjustments.get(0).getQuantity()).isEqualTo(2);
-        assertThat(adjustments.get(0).getReason()).isEqualTo("ORDER_FULFILLMENT");
+        assertThat(adjustments.get(0).getReason()).isEqualTo("ORDER_DELIVERED");
     }
 
     @Test
