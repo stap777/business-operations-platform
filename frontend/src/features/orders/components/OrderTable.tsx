@@ -4,7 +4,7 @@ import { OrderStatusBadge, PaymentStatusBadge, DeliveryStatusBadge } from './Ord
 import { ActionDropdownMenu } from '../../../components/common/ActionDropdownMenu';
 import type { ActionMenuItem } from '../../../components/common/ActionDropdownMenu';
 import { Button } from '../../../components/ui/button';
-import { Eye, Lock, Printer, ShieldCheck, XCircle, Edit, Trash2, Ban, Receipt, Truck } from 'lucide-react';
+import { Eye, Printer, ShieldCheck, XCircle, Edit, Trash2, Ban, Receipt, Truck } from 'lucide-react';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { TableSkeleton } from '../../../components/common/TableSkeleton';
 
@@ -22,6 +22,39 @@ interface OrderTableProps {
   onMarkDelivered?: (order: OrderResponse) => void;
   userRole?: string;
 }
+
+const renderOrderBadges = (order: OrderResponse) => {
+  if (order.orderStatus === 'CANCELLED' || order.orderStatus === 'VOIDED') {
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <OrderStatusBadge status={order.orderStatus} />
+      </div>
+    );
+  }
+
+  if (order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') {
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <OrderStatusBadge status="VERIFIED" />
+        <DeliveryStatusBadge status="DELIVERED" />
+      </div>
+    );
+  }
+
+  if (order.orderStatus === 'DELIVERED' || order.deliveryStatus === 'DELIVERED') {
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <DeliveryStatusBadge status="DELIVERED" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap">
+      <DeliveryStatusBadge status="PENDING" />
+    </div>
+  );
+};
 
 export const OrderTable: React.FC<OrderTableProps> = ({
   orders,
@@ -217,16 +250,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                       <PaymentStatusBadge status={order.paymentStatus} />
                     </td>
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <OrderStatusBadge status={order.orderStatus} />
-                        <DeliveryStatusBadge status={order.deliveryStatus} />
-                        {(order.isLocked || order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                            <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                            Verified
-                          </span>
-                        )}
-                      </div>
+                      {renderOrderBadges(order)}
                     </td>
                     <td
                       className="py-3.5 px-4 text-right"
@@ -368,16 +392,7 @@ export const OrderTable: React.FC<OrderTableProps> = ({
                 <span className="font-mono font-bold text-sm text-[#09090B] dark:text-[#FAFAFA]">
                   {order.orderNumber}
                 </span>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <OrderStatusBadge status={order.orderStatus} />
-                  <DeliveryStatusBadge status={order.deliveryStatus} />
-                  {(order.isLocked || order.orderStatus === 'VERIFIED' || order.orderStatus === 'COMPLETED') && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                      <Lock className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                      Verified
-                    </span>
-                  )}
-                </div>
+                {renderOrderBadges(order)}
               </div>
 
               {/* Customer & Date */}
