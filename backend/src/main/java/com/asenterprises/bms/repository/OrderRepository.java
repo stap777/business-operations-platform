@@ -44,7 +44,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query(
         value = "SELECT DISTINCT o FROM Order o JOIN FETCH o.customer JOIN FETCH o.manager " +
-                "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
+                "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%') OR LOWER(o.customer.fullName) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
                 "AND (CAST(:customerId AS Long) IS NULL OR o.customer.id = :customerId) " +
                 "AND (" +
                 "  :status IS NULL " +
@@ -54,7 +54,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                 "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
                 "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)",
         countQuery = "SELECT COUNT(o) FROM Order o " +
-                     "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
+                     "WHERE (CAST(:orderNumber AS String) IS NULL OR LOWER(o.orderNumber) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%') OR LOWER(o.customer.fullName) LIKE CONCAT('%', LOWER(CAST(:orderNumber AS String)), '%')) " +
                      "AND (CAST(:customerId AS Long) IS NULL OR o.customer.id = :customerId) " +
                      "AND (" +
                      "  :status IS NULL " +

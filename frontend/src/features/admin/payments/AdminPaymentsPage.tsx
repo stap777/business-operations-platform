@@ -13,6 +13,8 @@ import { Button } from '../../../components/ui/button';
 export const AdminPaymentsPage: React.FC = () => {
   const [page, setPage] = useState<number>(0);
   const [search, setSearch] = useState<string>('');
+  const [startDate, setStartDate] = useState<string | undefined>(undefined);
+  const [endDate, setEndDate] = useState<string | undefined>(undefined);
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<
     'ALL_OUTSTANDING' | PaymentStatus | 'ALL'
   >('ALL_OUTSTANDING');
@@ -38,18 +40,35 @@ export const AdminPaymentsPage: React.FC = () => {
     });
   }, []);
 
+  const handleDateChange = useCallback((start?: string, end?: string) => {
+    setStartDate(start);
+    setEndDate(end);
+    setPage(0);
+  }, []);
+
   // Build backend search filters
   const filterParams = useMemo(
     () => ({
       page,
       size: 15,
       orderNumber: search || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     }),
-    [page, search]
+    [page, search, startDate, endDate]
+  );
+
+  // Build backend payment report filters matching the selected date range
+  const reportFilterParams = useMemo(
+    () => ({
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    }),
+    [startDate, endDate]
   );
 
   const { data: pageData, isLoading, isFetching, isError, refetch } = useCreditOrders(filterParams);
-  const { data: paymentReport, refetch: refetchReport } = usePaymentReport();
+  const { data: paymentReport, refetch: refetchReport } = usePaymentReport(reportFilterParams);
 
   const handleRefreshAll = useCallback(() => {
     refetch();
@@ -157,6 +176,9 @@ export const AdminPaymentsPage: React.FC = () => {
         onSearchChange={handleSearchChange}
         selectedStatus={selectedStatusFilter}
         onStatusChange={handleStatusChange}
+        startDate={startDate}
+        endDate={endDate}
+        onDateChange={handleDateChange}
         onRefresh={handleRefreshAll}
         isFetching={isFetching}
       />

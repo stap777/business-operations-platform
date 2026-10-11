@@ -27,13 +27,13 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Query(
         value = "SELECT DISTINCT p FROM Payment p JOIN FETCH p.customer JOIN FETCH p.receivedBy " +
-                "WHERE (CAST(:paymentNumber AS String) IS NULL OR LOWER(p.paymentNumber) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%')) " +
+                "WHERE (CAST(:paymentNumber AS String) IS NULL OR LOWER(p.paymentNumber) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%') OR LOWER(p.customer.fullName) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%')) " +
                 "AND (CAST(:customerId AS Long) IS NULL OR p.customer.id = :customerId) " +
                 "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
                 "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate >= :startDate) " +
                 "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate <= :endDate)",
         countQuery = "SELECT COUNT(p) FROM Payment p " +
-                     "WHERE (CAST(:paymentNumber AS String) IS NULL OR LOWER(p.paymentNumber) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%')) " +
+                     "WHERE (CAST(:paymentNumber AS String) IS NULL OR LOWER(p.paymentNumber) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%') OR LOWER(p.customer.fullName) LIKE CONCAT('%', LOWER(CAST(:paymentNumber AS String)), '%')) " +
                      "AND (CAST(:customerId AS Long) IS NULL OR p.customer.id = :customerId) " +
                      "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
                      "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR p.paymentDate >= :startDate) " +
