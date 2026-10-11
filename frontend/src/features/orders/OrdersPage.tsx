@@ -263,6 +263,7 @@ export const OrdersPage: React.FC = () => {
       return rawOrders.filter(
         (o) =>
           o.orderStatus !== 'DELIVERED' &&
+          o.deliveryStatus !== 'DELIVERED' &&
           o.orderStatus !== 'COMPLETED' &&
           o.orderStatus !== 'CANCELLED' &&
           o.orderStatus !== 'VOIDED' &&
@@ -321,6 +322,7 @@ export const OrdersPage: React.FC = () => {
       }
       if (
         o.orderStatus !== 'DELIVERED' &&
+        o.deliveryStatus !== 'DELIVERED' &&
         o.orderStatus !== 'COMPLETED' &&
         o.orderStatus !== 'CANCELLED' &&
         o.orderStatus !== 'VOIDED' &&
@@ -414,7 +416,7 @@ export const OrdersPage: React.FC = () => {
             {[
               { id: 'ALL', label: 'ALL' },
               { id: 'TODAY', label: 'TODAY' },
-              { id: 'PENDING', label: 'PENDING' },
+              { id: 'PENDING', label: 'NOT DELIVERED' },
               { id: 'DELIVERED', label: 'DELIVERED' },
               { id: 'CASH', label: 'CASH' },
               { id: 'UPI', label: 'UPI' },

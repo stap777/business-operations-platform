@@ -124,7 +124,7 @@ export const OrderFilters: React.FC<OrderFiltersProps> = ({
           >
             <option value="">All Order Statuses</option>
             <option value="CREATED">Created</option>
-            <option value="ASSIGNED">Assigned</option>
+            <option value="ASSIGNED">Not Delivered</option>
             <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
             <option value="DELIVERED">Delivered</option>
             <option value="VERIFIED">Verified</option>
