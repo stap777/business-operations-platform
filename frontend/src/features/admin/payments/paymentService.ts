@@ -19,6 +19,7 @@ export const paymentService = {
 
     if (params.orderNumber) queryParams.orderNumber = params.orderNumber;
     if (params.customerId) queryParams.customerId = params.customerId;
+    if (params.paymentStatus) queryParams.paymentStatus = params.paymentStatus;
     if (params.orderStatus) queryParams.status = params.orderStatus;
     if (params.startDate) queryParams.startDate = params.startDate;
     if (params.endDate) queryParams.endDate = params.endDate;

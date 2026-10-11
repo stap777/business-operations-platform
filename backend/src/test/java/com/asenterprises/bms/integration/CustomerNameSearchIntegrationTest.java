@@ -512,6 +512,26 @@ public class CustomerNameSearchIntegrationTest {
         // PaymentReport: Open-ended endDate more than 30 days ago should not invert range or throw
         PaymentReportResponse pastReport = paymentReportService.getPaymentReport(null, LocalDate.now().minusDays(45), null);
         assertThat(pastReport).isNotNull();
+
+        // Order: Search "Alice" + ALL_OUTSTANDING -> returns only ORD-ALICE-1001 (100.00 outstanding)
+        Page<OrderResponse> aliceOutstanding = orderService.searchOrders(
+                "Alice", null, null, "ALL_OUTSTANDING", null, null, PageRequest.of(0, 10)
+        );
+        assertThat(aliceOutstanding.getContent()).hasSize(1);
+        assertThat(aliceOutstanding.getContent().get(0).getOrderNumber()).isEqualTo("ORD-ALICE-1001");
+
+        // Order: Search "Alice" + PAID -> returns only ORD-ALICE-1002 (paid)
+        Page<OrderResponse> alicePaid = orderService.searchOrders(
+                "Alice", null, null, "PAID", null, null, PageRequest.of(0, 10)
+        );
+        assertThat(alicePaid.getContent()).hasSize(1);
+        assertThat(alicePaid.getContent().get(0).getOrderNumber()).isEqualTo("ORD-ALICE-1002");
+
+        // Order: Search "Alice" + ALL -> returns both orders
+        Page<OrderResponse> aliceAllPaymentStatuses = orderService.searchOrders(
+                "Alice", null, null, "ALL", null, null, PageRequest.of(0, 10)
+        );
+        assertThat(aliceAllPaymentStatuses.getContent()).hasSize(2);
         Page<PaymentResponse> aliceTransfer = paymentService.searchPayments(
                 "Alice",
                 null,

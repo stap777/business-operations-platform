@@ -52,10 +52,11 @@ export const AdminPaymentsPage: React.FC = () => {
       page,
       size: 20,
       orderNumber: search || undefined,
+      paymentStatus: selectedStatusFilter || 'ALL_OUTSTANDING',
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     }),
-    [page, search, startDate, endDate]
+    [page, search, selectedStatusFilter, startDate, endDate]
   );
 
   // Build backend payment report filters matching the selected date range
@@ -76,27 +77,7 @@ export const AdminPaymentsPage: React.FC = () => {
   }, [refetch, refetchReport]);
 
   const rawOrders = pageData?.content || [];
-
-  // Filter orders according to selectedStatusFilter
-  const filteredOrders = rawOrders.filter((order) => {
-    const total = order.totalAmount || 0;
-    const paid = order.amountReceived || 0;
-    const outstanding = total - paid;
-
-    if (selectedStatusFilter === 'ALL_OUTSTANDING') {
-      return outstanding > 0 && order.paymentStatus !== 'PAID';
-    }
-    if (selectedStatusFilter === 'PENDING') {
-      return order.paymentStatus === 'PENDING';
-    }
-    if (selectedStatusFilter === 'PARTIAL') {
-      return order.paymentStatus === 'PARTIAL';
-    }
-    if (selectedStatusFilter === 'PAID') {
-      return order.paymentStatus === 'PAID';
-    }
-    return true; // ALL
-  });
+  const filteredOrders = rawOrders;
 
   const totalPages = pageData?.totalPages || 0;
   const totalElements = pageData?.totalElements || 0;

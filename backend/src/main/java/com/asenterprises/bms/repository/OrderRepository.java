@@ -51,6 +51,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                 "  OR (:status = com.asenterprises.bms.entity.OrderStatus.DELIVERED AND (o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED OR o.deliveryStatus = com.asenterprises.bms.entity.DeliveryStatus.DELIVERED)) " +
                 "  OR (:status != com.asenterprises.bms.entity.OrderStatus.DELIVERED AND o.orderStatus = :status)" +
                 ") " +
+                "AND (" +
+                "  CAST(:paymentStatus AS String) IS NULL OR CAST(:paymentStatus AS String) = 'ALL' " +
+                "  OR (CAST(:paymentStatus AS String) = 'ALL_OUTSTANDING' AND o.paymentStatus != com.asenterprises.bms.entity.PaymentStatus.PAID AND (o.totalAmount - COALESCE(o.amountReceived, 0)) > 0 AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED)) " +
+                "  OR (CAST(:paymentStatus AS String) = 'PENDING' AND o.paymentStatus = com.asenterprises.bms.entity.PaymentStatus.PENDING) " +
+                "  OR (CAST(:paymentStatus AS String) = 'PARTIAL' AND o.paymentStatus = com.asenterprises.bms.entity.PaymentStatus.PARTIAL) " +
+                "  OR (CAST(:paymentStatus AS String) = 'PAID' AND o.paymentStatus = com.asenterprises.bms.entity.PaymentStatus.PAID)" +
+                ") " +
                 "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
                 "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)",
         countQuery = "SELECT COUNT(o) FROM Order o " +
@@ -61,6 +68,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                      "  OR (:status = com.asenterprises.bms.entity.OrderStatus.DELIVERED AND (o.orderStatus = com.asenterprises.bms.entity.OrderStatus.DELIVERED OR o.deliveryStatus = com.asenterprises.bms.entity.DeliveryStatus.DELIVERED)) " +
                      "  OR (:status != com.asenterprises.bms.entity.OrderStatus.DELIVERED AND o.orderStatus = :status)" +
                      ") " +
+                     "AND (" +
+                     "  CAST(:paymentStatus AS String) IS NULL OR CAST(:paymentStatus AS String) = 'ALL' " +
+                     "  OR (CAST(:paymentStatus AS String) = 'ALL_OUTSTANDING' AND o.paymentStatus != com.asenterprises.bms.entity.PaymentStatus.PAID AND (o.totalAmount - COALESCE(o.amountReceived, 0)) > 0 AND o.orderStatus NOT IN (com.asenterprises.bms.entity.OrderStatus.CANCELLED, com.asenterprises.bms.entity.OrderStatus.VOIDED)) " +
+                     "  OR (CAST(:paymentStatus AS String) = 'PENDING' AND o.paymentStatus = com.asenterprises.bms.entity.PaymentStatus.PENDING) " +
+                     "  OR (CAST(:paymentStatus AS String) = 'PARTIAL' AND o.paymentStatus = com.asenterprises.bms.entity.PaymentStatus.PARTIAL) " +
+                     "  OR (CAST(:paymentStatus AS String) = 'PAID' AND o.paymentStatus = com.asenterprises.bms.entity.PaymentStatus.PAID)" +
+                     ") " +
                      "AND (CAST(:startDate AS java.time.LocalDateTime) IS NULL OR o.createdAt >= :startDate) " +
                      "AND (CAST(:endDate AS java.time.LocalDateTime) IS NULL OR o.createdAt <= :endDate)"
     )
@@ -68,6 +82,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("orderNumber") String orderNumber,
             @Param("customerId") Long customerId,
             @Param("status") OrderStatus status,
+            @Param("paymentStatus") String paymentStatus,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate,
             Pageable pageable

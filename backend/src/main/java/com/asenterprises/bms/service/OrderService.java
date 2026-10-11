@@ -397,6 +397,18 @@ public class OrderService {
             LocalDate startDate,
             LocalDate endDate,
             Pageable pageable) {
+        return searchOrders(orderNumber, customerId, status, null, startDate, endDate, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<OrderResponse> searchOrders(
+            String orderNumber,
+            Long customerId,
+            OrderStatus status,
+            String paymentStatus,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable) {
 
         String trimmedOrderNumber = trim(orderNumber);
         LocalDate effectiveStart = startDate;
@@ -407,7 +419,7 @@ public class OrderService {
         LocalDateTime startDateTime = effectiveStart != null ? effectiveStart.atStartOfDay() : null;
         LocalDateTime endDateTime = effectiveEnd != null ? effectiveEnd.atTime(LocalTime.MAX) : null;
 
-        return orderRepository.searchOrders(trimmedOrderNumber, customerId, status, startDateTime, endDateTime, pageable)
+        return orderRepository.searchOrders(trimmedOrderNumber, customerId, status, paymentStatus, startDateTime, endDateTime, pageable)
                 .map(this::mapToResponse);
     }
 

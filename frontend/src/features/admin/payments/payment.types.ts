@@ -48,6 +48,7 @@ export interface PaymentFilterParams {
   size?: number;
   orderNumber?: string;
   customerId?: number;
+  paymentStatus?: string;
   status?: PaymentStatus;
   orderStatus?: OrderStatus;
   startDate?: string;

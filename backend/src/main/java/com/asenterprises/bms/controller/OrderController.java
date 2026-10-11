@@ -63,11 +63,12 @@ public class OrderController {
             @RequestParam(required = false) String orderNumber,
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) String paymentStatus,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PageableDefault(size = 20) Pageable pageable) {
 
-        return ResponseEntity.ok(orderService.searchOrders(orderNumber, customerId, status, startDate, endDate, pageable));
+        return ResponseEntity.ok(orderService.searchOrders(orderNumber, customerId, status, paymentStatus, startDate, endDate, pageable));
     }
 
     @PatchMapping("/{id}/cancel")
