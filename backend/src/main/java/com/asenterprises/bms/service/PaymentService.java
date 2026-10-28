@@ -9,6 +9,7 @@ import com.asenterprises.bms.dto.PendingOrderResponse;
 import com.asenterprises.bms.dto.SuggestedAllocationItemDto;
 import com.asenterprises.bms.entity.Customer;
 import com.asenterprises.bms.entity.CustomerStatus;
+import com.asenterprises.bms.entity.DeliveryStatus;
 import com.asenterprises.bms.entity.Order;
 import com.asenterprises.bms.entity.OrderStatus;
 import com.asenterprises.bms.entity.Payment;
@@ -368,6 +369,10 @@ public class PaymentService {
         if (order.getPaymentStatus() != newStatus) {
             order.setPaymentStatus(newStatus);
             log.info("Updated Order {} payment status to {}", order.getOrderNumber(), newStatus);
+        }
+        if (newStatus == PaymentStatus.PAID && order.getDeliveryStatus() != DeliveryStatus.DELIVERED) {
+            order.setDeliveryStatus(DeliveryStatus.DELIVERED);
+            log.info("Automatically updated Order {} delivery status to DELIVERED upon full payment", order.getOrderNumber());
         }
         orderRepository.save(order);
 

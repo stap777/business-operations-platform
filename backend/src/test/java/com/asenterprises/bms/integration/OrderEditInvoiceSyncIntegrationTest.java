@@ -393,6 +393,9 @@ public class OrderEditInvoiceSyncIntegrationTest {
 
         OrderResponse createdOrder = orderService.createOrder(createRequest, manager.getUsername());
 
+        // Mark Delivered while unpaid, then pay in full prior to verification
+        deliveryService.markDeliveredByAdmin(createdOrder.getId(), null, admin.getUsername());
+
         paymentService.createPayment(PaymentRequest.builder()
                 .customerId(customer.getId())
                 .totalAmount(new BigDecimal("200.00"))
@@ -403,8 +406,6 @@ public class OrderEditInvoiceSyncIntegrationTest {
                         .build()))
                 .build(), admin.getUsername());
 
-        // Mark Delivered and Verify
-        deliveryService.markDeliveredByAdmin(createdOrder.getId(), null, admin.getUsername());
         verificationService.verifyOrder(createdOrder.getId(), admin.getUsername());
 
         Invoice preEditInvoice = invoiceRepository.findByOrderIdWithDetails(createdOrder.getId()).orElseThrow();

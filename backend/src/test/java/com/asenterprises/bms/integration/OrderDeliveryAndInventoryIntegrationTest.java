@@ -335,7 +335,12 @@ public class OrderDeliveryAndInventoryIntegrationTest {
     void testVerificationAfterDeliveryDoesNotDoubleDeductStock() {
         OrderResponse order = createTestOrder(5, null);
 
-        // Pay order in full prior to verification
+        // Mark DELIVERED while unpaid -> Stock drops from 50 to 45
+        deliveryService.markDeliveredByAdmin(order.getId(), null, admin.getUsername());
+        assertThat(productRepository.findById(trackedProduct.getId()).orElseThrow().getAvailableStock()).isEqualTo(45);
+        assertThat(stockAdjustmentRepository.findByProductId(trackedProduct.getId())).hasSize(1);
+
+        // Pay order in full after delivery
         paymentService.createPayment(PaymentRequest.builder()
                 .customerId(customer.getId())
                 .totalAmount(order.getTotalAmount())
@@ -345,11 +350,6 @@ public class OrderDeliveryAndInventoryIntegrationTest {
                         .allocatedAmount(order.getTotalAmount())
                         .build()))
                 .build(), admin.getUsername());
-
-        // Mark DELIVERED -> Stock drops from 50 to 45
-        deliveryService.markDeliveredByAdmin(order.getId(), null, admin.getUsername());
-        assertThat(productRepository.findById(trackedProduct.getId()).orElseThrow().getAvailableStock()).isEqualTo(45);
-        assertThat(stockAdjustmentRepository.findByProductId(trackedProduct.getId())).hasSize(1);
 
         // Admin verifies the order
         InvoiceResponse invoiceRes = verificationService.verifyOrder(order.getId(), admin.getUsername());
@@ -528,5 +528,109 @@ public class OrderDeliveryAndInventoryIntegrationTest {
         // Exactly one stock adjustment record created
         List<StockAdjustment> adjustments = stockAdjustmentRepository.findByProductId(trackedProduct.getId());
         assertThat(adjustments).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("11. When order payment becomes fully PAID in one payment, delivery status automatically transitions to DELIVERED without stock deduction")
+    void testFullPaymentAutomaticallySetsDeliveryStatusToDelivered() {
+        OrderResponse order = createTestOrder(5, null);
+        assertThat(order.getDeliveryStatus()).isEqualTo(DeliveryStatus.PENDING);
+        assertThat(order.getPaymentStatus()).isEqualTo(PaymentStatus.PENDING);
+
+        // Record full payment
+        paymentService.createPayment(PaymentRequest.builder()
+                .customerId(customer.getId())
+                .totalAmount(order.getTotalAmount())
+                .paymentMethod(PaymentMethod.UPI)
+                .allocations(List.of(PaymentAllocationRequest.builder()
+                        .orderId(order.getId())
+                        .allocatedAmount(order.getTotalAmount())
+                        .build()))
+                .build(), admin.getUsername());
+
+        Order paidOrder = orderRepository.findById(order.getId()).orElseThrow();
+        assertThat(paidOrder.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(paidOrder.getDeliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
+
+        // Inventory is NOT deducted upon payment (remains 50)
+        assertThat(productRepository.findById(trackedProduct.getId()).orElseThrow().getAvailableStock()).isEqualTo(50);
+        assertThat(stockAdjustmentRepository.findByProductId(trackedProduct.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("12. Final installment completing payment automatically transitions delivery status to DELIVERED")
+    void testFinalInstallmentCompletingPaymentAutomaticallySetsDeliveryStatusToDelivered() {
+        OrderResponse order = createTestOrder(5, null);
+        assertThat(order.getDeliveryStatus()).isEqualTo(DeliveryStatus.PENDING);
+
+        BigDecimal halfAmount = order.getTotalAmount().divide(new BigDecimal("2"), 2, java.math.RoundingMode.HALF_UP);
+        BigDecimal remainingAmount = order.getTotalAmount().subtract(halfAmount);
+
+        // Installment 1: Partial payment -> Remains undelivered
+        paymentService.createPayment(PaymentRequest.builder()
+                .customerId(customer.getId())
+                .totalAmount(halfAmount)
+                .paymentMethod(PaymentMethod.CASH)
+                .allocations(List.of(PaymentAllocationRequest.builder()
+                        .orderId(order.getId())
+                        .allocatedAmount(halfAmount)
+                        .build()))
+                .build(), admin.getUsername());
+
+        Order partialOrder = orderRepository.findById(order.getId()).orElseThrow();
+        assertThat(partialOrder.getPaymentStatus()).isEqualTo(PaymentStatus.PARTIAL);
+        assertThat(partialOrder.getDeliveryStatus()).isEqualTo(DeliveryStatus.PENDING);
+
+        // Installment 2: Final payment completing order -> Automatically transitions to DELIVERED
+        paymentService.createPayment(PaymentRequest.builder()
+                .customerId(customer.getId())
+                .totalAmount(remainingAmount)
+                .paymentMethod(PaymentMethod.BANK_TRANSFER)
+                .allocations(List.of(PaymentAllocationRequest.builder()
+                        .orderId(order.getId())
+                        .allocatedAmount(remainingAmount)
+                        .build()))
+                .build(), admin.getUsername());
+
+        Order completedPaymentOrder = orderRepository.findById(order.getId()).orElseThrow();
+        assertThat(completedPaymentOrder.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(completedPaymentOrder.getDeliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
+
+        // Stock deduction behavior preserved: payment does not deduct stock
+        assertThat(productRepository.findById(trackedProduct.getId()).orElseThrow().getAvailableStock()).isEqualTo(50);
+    }
+
+    @Test
+    @DisplayName("13. Unpaid order can be delivered (with stock deduction) and subsequent payment preserves DELIVERED status without double-deduction")
+    void testUnpaidOrderCanBeDeliveredAndSubsequentPaymentPreservesDeliveredStatus() {
+        OrderResponse order = createTestOrder(5, null);
+
+        // Deliver while unpaid
+        deliveryService.markDeliveredByAdmin(order.getId(), null, admin.getUsername());
+
+        Order deliveredOrder = orderRepository.findById(order.getId()).orElseThrow();
+        assertThat(deliveredOrder.getDeliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
+        assertThat(deliveredOrder.getPaymentStatus()).isEqualTo(PaymentStatus.PENDING);
+        assertThat(productRepository.findById(trackedProduct.getId()).orElseThrow().getAvailableStock()).isEqualTo(45);
+        assertThat(stockAdjustmentRepository.findByProductId(trackedProduct.getId())).hasSize(1);
+
+        // Subsequent full payment
+        paymentService.createPayment(PaymentRequest.builder()
+                .customerId(customer.getId())
+                .totalAmount(order.getTotalAmount())
+                .paymentMethod(PaymentMethod.CASH)
+                .allocations(List.of(PaymentAllocationRequest.builder()
+                        .orderId(order.getId())
+                        .allocatedAmount(order.getTotalAmount())
+                        .build()))
+                .build(), admin.getUsername());
+
+        Order paidDeliveredOrder = orderRepository.findById(order.getId()).orElseThrow();
+        assertThat(paidDeliveredOrder.getDeliveryStatus()).isEqualTo(DeliveryStatus.DELIVERED);
+        assertThat(paidDeliveredOrder.getPaymentStatus()).isEqualTo(PaymentStatus.PAID);
+
+        // Stock is NOT deducted again (remains 45)
+        assertThat(productRepository.findById(trackedProduct.getId()).orElseThrow().getAvailableStock()).isEqualTo(45);
+        assertThat(stockAdjustmentRepository.findByProductId(trackedProduct.getId())).hasSize(1);
     }
 }

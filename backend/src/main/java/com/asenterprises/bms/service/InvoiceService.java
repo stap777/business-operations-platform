@@ -3,6 +3,8 @@ package com.asenterprises.bms.service;
 import com.asenterprises.bms.dto.BusinessSettingsResponse;
 import com.asenterprises.bms.dto.InvoiceItemResponse;
 import com.asenterprises.bms.dto.InvoiceResponse;
+import com.asenterprises.bms.entity.Customer;
+import com.asenterprises.bms.entity.DeliveryStatus;
 import com.asenterprises.bms.entity.Invoice;
 import com.asenterprises.bms.entity.InvoiceItem;
 import com.asenterprises.bms.entity.Order;
@@ -186,6 +188,10 @@ public class InvoiceService {
         order.setAmountReceived(totalAllocated);
         if (order.getPaymentStatus() != newStatus) {
             order.setPaymentStatus(newStatus);
+        }
+        if (newStatus == PaymentStatus.PAID && order.getDeliveryStatus() != DeliveryStatus.DELIVERED) {
+            order.setDeliveryStatus(DeliveryStatus.DELIVERED);
+            log.info("Automatically updated Order {} delivery status to DELIVERED upon order edit reaching full payment", order.getOrderNumber());
         }
 
         // Synchronize Customer snapshots
