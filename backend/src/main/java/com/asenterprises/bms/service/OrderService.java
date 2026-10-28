@@ -379,6 +379,7 @@ public class OrderService {
         order.setTotalAmount(subtotal.subtract(discountAmount));
 
         Order updatedOrder = orderRepository.save(order);
+        invoiceService.syncInvoiceWithOrder(updatedOrder);
         return mapToResponse(updatedOrder);
     }
 

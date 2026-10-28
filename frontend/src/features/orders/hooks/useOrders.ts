@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { orderService } from '../orderService';
 import type { OrderQueryParams, OrderRequest } from '../order.types';
+import { invoiceKeys } from '../../admin/invoices/hooks/useInvoices';
 import { toast } from 'sonner';
 
 export const orderKeys = {
@@ -52,6 +53,7 @@ export const useUpdateOrder = () => {
     onSuccess: (data) => {
       toast.success(`Order ${data.orderNumber} updated successfully.`);
       queryClient.invalidateQueries({ queryKey: orderKeys.all });
+      queryClient.invalidateQueries({ queryKey: invoiceKeys.all });
     },
     onError: (err: any) => {
       const msg = err.response?.data?.message || 'Failed to update order.';
